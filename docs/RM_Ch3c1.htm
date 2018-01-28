@@ -1,0 +1,1456 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H3 ><A name="d_lmclear"></A>d_lmclear</A></H3>
+<FONT SIZE="2"><P>Clear a user from the lock manager's user table</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_lmclear</B>(const char *<I>username</I>, const char <I>*lockmgr</I>, LMC_AVAIL_FCN *<I>avail</I>, DB_TASK *<I>task</I>) </P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>username<BR>
+The name of the user to be removed from the lock manager's user table.</P>
+<P>lockmgr<BR>
+The lock manager name.</P>
+<P>avail<BR>
+The function that checks the availability of the lock manager communication type.  This can be specified directly (for example, <B>&amp;psp_tcp_avail</B>) or with the return value of the <B>psp_lmcFind</B> function (for example, <B>psp_lmcFind("TCP")</B>).</P>
+<P>task<BR>
+A pointer to the application's task variable.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function clears the specified user from the lock manager's user table.  This action involves freeing all locks and files that are held by the user and preparing for transaction recovery.  The function can be called any time, either before or after opening a database.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DUPUSERID<BR>
+The specified user ID is the same as the user ID currently in use.  When calling <B>d_lmclear</B>, you must call it from a task with a different user ID than the one you are clearing.</P>
+<P>S_INVLOCK<BR>
+The specified lock manager type is invalid.</P>
+<P>S_LMCERROR<BR>
+The attempt to communicate with the lock manager failed.</P>
+<P>S_NOLOCKMGR<BR>
+The specified lock manager was not found.</P>
+<P>S_UNAVAIL<BR>
+There was an internal or general lock manager error.</P>
+<P>S_USERID<BR>
+No user ID was specified.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_TASK *task1;
+
+d_opentask(&amp;task1);
+
+d_dbuserid("Task1",  task1);
+
+/* Clear user "Task2" from the lock manager called lm_name. 
+d_lmclear("Task2", lm_name, psp_lmcFind("TCP"), task1);</PRE>
+</FONT><FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_lmstat"></A>d_lmstat</H3>
+<FONT SIZE="2"><P>Report user status if user's ID is known</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_lmstat</B>(char *<I>name</I>, int *<I>status</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>name<BR>
+The name of the user.</P>
+<P>status<BR>
+The status of the user.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function allows the application to find the status of a particular user if the user's name is known.  The status values that are returned are the following.</P><DIR>
+
+<P>U_BEING_REC<BR>
+The user is being recovered.</P>
+<P>U_DEAD<BR>
+The user 'died' and has not been cleaned up.</P>
+<P>U_EMPTY<BR>
+The user does not exist to the lock manager.</P>
+<P>U_HOLDING_X<BR>
+The user has left exclusive locks when closing.</P>
+<P>U_LIVE<BR>
+The user is in a normal state.</P>
+<P>U_REC_MYSELF<BR>
+The user has re-entered and is recovering itself.</P>
+<P>U_RECOVERING<BR>
+The user is recovering for another user.</P></DIR>
+
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.  (In one-user mode, U_EMPTY will always be the status.)</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+No databases are open.</P>
+<P>S_INVTASK<BR>
+Invalid DB_TASK referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_TASK *task1, *task2;
+
+d_opentask(&amp;task1);
+d_opentask(&amp;task2);
+
+/* set up the two tasks for the same lockmgr type and 
+   name, task1 needs to know userID of task2 */
+d_lockmgr(lm_name,   task1);
+d_lockcomm(lm_type,  task1);
+d_dbuserid("Task1",  task1);
+d_open(db_name, "s", task1);
+
+d_lockmgr(lm_name,   task2);
+d_lockcomm(lm_type,  task2);
+d_dbuserid("Task2",  task2);
+d_open(db_name, "s", task2);
+
+...
+d_lmstat("Task2", &amp;lmStat, task1);
+switch (lmStat) {
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_lockcomm, d_lockmgr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_lock"></A>d_lock</H3>
+<FONT SIZE="2"><P>Lock group of record or set types</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_lock</B>(int <I>count</I>, LOCK_REQUEST *<I>lrpkt</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>count<BR>
+The number of items to be locked.</P>
+<P>lrpkt<BR>
+A pointer to a lock request packet array.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_lock</B> provides a grouped lock request capability whereby more than one record and/or set type can be locked in a single request.  Two parameters are passed to <B>d_lock</B>.  The first parameter is an integer that contains a count of the number of items to be locked.  The second parameter is a pointer to a lock request packet array.  Each lock request is placed in a LOCK_REQUEST structure entry as defined below and declared in file <B>db.star.h</B>.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+  int item;  /* record or set type to be locked */
+  char type; /* type of lock */
+} LOCK_REQUEST;</PRE>
+</FONT><FONT SIZE="2"><P>Structure field <I>item</I> contains the record or set type of the record or set to be locked.  Field <I>type</I> contains the type of lock to be applied as follows.</P>
+
+<UL>
+<LI>'r' (read lock) 
+  
+<LI>'w' (write lock) 
+  
+<LI>'x' (exclusive lock) 
+  
+<LI>'k' (keep lock)</LI></UL>
+
+<P>Read locks allow other DB_TASKs to read but not update the locked files.  Write locks prevent all other DB_TASKs from accessing the locked files and can only be issued from within a transaction.  Exclusive locks also prevent all other DB_TASKs from accessing the locked files but can be issued independent of transactions.  Keep locks can only be issued from within a transaction and will keep read-locked and write-locked files read-locked after a transaction ends (<B>d_trend</B> normally frees all read and write-locked files).  The record or set types specified with a keep lock must be locked in order to apply a keep lock.  Otherwise, status S_NOTLOCKED is returned.</P>
+<P>Within a transaction, a read-locked file can be upgraded to a write or exclusive lock by calling <B>d_lock</B> with a write or exclusive lock, where a read lock already exists.  If the upgrade lock request is denied, the read lock will remain in effect.</P>
+<P>If any of the requested locks cannot be granted, none of the locks will be granted.</P>
+<P>In one-user mode, this function just returns with the status S_OKAY.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If a single <B>d_lock</B> call for each transaction is always used to 
+  lock all of the files needed by the transaction, and the timeout value is not 
+  -1, the program is guaranteed to be free of deadlock.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADTYPE<BR>
+An invalid lock type was specified.  You may have passed a string (for example, "r") instead of a character.</P>
+<P>S_INVNUM<BR>
+Invalid record or set type specified in lock request packet.</P>
+<P>S_NOTFREE<BR>
+Attempt to lock previously locked record or set.</P>
+<P>S_NOTRANS<BR>
+Requested a write lock outside of a transaction.</P>
+<P>S_UNAVAIL<BR>
+One or more of the requested files is not available (that is, you were on the queue waiting for a file longer than your current timeout value).</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>LOCK_REQUEST trx_ckin_pkt[] =
+{
+   { AUTHOR_LIST,       'r' },
+   { HAS_PUBLISHED,     'w' },
+   { BORROWER,          'w' }
+};
+int trx_ckin_sz = sizeof(trx_ckin_pkt) / sizeof(trx_ckin_pkt[0]);
+...
+d_trbegin("trx_ckin");
+if ( d_lock(trx_ckin_sz, trx_ckin_pkt, task, 0) == S_OKAY )
+{
+   ...                   /* check in borrowed book */
+   d_trend(task);
+}
+else
+   d_trabort(task);      /* try again later */</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_recfree, d_reclock, d_reclstat, d_setfree, d_setlock, d_setlstat, d_timeout, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_lockcomm"></A>d_lockcomm</H3>
+<FONT SIZE="2"><P>Select a lock manager interface</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_lockcomm</B>(LMC_AVAIL_FNC *<I>avail</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>avail<BR>
+A pointer to an available lock manager communication type.  This can be specified directly (for example, <B>&amp;psp_tcp_avail</B>), or with the return value of the psp_lmcFind function, (for example, <B>psp_lmcFind("TCP")</B>).</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the type of communications to use for the lock manager.</P>
+<P>A multi-user application must call <B>d_lockcomm</B> to initialize the protocol interface.  An attempt to use <B><I>db.*</B></I> without a call to <B>d_lockcomm</B> produces a user error S_NOLOCKCOMM, indicating that the lock manager communication layer was not initialized.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<B><BR>
+</B>The database is open.  Function called after<B> d_open</B>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_lockmgr( "acct_lm", task );
+d_lockcomm(psp_lmcFind("TCP"), task);
+d_open("acct", "s", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_dbtaf, d_lockmgr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_lockmgr"></A>d_lockmgr</H3>
+<FONT SIZE="2"><P>Select the named lock manager to use</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_lockmgr</B>(char *<I>id</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>id<BR>
+A string containing the desired lock manager name.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function selects the named lock manager to be used during multi-user operation.  If a lock manager is not otherwise specified, the lock manager named "<B>lockmgr</B>" is used.  The lock manager name must be set before the database is opened by the <B>d_lockmgr</B> function, the LOCKMGR environment variable, or by the <B>db.star.ini</B> file.</P>
+<P>When using the LMC_GENERAL lock manager type, this <B>d_lockmgr </B>function will specify the name of the DBL file used.  However, the DBTAF variables will control the directory in which this DBL file is placed.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+The database is open.  Function called after <B>d_open</B>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_lockmgr( "acct_lm", task );
+d_lockcomm(psp_lmcFind("TCP"), task);
+d_open("acct", "s", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_dbtaf, d_lockcomm</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_locktimeout"></A>d_locktimeout</H3>
+<FONT SIZE="2"><P>Set the timeout value for locks within this task</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_locktimeout</B>(int <I>read_secs</I>, int <I>write_secs</I>, DB_TASK <I>*task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>read_secs<BR>
+The number of seconds to wait before a read lock is automatically released.</P>
+<P>write_secs<BR>
+The number of seconds to wait before a write lock is automatically released.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function allows you to specify a maximum time that read and write locks can be held.  Use it to handle situations where "dead users" are cluttering up a lock manager, but you do not want to kill users manually using the lock manager console.  The timeout value is transmitted to the lock manager each time a lock request is made, and each setting overrides all previous settings.  Thus, if you set the values to 5 seconds, reset values to 30, and acquire a new lock, all timers will change to 30 seconds.</P>
+<P>Each user has only one read timer and one write timer.  A user's read timer starts each time a read lock is granted, and the write timer starts each time a write lock is granted.  No user is killed while any timer still has time left, or while there are no locks held.</P>
+<P>If you never call <B>d_locktimeout</B>, locks will not time out.  If you set either value to 0 or a negative number, that lock type will never time out.</P>
+<P>An exclusive lock will use the <I>write_secs</I> timeout.  A keep lock will, while it is still a write lock, time out in <I>write_secs</I> seconds.  Once the transaction ends and the lock is downgraded to a read lock, only the <I>read_secs</I> value (if any) will apply.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>LOCK_REQUEST lockarr[] = {
+   {AUTHOR_LIST, 'r'},
+   {BORROWER,'w'}
+};
+d_locktimeout(60,10,task); /* 60 second READ timeout, 10 sec WRITE timeout */</PRE>
+</FONT><FONT SIZE="2"><P>The following code will cause a 60 second timeout.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   d_lock(1,lockarr,task,0);</PRE>
+</FONT><FONT SIZE="2"><P>The following code will cause a 10 second timeout.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   d_lock(2,lockarr,task,0);</PRE>
+</FONT><FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_makenew"></A>d_makenew</H3>
+<FONT SIZE="2"><P>Make a new empty record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_makenew</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The type of record to be created.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function creates a new record occurrence of type <I>REC</I>.  If the record contains key fields, each must have been previously set up with calls to <B>d_setkey</B>.  The <B>d_makenew</B> function cannot be used to create records that contain compound keys.  (For those types of records, you must use <B>d_fillnew</B>.)  The key fields are stored automatically in the key files and in the record by <B>d_makenew</B>.  If any key field is a unique key, and the data in the field is not unique, status S_DUPLICATE is returned, and the record is not created.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = database address of new record;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on <I>REC</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_COMKEY<BR>
+Record contains compound key.  Use <B>d_fillnew</B> to create records with compound keys.</P>
+<P>S_DUPLICATE<BR>
+A duplicate key was specified in the <B>d_setkey</B> list.</P>
+<P>S_INVREC<BR>
+Invalid record type specified.  You may have passed a set or field type instead.</P>
+<P>S_KEYREQD<BR>
+The <B>d_setkey</B> function was not called on one or more of the key fields prior to the <B>d_makenew</B> call.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* create intersection record */
+d_makenew(INTERSECT, task, TIMS_DBN);
+d_connect(KEY_TO_INFO, task, TIMS_DBN);
+d_connect(INFO_TO_KEY, task, TIMS_DBN);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_fillnew, d_keystore, d_setkey</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_mapchar"></A>d_mapchar</H3>
+<FONT SIZE="2"><P>Map character for sorting and output</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_mapchar</B>(unsigned char <I>inchar</I>, unsigned char <I>outchar</I>, char *<I>sort_as</I>, unsigned char <I>subsort</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>inchar<BR>
+The value of the character to be mapped.</P>
+<P>outchar<BR>
+The displayed character.</P>
+<P>sort_as<BR>
+A pointer to a string containing sort-as characters.</P>
+<P>subsort<BR>
+Value to distinguish between two equal sort-as values.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_mapchar</B> modifies the entries in a country table for value <I>inchar</I>.  The country-table is used for sorting key fields and for the output in some <B><I>db.*</B></I> utilities (for example, <B>ida</B>).  If function <B>d_mapchar</B> is called for the first time, the country table is placed into memory and initialized.  The table may be made case-insensitive by calling <B>d_on_opt</B> with the IGNORECASE flag.  If <I>outchar</I> is '\0', then <I>inchar</I> is stored without modification in the database.  Otherwise, the content of <I>outchar</I> is stored.  This can be used for the mapping of 7-bit values to 8-bit values (which may be necessary on some systems).  </P>
+<P>The string <I>sort_as</I> is limited to two bytes.  It can contain the value(s) with which <I>inchar</I> should be sorted.  You can sort by one or two characters.  The <I>subsort</I> value 1 must be used if you want to differentiate between two equal sort-values.  If you chose to differentiate between them, they will be grouped together but subsorted by ASCII value.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If you use a sorting table other than the standard ASCII table, you must continue to use this sorting table, unless you rebuild the key files with the <B>keybuild</B> utility and a <B>db.star.ctb</B> file matching the new 
+  mapping. Sorted sets cannot be changed later. Once a database is built, it is 
+  best not to change its mappings.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Since the <B><I>db.*</B></I> utilities do not have access to your application's data concerning your calls to <B>d_mapchar</B>, it is recommended that you use the country-table file or the INI file so that all programs that call <B>d_open </B>will use the exact same mappings.  This way your key files and sorted set connections will not be corrupted and not be marked as corrupted due to different mappings.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSORT<BR>
+Invalid sort string value (length &gt; 2).</P>
+<P>S_NOMEMORY<BR>
+Not enough memory to install country table.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Initialize country table for Germany */
+d_on_opt( IGNORECASE, task );
+d_mapchar( 'Ä', 'Ä', "AE", 0, task );
+d_mapchar( 'ä', 'ä', "AE", 0, task );
+d_mapchar( 'Ü', 'Ü', "UE", 0, task );
+d_mapchar( 'ü', 'ü', "UE", 0, task );
+d_mapchar( 'Ö', 'Ö', "OE", 0, task );
+d_mapchar( 'ö', 'ö', "OE", 0, task );
+d_mapchar( 'ß', 'ß', "SS", 0, task );
+
+d_open( "tims", "s", task );
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_ctbpath, d_dbini, d_off_opt, d_on_opt</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_members"></A>d_members</H3>
+<FONT SIZE="2"><P>Get count of current set members</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_members</B>(int <I>SET</I>, long *<I>count</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current membership count is to be returned.</P>
+<P>count<BR>
+A pointer to a long integer variable that receives the total member count.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_members</B> copies the count members from the set of total number of members for the current owner of <I>SET</I> into the long integer pointed to by <I>count</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+<P>S_NOTLOCKED<BR>
+Record type is not locked.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name */
+long num;        /* number of pubs. */
+...
+/* Print list of authors with total number of associated publications in database */
+for ( d_findfm(AUTHOR_LIST, task, 0); db_status == S_OKAY; d_findnm(AUTHOR_LIST, task, 0) )
+{
+   d_crread(NAME, name, task, 0);
+   d_setor(HAS_PUBLISHED, task, 0);
+   d_members(HAS_PUBLISHED, &amp;num, task, 0);
+   printf("Author %s has %ld publications on file.\n", name, num);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_ismember, d_isowner</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_off_opt"></A>d_off_opt</H3>
+<FONT SIZE="2"><P>Turn off runtime options</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_off_opt</B>(unsigned long <I>optflag</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>optflag<BR>
+The option flag word containing bit settings for the options to be turned off.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function is used to turn off any or all <B><I>db.*</B></I> runtime options.  Several runtime options are currently controlled using this function, as follows:</P>
+<P>ARCLOGGING (initially OFF)<BR>
+Archive logging.</P>
+<P>CLOSEFILES (initially OFF)<BR>
+Automatic closing of files before a runtime function returns.</P>
+<P>DCHAINUSE (initially ON)<BR>
+Ability to turn off the use of delete chain slots when new records are created.</P>
+<P>DELETELOG (initially OFF)<BR>
+Deletion of the log file by the <B>d_close</B> function.  Default is <I>not</I> to delete it.</P>
+<P>IGNORECASE (initially OFF)<BR>
+Case sensitivity in key files and sorted sets.</P>
+<P>IGNOREENV (initially OFF)<BR>
+Disregard of environment variables.  The purpose is to allow the application to use the options in the <B>db.star.ini</B> or from the API functions only, regardless of what is in the environment of the user.  This option cannot be set in the <B>db.star.ini</B> file, because the environment has already been read when the <B>db.star.ini</B> file is processed.</P>
+<P>LMC_OPT_PORTABLE (ON for some protocol types)<BR>
+For LMC_GENERAL and LMC_TCP, incorrect synchronization of file access across the network.  Thus, the accesses to the <B>.taf</B> and (for LMC_GENERAL) <B>.dbl</B> file need to be synchronized by the use of a guard file (<B>.lfg</B>).</P>
+<P>MBSSORT (initially OFF)<BR>
+Use of multi-byte character sorting functions for character string fields.  Use this option on UNIX if your database contains key fields or set-sorting fields that contain UTF-8 encoded character strings.</P>
+<P>MULTITAF (initially OFF)<BR>
+Use of multiple TAF files (one for each database user).  Switching this option on may improve transaction performance on systems where the system file-locking functions are slow, notably UNIX systems where the TAF file is accessed via NFS.</P>
+<P>NORECOVER (initially OFF)<BR>
+Disabling of <B><I>db.*</B></I> recovery mechanisms.  This option will readily cause corruption if used without proper understanding of how recovery works.  The NORECOVER option was designed for use by applications such as <B>dbcheck</B>, which read and test the database.</P>
+<P>READNAMES (initially OFF)<BR>
+Reading of record, set, and field names from the database dictionary whenever a database is opened.  These names can be retrieved with the function <B>d_internals</B>.</P>
+<P>READONLY (initially OFF)<BR>
+Opening of the database and all database files in read-only mode.  The primary use is to facilitate database on CD-ROM devices.</P>
+<P>SYNCFILES (initially OFF)<BR>
+Forced synchronization of files after every write.</P>
+<P>TRLOGGING (initially ON)<BR>
+Transaction logging and recovery.</P>
+<P>TRUNCATELOG (initially OFF)<BR>
+Resetting of the log file to zero bytes at each <B>d_trbegin</B>.  Usually this happens at <B>d_[i]open </B>only.</P>
+<P>TXTEST (initially OFF)<BR>
+A debugging option.  If this option is on, then during a transaction, the error handler is called with an S_DEBUG "error" after all changes have been written to the log file, but before the transaction has been committed to the database.  This allows recovery tests to occur.</P>
+<P>The <I>optflag</I> parameter contains a bit status word that has a bit associated with each option.  The <B>db.star.h</B> header file contains constant definitions for each option.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  The LMC options <I>cannot</I> be <B>or</B>'ed together with non-LMC options, but non-LMC options can be <B>or</B>'ed together with other non-LMC options.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVTASK<BR>
+An invalid DB_TASK is referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* turn off transaction logging and delete chain use */
+d_off_opt(TRLOGGING | DCHAINUSE, task );
+d_open("tims", "s", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_dbini, d_mapchar, d_on_opt</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_on_opt"></A>d_on_opt</H3>
+<FONT SIZE="2"><P>Turn on runtime options</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_on_opt</B>(unsigned long <I>optflag</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>optflag<BR>
+The option flag word containing bit settings for the options to be turned on.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function is used to turn on any or all <B><I>db.*</B></I> runtime options.  See <B>d_off_opt </B>for the list of currently supported options.</P>
+<P>The <I>optflag</I> parameter contains a bit status word that has a bit associated with each option.  The <B>db.star.h</B> header file contains constant definitions for each option.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVTASK<BR>
+An invalid DB_TASK is referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* turn on archive logging */
+d_on_opt( ARCLOGGING, task );
+d_open("tims", "s", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_dbini, d_mapchar, d_off_opt</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_open"></A>d_open</H3>
+<FONT SIZE="2"><P>Open database(s)</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_open</B>(const char *<I>dbnames</I>, const char *<I>mode</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  <B>d_open</B>(const wchar_t *<I>dbnames</I>, const char *<I>mode</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dbnames<BR>
+A semicolon-separated list of names of the databases to be opened.</P>
+<P>mode<BR>
+A string containing the type of access to the database.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function opens the databases identified in the string pointed to by <I>dbnames</I>.  If more than one database is to be opened, the names are separated in the list by semi-colons (';').  No white space (for example, spaces or tabs) should be embedded in the string.  The type of access to all of the databases is specified by the string <I>type</I> as follows:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="8%" VALIGN="top">
+<B><U><FONT SIZE="2"><P>Type</B></U></FONT></P></TD>
+<TD WIDTH="92%" VALIGN="top">
+<B><U><FONT SIZE="2"><P>Description</B></U></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="2"><P>"s"</FONT></P></TD>
+<TD WIDTH="92%" VALIGN="top">
+<FONT SIZE="2"><P>Shared access mode.  Multiple users can be accessing database at the same time.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="2"><P>"x"</FONT></P></TD>
+<TD WIDTH="92%" VALIGN="top">
+<FONT SIZE="2"><P>Exclusive access mode.  Only one user can access the database.  All others will be locked out.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="2"><P>"o"</FONT></P></TD>
+<TD WIDTH="92%" VALIGN="top">
+<FONT SIZE="2"><P>One-user-only mode.  Only one user will be using specified database.  The application will attempt to lock out all other users.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The open mode can be in either uppercase or lowercase.</P>
+<P>Each database name can include a path name of the directory that contains the dictionary and database files.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I> If the specified path is 
+  absolute (that is, begins with '/'), it will override the DBDPATH and DBFPATH 
+  environment variables for that database.</BLOCKQUOTE>
+<FONT SIZE="2"><P>If multiple databases are being opened, the databases are assigned sequential numbers left to right in the order specified in the list, with the first being zero.  The current database will be set to zero (that is, the first in the list) upon return from the call.  The database number is passed to return from the call.  The database number is passed to each database access function to set the current database.  If only a single database is opened, or function <B>d_setdb</B> is used to set the current database, then the database number parameter to the database access functions can be CURR_DB defined in <B>db.star.h</B> as -1.</P>
+<P>The processing of a <B>d_open</B> call is quite involved and basically consists of dynamically allocating and initializing the memory required for the dictionary, currency tables, key processing tables, virtual memory cache, and, in shared mode, lock control tables.  An inter-process communication session is initiated with the lock manager, and the names of the database files to be used by the program are sent to the lock manager.  If no other DB_TASKs are using this transaction activity file (TAF), the TAF is checked to see if a recovery is necessary.  The transaction log file is then initialized.</P>
+<P>The single-user versions of <B><I>db.*</B></I> are now the multi-user versions without the lock manager.  This means that all calls to open the database(s) (<B>d_open</B>) require the "open mode" parameter.  For one-user customers, the only mode that will work is "o" (one-user) mode.  All other modes will be accepted, but they will try to find the lock manager (which does not exist) and generate a "not found" error.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = system record (NULL_DBA, if no system record);</P>
+<P>curr_own[system owned sets] = system record;</P>
+<P>curr_own[all other sets] = NULL_DBA;</P>
+<P>curr_mem[of all sets] = NULL_DBA;</P>
+<P>curr_db = 0;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADBDPATH<BR>
+The number of elements in DBDPATH does not match the number of databases opened.</P>
+<P>S_BADBFPATH<BR>
+The number of elements in DBFPATH does not match the number of databases opened.</P>
+<P>S_BADTYPE<BR>
+An invalid access mode type was specified.  Be sure a string was passed and not a single character.</P>
+<P>S_BADUSERID<BR>
+The user ID is invalid.  It must contain only alphanumeric characters or underscore ('_').</P>
+<P>S_DUPUSERID<BR>
+Specified user ID is being used by another user.</P>
+<P>S_INVDB<BR>
+An invalid database name was used or database was not found.</P>
+<P>S_NAMELEN<BR>
+The fully qualified name of a control or database file was longer than 47 characters.</P>
+<P>S_NOLOCKMGR<BR>
+Unable to open lock manager session.  The lock manager has probably not been started.</P>
+<P>S_NOMEMORY<BR>
+Not enough memory is available for all the required <B><I>db.*</B></I> runtime tables.  Try calling function <B>d_setpages</B> with fewer pages before calling <B>d_open</B>.</P>
+<P>S_RECOVERY<BR>
+A recovery operation is about to occur.</P>
+<P>S_TAFSYNC<BR>
+The lock manger type and name in the TAF file do not match the type and/or name you are trying to use.</P>
+<P>S_UNAVAIL<BR>
+Database is unavailable; another user has exclusive access or your exclusive access request is denied because 1) others are using the database or 2) the lock manager has insufficient table space.</P>
+<P>S_USERID<BR>
+No user ID was specified.  You must have the DBUSERID environment variable defined, or you must call function <B>d_dbuserid</B> before <B>d_open</B>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>switch ( operation )
+{
+   case ACCTS_PAY:
+      /* open for shared accounts payable usage */
+      d_open("genledg;acctspay", "s", task);
+      break;
+   case ACCTS_RCV:
+      /* open for shared accounts receivable usage */
+      d_open("genledg;acctsrcv", "s", task);
+      break;
+   case MONTH_END:
+      /* open for exclusive month-end processing */
+      d_open("genledg", "x", task);
+      break;
+}
+if ( db_status == S_UNAVAIL )
+   user_message("database unavailable");
+else
+{
+   if ( db_status != S_OKAY )
+      terminate();
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_close, d_iclose, d_setdb</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_opentask"></A>d_opentask</H3>
+<FONT SIZE="2"><P>Allocate memory for a new database task</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_opentask</B>(DB_TASK **<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+The database task to be created.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function allocates memory for and initializes a database task.  When using the database context-switching features, at least one call to <B>d_opentask</B> must precede all other <B><I>db.*</B></I> functions that take a task parameter.  The cache associated with this new task is the first shareable cache found in the list of active DB_TASKs for the application.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOMEMORY<BR>
+Insufficient memory available for new task.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_TASK *LocalDbTask, *RemoteDbTask;
+
+if (d_opentask(&amp;LocalDbTask) == S_OKAY)
+{
+   if (d_open("/data/tempdb", "o", LocalDbTask) == S_OKAY)
+   {
+      if (d_opentask(&amp;RemoteDbTask) == S_OKAY)
+      {
+         if (d_lockcomm(psp_lmcFind("TCP"), RemoteDbTask) == S_OKAY)
+         {
+            if (d_dbuserid(szUserid, &amp;RemoteDbTask) == S_OKAY)
+            {
+               if (d_open("/public/maindb", "s", RemoteDbTask) == S_OKAY)
+               {
+                  /* various database access using both DB_TASKs */
+                  ...
+                  d_close(RemoteDbTask);
+               }
+            }
+         }
+         d_closetask(RemoteDbTask);
+      }
+      d_close(LocalDbTask);
+   }
+   d_closetask(LocalDbTask);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_closetask</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_rdcurr"></A>d_rdcurr</H3>
+<FONT SIZE="2"><P>Read currency tables</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_rdcurr</B>(DB_ADDR **<I>currbuff</I>, int *<I>currsize</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>currbuff<BR>
+A pointer to a DB_ADDR pointer variable that will contain a pointer to a <B>d_rdcurr</B> allocated buffer.  This buffer contains the currency table.</P>
+<P>currsize<BR>
+A pointer to an integer variable that will contain the size of the buffer, in bytes.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function allocates a memory buffer and copies the contents of the currency table (and timestamps, if used) into that buffer.  A pointer to the copy of the currency table is returned in <I>currbuff</I> and the size of the buffer, in bytes, is returned in <I>currsize</I>.  The size is provided in case the application needs to save the table in a file for restoration in a later execution of the database program.</P>
+<P>This function is used with <B>d_wrcurr</B> to save and restore the state of a database routine.  Use this function before or after calling other routines whose currency change status is unknown. </P>
+<P>If the application does not call <B>d_wrcurr</B>, the memory can be freed by calling the <B>free</B> function.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOMEMORY<BR>
+Unable to allocate enough memory for <I>currbuff</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR *ctab;  /* save currency table */
+int csize;      /* size of saved currency table */
+   ...
+/* save currency tables */
+d_rdcurr(&amp;ctab, &amp;csize, task, 0);
+   ...   /* do some other processing */
+/* restore currency tables */
+if ( need_to_restore )
+   d_wrcurr(ctab, task, 0);
+else
+   free( ctab );</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_wrcurr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recfree"></A>d_recfree</H3>
+<FONT SIZE="2"><P>Free record type read-lock</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recfree</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which a read or exclusive lock is to be freed.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_recfree</B> frees the read or exclusively locked data and key files associated with record type <I>REC</I>.  This function can only be executed outside of a transaction.  Inside transactions, locks are freed by functions <B>d_trend</B> or <B>d_trabort</B>.  If the record type is exclusively locked, all changed database pages in the cache are flushed.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on <I>REC</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Invalid record type specified.  Perhaps you passed a set or field type instead.</P>
+<P>S_NOTLOCKED<BR>
+Record type is not locked.</P>
+<P>S_TRFREE<BR>
+Attempted to free a read-lock inside a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int count, stat = S_OKAY;
+...
+/* list info record in id_code order */
+while ( stat == S_OKAY )
+{
+   d_reclock(INFO, "r", task, CURR_DB);
+   for ( count = 0; 
+      (count &lt; 20) &amp;&amp; ((stat=d_keynext(ID_CODE, task, CURR_DB)) == S_OKAY);
+      ++count)
+   {
+      /* hold lock for only 20 records at a time */
+      d_recread(&amp;irec, task, CURR_DB);
+      pr_info();
+   }
+   d_recfree(INFO, task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keyfree, d_keylock, d_keylstat, d_lock, d_reclock, d_reclstat, d_setfree, d_setlock, d_setlstat, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recfrst"></A>d_recfrst</H3>
+<FONT SIZE="2"><P>Find first occurrence of record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recfrst</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which the first occurrence is to be returned.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will find the first occurrence of record type <I>REC</I> on the data file that contains <I>REC</I>.  It is used in conjunction with functions <B>d_recnext</B> and <B>d_recprev</B> to provide sequential record access capability.  The records are retrieved in database address order, skipping any deleted records or records of a different type.  Thus, <B>d_recfrst</B> returns the <I>REC</I> occurrence with the lowest database address.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record found;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>REC</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Invalid record type specified.  Perhaps you passed a set or field type instead.</P>
+<P>S_NOTFOUND<BR>
+No occurrences of <I>REC</I> in the database.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int info_total;
+
+/* Compute total number of info records in database */
+for ( info_total = 0, d_recfrst(INFO, task, 0); db_status == S_OKAY; d_recnext(task, 0))
+   ++info_total;
+printf("total of %d info records in database\n",info_total);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_reclast, d_recnext, d_recprev, d_recset</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_reclast"></A>d_reclast</H3>
+<FONT SIZE="2"><P>Find last occurrence of record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_reclast</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which the last occurrence is to be returned.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will find the last occurrence of record type <I>REC</I> on the data file that contains <I>REC</I>.  This function is used in conjunction with <B>d_recprev</B> and <B>d_recnext</B> to provide sequential record access capability.  The records are retrieved in database address order, skipping any deleted records or records of a different type.  Thus, <B>d_reclast</B> returns the <I>REC</I> occurrence with the highest database address.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = found record;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>REC</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Invalid record type specified.  You may have passed a set or field type instead.</P>
+<P>S_NOTFOUND<BR>
+No occurrences of <I>REC</I> in the database.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int info_total;
+
+/* compute total number of info records in database */
+info_total = 0;
+for (d_reclast(INFO, task, 2); db_status == S_OKAY; d_recprev(task, 2))
+   ++info_total;
+printf("Total of %d info records in database\n", info_total);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_recfrst, d_recnext, d_recprev, d_recset</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_reclock"></A>d_reclock</H3>
+<FONT SIZE="2"><P>Lock files associated with record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_reclock</B>(int <I>REC</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which the files are to be locked.</P>
+<P>type<BR>
+A pointer to a string containing the type of lock to be applied.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function places a lock on the data and key files associated with <I>REC</I>.  The lock type is specified as follows.</P>
+
+<UL>
+<LI>"r" (read lock) 
+  
+<LI>"w" (write lock) 
+  
+<LI>"x" (exclusive lock) 
+  
+<LI>"k" (keep lock)</LI></UL>
+
+<P>Read locks allow other programs to read but not update the locked files.  Write locks prevent all other programs from accessing the locked files and can only be issued from within a transaction.  Exclusive locks also prevent all other programs from accessing the locked files but can be issued independent of transactions.  Keep locks can only be issued from within a transaction and will keep read and write-locked files read-locked after a transaction ends (<B>d_trend</B> normally frees all read and write-locked files).  The record type must be locked in order to apply a keep lock; otherwise, status S_NOTLOCKED is returned.</P>
+<P>Within a transaction, a read-locked file can be upgraded to a write or exclusive lock by calling <B>d_reclock</B> with a write or exclusive lock where a read lock already exists.  If the upgrade lock request is denied, the read lock will remain in effect.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADTYPE<BR>
+Invalid lock type specified.  You may have passed a character (for example, 'r') instead of a string (for example, "r").</P>
+<P>S_INVREC<BR>
+Invalid record type specified.  Perhaps you passed a set or field type instead.</P>
+<P>S_NOTFREE<BR>
+Record type already locked by your application.</P>
+<P>S_NOTRANS<BR>
+Requested a write lock outside of a transaction.</P>
+<P>S_UNAVAIL<BR>
+One of the requested files is not available (that is, you were on the queue waiting for a file longer than your current timeout value).</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int count, stat = S_OKAY;
+   ...
+/* list info record in id_code order */
+while ( stat == S_OKAY )
+{
+   while ( d_reclock(INFO, "r", task, 7) == S_UNAVAIL )
+      ;
+   for ( count = 0; 
+      (count &lt; 20) &amp;&amp; ((stat = d_keynext(ID_CODE, task, 7)) == S_OKAY);
+      ++count)
+   {
+      /* hold lock for only 20 records at a time */
+      d_recread(&amp;irec, task, 7);
+      pr_info();
+   }
+   d_recfree(INFO, task, 7);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keyfree, d_keylock, d_keylstat, d_lock, d_recfree, d_reclstat, d_setfree, d_setlock, d_setlstat,  d_timeout, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_reclstat"></A>d_reclstat</H3>
+<FONT SIZE="2"><P>Get lock status of record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_reclstat</B>(int <I>REC</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which the lock status is to be checked.</P>
+<P>type<BR>
+A pointer to a character variable that contains the current lock type status.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function returns the current lock status for record type <I>REC</I> in the character variable pointed to by type.  The lock types that can be returned are as follows:</P>
+
+<UL>
+<LI>'r' (read lock) 
+  
+<LI>'w' (write lock) 
+  
+<LI>'x' (exclusive lock) 
+  
+<LI>'k' (keep lock) 
+  
+<LI>'s' (static record) 
+  
+<LI>'f' (free; one-user mode always returns an 'f' [free] status)</LI></UL>
+
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Invalid record type specified.  Perhaps you passed a set or field type instead.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char lstat;
+...
+d_reclstat(INFO, &amp;lstat, task, CURR_DB);
+if ( lstat == 'f' )
+   d_reclock(INFO, "r", task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_reclock, d_setlstat</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recnext"></A>d_recnext</H3>
+<FONT SIZE="2"><P>Find next occurrence of current record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recnext</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function finds the next occurrence of the record of the same type that was found with a previous call to <B>d_recfrst</B>, <B>d_recnext</B>, <B>d_reclast</B>, <B>d_recprev</B>, or <B>d_recset</B>.  This function provides sequential record access capability.  The records are retrieved in database address order.  Records of a different type and deleted records are skipped.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record found;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on current record type to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOTFOUND<BR>
+No more occurrences of record type in the database.</P>
+<P>S_NOTYPE<BR>
+The <B>d_recfrst</B>, <B>d_recset</B>, or <B>d_reclast</B> function has not been called to set the record type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int info_total;
+
+/* Compute total number of info records in database */
+info_total = 0;
+for ( d_recfrst(INFO, task, CURR_DB); db_status == S_OKAY; d_recnext(task, CURR_DB))
+   ++info_total;
+printf("total of %d info records in database\n", info_total);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_recfrst, d_reclast, d_recprev, d_recset</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recnum"></A>d_recnum</H3>
+<FONT SIZE="2"><P>Return record table index from #<B>define</B> and database number</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recnum</B>(int *<I>index</I>, int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>index<BR>
+The index into the record table for <I>REC</I>.</P>
+<P>REC<BR>
+The record type for which to get the index.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function takes the <B>#define</B> for records (from <B>ddlp</B>) and the database number and returns the record table index for that record.  The index number can then be used with functions like <B>d_internals</B>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.  (If an error occurs, the output buffer is not changed.)</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Invalid record referenced.</P>
+<P>S_INVTASK<BR>
+Invalid DB_TASK referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>#include "db.star.h"
+#include "internal.h"
+   ...
+
+{
+   RECORD_ENTRY  recEntry;
+   int  recIndex;
+   ...
+   d_open("tims", "s", task);
+   d_recnum(&amp;recIndex, AUTHOR, task, 0);
+   d_internals(task, TOPIC_RECORD_TABLE, 0, recIndex, 
+      &amp;recEntry, sizeof(RECORD_ENTRY));
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_recprev"></A>d_recprev</H3>
+<FONT SIZE="2"><P>Find previous occurrence of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recprev</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will find the previous occurrence of the record of the same type as was found with a previous call to <B>d_recprev</B>, <B>d_recfrst</B>, <B>d_reclast</B>, <B>d_recfrst</B>, or <B>d_recset</B>.  This function provides sequential record access capability.  The records are retrieved in descending database address order.  Records of a different type or deleted records are skipped.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = found record;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but old or deleted data may be read.  Use a read lock on current record type to ensure that current data is read.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOTFOUND<BR>
+No more occurrences of <I>REC</I> in the database.</P>
+<P>S_NOTYPE<BR>
+The <B>d_recfrst</B>,<B> d_recset</B>, or <B>d_reclast</B> function has not been called to set the record type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int info_total = 0;
+
+/* Compute total number of info records in database */
+for ( d_reclast(INFO, task, CURR_DB); db_status == S_OKAY; d_recprev(task, CURR_DB))
+   ++info_total;
+printf("total of %d info records in database\n", info_total);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_recfrst, d_reclast, d_recnext, d_recset</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recread"></A>d_recread</H3>
+<FONT SIZE="2"><P>Read contents of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recread</B>(void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>value<BR>
+A pointer to the area where the contents of the current record will be copied.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the contents of the current record to the data area pointed to by <I>value</I>.  Usually, <I>value</I> will point to a variable declared as one of the struct types in the &lt;<B>dbname</B>&gt;<B>.h </B>header file corresponding to a DDL record definition.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>This function now updates the timestamp for the current record in the currency table from the database.  </P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on current record type to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+Record has been deleted since last accessed.</P>
+<P>S_NOCR<BR>
+The current record is null.</P>
+<P>S_NOTLOCKED<BR>
+Record type of current record is not locked.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>struct info irec;
+...
+/* display all info records in id_code order */
+for ( d_keyfrst(ID_CODE, task, 1); db_status == S_OKAY; d_keynext(ID_CODE, task, 1) )
+{
+   d_recread(&amp;irec, task, 1);
+   ...   /* print info record contents */
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crread</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recset"></A>d_recset</H3>
+<FONT SIZE="2"><P>Set occurrence of current record type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recset</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>REC<BR>
+The record type for which the current occurrence is to be set.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the current occurrence of the record to the current record.  Use this function to perform sequential record access scans (via <B>d_recnext</B> or <B>d_recprev</B>) from the current record when it was not found by one of the other <B>d_rec*</B> functions.  These scans are possible regardless of how the current record was established.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVREC<BR>
+Current record is not in the same file that contains <I>REC</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Scan sequentially from key, starting with key */
+d_keyfind(INFO_TYPE, &amp;info_key, task, CURR_DB);
+for ( d_recset(INFO, task, CURR_DB); db_status == S_OKAY; d_recnext(task, CURR_DB))
+{
+   d_recread(&amp;info, task, CURR_DB);
+   print_record(&amp;info);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_recfrst, d_reclast, d_recnext, d_recprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recstat"></A>d_recstat</H3>
+<FONT SIZE="2"><P>Test timestamp status of record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recstat</B>(DB_ADDR <I>dba</I>, unsigned long <I>rts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dba<BR>
+The database address of the record for which the timestamp status is to be checked.</P>
+<P>rts<BR>
+The last access timestamp of record to be checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function tests the timestamp status on the disk of the record stored at database address <I>dba</I> against the last access timestamp <I>rts</I>.  If the record has not been changed by another program since it was last accessed by this program, status S_OKAY is returned.  If the record was modified since it was last accessed, status S_UPDATED is returned.  If the record has been deleted since it was last accessed, status S_DELETED is returned.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on <I>REC</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The current record has been deleted since last accessed.</P>
+<P>S_NOTLOCKED<BR>
+Record type is not locked.</P>
+<P>S_OKAY<BR>
+The current record has not been changed by another user since last accessed.</P>
+<P>S_TIMESTAMP<BR>
+The current record type is not timestamped.</P>
+<P>S_UPDATED<BR>
+The current record has been modified since last accessed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>struct info    irec;
+DB_ADDR        idba;
+unsigned long  its;
+   ...
+d_reclock(INFO, "r", task, CURR_DB);
+d_keyfind(ID_CODE, "db012", task, CURR_DB);
+d_recread(&amp;irec, task, CURR_DB);
+d_crget(&amp;idba, task, CURR_DB);
+d_gtscr(&amp;its, task, CURR_DB);
+d_recfree(INFO, task, CURR_DB);
+   ...   /* do some other processing */
+d_trbegin("infoupd", task);
+d_reclock(INFO, "w", task, CURR_DB);
+if ( d_recstat(idba, its, task, CURR_DB) == S_UPDATED )
+{
+   /* re-read record */
+   d_crset(&amp;idba, task, CURR_DB);
+   d_recread(&amp;irec, task, CURR_DB);
+}
+else
+{
+   if ( db_status == S_DELETED )
+   ...   /* report deletion */
+   else
+   {
+      if ( db_status == S_OKAY )
+      ...   /* complete update */
+   }
+}
+d_trend(task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmstat, d_costat, d_crstat, d_csstat</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_recwrite"></A>d_recwrite</H3>
+<FONT SIZE="2"><P>Write contents of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_recwrite</B>(const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>value<BR>
+A pointer to the data to be copied into the current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the data from the location pointed to by <I>value</I> into the current record.  Key fields are automatically updated.  Sorted sets with sort fields contained in the current record are automatically updated.  However, where multiple fields in the record are used as sort fields in the same set, better performance may result if you disconnect the current record from all sorted sets before calling <B>d_recwrite</B> and then reconnect it following the call.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on record type of current record.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DUPLICATE<BR>
+Duplicate key value found.</P>
+<P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_NOTLOCKED<BR>
+Record type of current record is not locked.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Modify info record */
+mod_info(id, dbn)
+char *id;     /* id code of info rec to modify */
+int dbn;      /* database number of id */
+{
+   if ( d_keyfind(ID_CODE, id, task, dbn) == S_OKAY )
+   {
+      d_recread(&amp;irec, task, dbn);
+      /* user edits info data */
+      if ( edit_info(&amp;irec) )
+      {
+         /* okay to update */
+         d_recwrite(&amp;irec, task, dbn);
+      }
+      else
+         ...   /* edit canceled */
+   }
+   else
+   {
+      if ( db_status == S_NOTFOUND )
+         usermsg("id code not found");
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crwrite, d_csmwrite, d_csowrite</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_renclean"></A>d_renclean</H3>
+<FONT SIZE="2"><P>Clean up memory used by <B>d_renfile</P></B></FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_renclean</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>All memory used by <B>d_renfile</B> and the name changes represented will be freed.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_OKAY<BR>
+Function successful.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_renfile("tims", TIMSDAT, "newname.d01", task);   /* substitute  file */
+d_open("tims", "x", task);   /* Open an initial set of databases */
+
+/* new file name would be used */
+
+d_close(task);                     /* Close all databases */
+d_open("tims", "x", task);         /* Open an initial set of databases */
+
+/* new file name would STILL be used */
+
+d_close(task);                     /* Close all databases */
+d_renclean(task);                  /* Remove the substitution list */
+d_open("tims", "x", task);         /* Open an initial set of databases */
+
+/* new file name would NOT be used, uses original 
+   name in the dictionary */
+
+d_close(task);                     /* Close all databases */
+</FONT></PRE>
+<FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_renfile"></A>d_renfile</H3>
+<FONT SIZE="2"><P>Substitute database files</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_renfile</B>(const char *<I>dbname</I>, int <I>FILEID</I>, const char *<I>filenm</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dbname<BR>
+The name of the database for which the file is to be renamed.</P>
+<P>FILEID<BR>
+The DDL file ID for the file to be renamed.</P>
+<P>filenm<BR>
+The new file name.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will inform <B><I>db.*</B></I> of a temporary substitution in the name of file <I>FILEID</I> in database <I>dbname</I>.  The <I>FILEID</I> parameter is the file identifier constant defined in the database dictionary file &lt;<B>dbname</B>&gt;<B>.dbd </B>and generated by <B>ddlp</B> when the "<I>fileid</I> = 
+  <I>filename</I>" clause occurs in a data or key file statement in the DDL.  Function <B>d_renfile</B> must be called prior to the database being opened with a <B>d_open</B> or <B>d_iopen</B> call.  When the database is opened, the new file name, <I>filenm</I>, will be temporarily substituted for the name specified in the DDL in the file table dictionary entry so that all database I/O to that file is performed against the new file.</P>
+<P>The name of the database must be specified in the <B>d_renfile</B> call to distinguish between files contained in different databases in case more than one is opened.</P>
+</FONT><B><I><BLOCKQUOTE>Notes:</BLOCKQUOTE>
+</B></I><BLOCKQUOTE>1) The file specification provided in the <B>d_renfile</B> call overrides the use of either environment variables or a path prefix with the database name on <B>d_open</B> in the locating of database files.  (The dictionary and control file specifications, however, are unaffected.)</BLOCKQUOTE>
+<BLOCKQUOTE>2) <B>d_renfile</B> will hold the name changes over the calls <B>d_open</B> and <B>d_close</B>, or <B>d_iopen</B> and <B>d_iclose</B>.  The function <B>d_renclean</B> must be used to free the memory used by <B>d_renfile</B>.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+Database is open.  Function called after <B>d_open</B>.</P>
+<P>S_RENAME<BR>
+Invalid file number.</P>
+</FONT><H4>Examples</H4>
+<B><FONT SIZE="2"><P>DDL</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>database tims {
+   data file timsdat = "tims.dat" contains ...;
+   key  file timskey = "tims.key" contains ...;
+   ...
+}</PRE>
+</FONT><B><FONT SIZE="2"><P>C Code</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>d_renfile("tims", TIMSDAT, "dbstar.dat", task);
+d_renfile("tims", TIMSKEY, "dbstar.key", task);
+d_open("tims", "x", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_dbdpath, d_dbfpath, d_open</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_rerdcurr"></A>d_rerdcurr</H3>
+<FONT SIZE="2"><P>Reread currency tables</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_rerdcurr</B>(DB_ADDR **<I>currbuff</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>currbuff<BR>
+A pointer to a DB_ADDR pointer variable that will contain a pointer to a <B>d_rdcurr</B> allocated buffer.  This buffer contains the currency table.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number of the currency to read.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the more current contents of the currency table (and timestamps, if used) into the buffer that was previously allocated by <B>d_rdcurr</B>.  </P>
+<P>This function is used with <B>d_wrcurr</B> to save and restore the state of a database routine.  Use this function before or after calling other routines when you do not know how the currency might be changed.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+No databases are open yet.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR *ctab;      /* save currency table */
+int csize;          /* size of saved currency table */
+   ...
+/* save currency tables */
+d_rdcurr(&amp;ctab, &amp;csize, task, CURR_DB);
+   ...   /* do some other processing */
+/* save the new currency tables */
+d_rerdcurr(&amp;ctab, task, CURR_DB);
+   ...   /* do something else */
+/* restore currency tables */
+if ( need_to_restore )
+   d_wrcurr(ctab, task);
+else
+   free( ctab );</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_rdcurr, d_wrcurr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_rlbclr"></A>d_rlbclr</H3>
+<FONT SIZE="2"><P>Clear record lock bit</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_rlbclr</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Call function <B>d_rlbclr</B> to clear the record lock bit of the current record.  After a record occurrence is locked, the record remains locked until function <B>d_rlbclr</B> is called to clear the lock bit.  If <B>d_rlbclr</B> is called from within a transaction, the data file containing the current record must be write-locked.  User error S_NOTLOCKED is returned if the function is called within a transaction, and the data file of the current record is not write-locked.  </P>
+<P>The clearing of the record lock bit cannot be applied until the transaction ends, because other modifications to the record are usually involved in the transaction.  If <B>d_trabort</B> is called after <B>d_rlbclr</B>, the clear is aborted, and the record remains locked.  The lock bit is cleared through the cache rather than directly to the file when <B>d_rlbclr</B> is called within a transaction.  If<B> d_rlbclr</B> is called outside a transaction, the file does not need to be locked and the operation will directly clear the lock bit on the file.  </P>
+<P>The <B><I>db.*</B></I> runtime does not provide any automatic protection against changes to records that have the lock bit set.  It is the responsibility of the application program to ensure that the record lock bit is first checked before updating a record.</P>
+<P>No records that have been locked by the program should remain locked after the database is closed.  The database consistency check utility, <B>dbcheck</B>, can be used to report all record occurrences which have the lock bit set.  The <B>dbclrlb</B> utility can be used to clear all record occurrences that have the lock bit set.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>If inside transaction, requires write lock on current record.  Outside of transaction, no lock required.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_NOTLOCKED<BR>
+Current record's file is not write-locked.</P>
+<P>S_UNAVAIL<BR>
+System was unable to access the current record's data file.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* fetch record to be modified */
+...
+if ( d_rlbset(task, CURR_DB) != S_OKAY )
+   /* unable to access record */
+   ...
+else
+{
+   /* display record and allow user to edit it */
+   ...
+   /* user mods complete - update database */
+   d_trbegin("mod", task);
+   while ( d_reclock(REC, "w", task, CURR_DB) == S_UNAVAIL )
+      ;      /* wait for file's to become available */
+   d_recwrite(&amp;rec, task, CURR_DB);   /* update record */
+<I>   </I>d_rlbclr(task, CURR_DB);           /* unlock record */
+   d_trend(task);                     /* end transaction */
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_rlbset, d_rlbtst</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_rlbset"></A>d_rlbset</H3>
+<FONT SIZE="2"><P>Set record lock bit</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_rlbset</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_rlbset</B> is called to set the record lock bit of the current record.  The data file that contains the record need not be locked.  The <B><I>db.*</B></I> runtime will automatically synchronize access to the record.  The current record is accessed directly without using the cache.  Thus, upon successful completion of the call, the bit is physically set in the record on the disk.  </P>
+<P>Function <B>d_rlbset</B> returns status S_UNAVAIL if the system cannot gain access to the data file (due to its being write- or exclusive-locked).  Status S_LOCKED is returned if the current record's lock bit is already set.  Status S_OKAY is returned when the function has successfully set the lock bit.  If <B>d_rlbset</B> is called within a transaction, the operation still goes directly to the file, bypassing use of the cache.  Thus, a <B>d_trabort</B> call does not undo any record lock bit settings that were performed within the transaction.</P>
+<P>No records that have been locked by the program should remain locked after the database is closed.  The database consistency check utility, <B>dbcheck</B>, can be used to report all record occurrences that have the lock bit set.  The <B>dbclrlb</B> utility can be used to clear all record occurrences that have the lock bit set.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The setting of a record's lock bit will not automatically prevent another process from updating the locked record.  It is the responsibility of the application to check whether a record occurrence is locked before allowing updates to it by either calling <B>d_rlbset</B> or <B>d_rlbtst</B> or checking global integer variable <B>rlb_status</B> after 
+  reading the record's contents.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>If inside transaction, requires write lock on current record.  Outside of transaction, no lock required.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_LOCKED<BR>
+Current record's lock bit is already set.</P>
+<P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_OKAY<BR>
+The lock bit has been successfully set.</P>
+<P>S_UNAVAIL<BR>
+System unable to get access to the current record's data file.  </P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* fetch record to be modified */
+...
+if ( d_rlbset(task, CURR_DB) != S_OKAY )
+   /* unable to access record */
+   ...
+else
+{
+   /* display record and allow user to edit it */
+   ...
+   /* user mods complete - update database */
+   d_trbegin("mod", task);
+   while ( d_reclock(REC, "w", task, CURR_DB) == S_UNAVAIL )
+      ;      /* wait for file's to become available */
+   d_recwrite(&amp;rec, task, CURR_DB);  /* update record */
+   d_rlbclr(task, CURR_DB);          /* unlock record */
+   d_trend(task);                    /* end transaction */
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_rlbclr, d_rlbtst</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_rlbtst"></A>d_rlbtst</H3>
+<FONT SIZE="2"><P>Test record lock bit</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_rlbtst</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_rlbtst</B> tests the record lock bit of the current record to determine if it is set.  Status code S_LOCKED is returned if the lock bit in the current record is set.  Status code S_UNLOCKED is returned if the lock bit of the current record is clear.  It is not necessary to have locked the current record type.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_LOCKED<BR>
+Current record's lock bit is set.</P>
+<P>S_UNLOCKED<BR>
+Current record's lock bit is clear.  The single-user version always returns an S_UNLOCKED status.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* ensure no info records are locked */
+for (d_recfrst(INFO, task, CURR_DB); db_status == S_OKAY;
+d_recnext(INFO, task, CURR_DB))
+{
+   if ( d_rlbtst(task, CURR_DB) == S_LOCKED )
+   {
+      /* report locked record */
+      ...
+      /* clear locked record */
+      d_rlbclr(task, CURR_DB);
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_rlbclr, d_rlbset</P>
+</B></FONT></BODY>
+</HTML>

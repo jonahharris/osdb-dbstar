@@ -1,0 +1,391 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 11</TITLE>
+</HEAD>
+<BODY>
+
+<FONT FACE="Palatino" SIZE="6"><H1><A NAME="dal"></A>Chapter 11<BR>
+Database Access Language (dal)</H1>
+</FONT><H2><A NAME="Introduction"></A>11.1   Introduction</H2>
+<FONT SIZE="2"><P>The Database Access Language (<B>dal</B>) is intended as a tool for interactive or batch manipulation of a <B><I>db.*</B></I> database.</P>
+<P>With<B> dal</B> you can execute a subset of the <B><I>db.*</B></I> runtime functions, either interactively at your terminal, or in batch mode from a batch file.  <B>dal</B> commands are the <B><I>db.*</B></I> runtime functions (without the <B>d_</B> prefix), plus a few additional commands.  <B>dal</B> is an interpretive language using variables that are defined as records, fields, database addresses, or integers.  The <B><I>db.*</B></I> functions are accessed by issuing statements very similar to the C function calling conventions (with some exceptions, as noted below).</P>
+</FONT><H2><A NAME="Using"></A>11.2   Using dal</H2>
+<FONT SIZE="2"><P>You can execute<B> dal</B> in one of two ways.</P>
+<P>1)  Execute interactively.  First, type in the following command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dal</PRE>
+</FONT><FONT SIZE="2"><P>Then at the <B>d_</B>  prompt, begin typing <B>dal</B> commands.</P>
+<P>2)  Execute <B>dal</B> in batch mode.  <BR>
+Write <B>dal</B> commands in a file (procfile), and use the filename as a parameter <BR>
+to the following dal command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dal<U> </U>procfile</PRE>
+</FONT><FONT SIZE="2"><P>Each supported <B><I>db.*</B></I> function can be called through <B>dal</B> by issuing a C-like command (without the <B>d_ </B>):</P>
+</FONT><FONT COLOR="#0000ff"><PRE>open("mydb","o");</PRE>
+</FONT>
+<H2><A NAME="Syntax"></A>11.3   General dal Syntax</H2>
+<FONT SIZE="2"><P>Commands can be entered into <B>dal</B> using a relatively free format.  All <B>dal</B> commands terminate with a semicolon.  If you fail to type the semicolon, you may still be able to type it on the next line, as <B>dal</B> usually will not process the command until it sees the semicolon.  <B>dal</B> recognizes C-style comments (/* this is a comment */).  In addition, any characters on a line after a pound sign (<B>#</B>) are ignored.  You may place more than one command per line, as long as each is terminated with the semicolon.  String constants are enclosed in double quotes.  Escape sequences are not supported within strings.</P>
+</FONT><H2><A NAME="Differences"></A>11.4   Differences between dal and C Conventions</H2>
+<FONT SIZE="2"><P>The syntax of <B>dal</B> is somewhat different from the standard C calling convention.  You need to be aware of these differences to avoid confusion, especially if you are using <B><I>db.*</B></I> for the first time, and using <B>dal</B> to learn <B><I>db.*</B></I>.  The differences are explained below.</P>
+<P>1.   Where the C calling conventions dictate a pointer argument, <B>dal</B> does not.  Look at the following example of a <B><I>db.*</B></I> C function call.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_fillnew(person, &amp;per);</PRE>
+</FONT><FONT SIZE="2"><P>The input to <B>dal</B> would appear as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>fillnew(person, per);   /* No &amp; before per */</PRE>
+</FONT><FONT SIZE="2"><P>2.   <B>dal</B> supports character array constants, but not numeric constants.  If you need to pass a numeric value to a <B><I>db.*</B></I> function, you must first assign the value to a variable, and then pass the variable to the function call.</P>
+<P>3.   Where a database constant is passed to a <B><I>db.*</B></I> function, you may use lowercase letters (for example, <B>person</B> instead of <B>PERSON</B>).</P>
+</FONT><H2><A NAME="Functions"></A>11.5   Supported <I>db.*</I> Functions</H2>
+<FONT SIZE="2"><P>The following <B><I>db.*</B></I> functions are recognized by <B>dal</B>.  No database number is allowed in the parameters lists, because <B>dal</B> must operate on one database at a time.</P>
+<P ALIGN="center"></P>
+<B><P ALIGN="center">Table 11-1.  <I>db.*</I> Functions Recognized by dal</P></B></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="480">
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_close</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dbuserid</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keylock</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_rlbset</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_cmtype</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_delete</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keynext</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_rlbtst</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_connect</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_destroy</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyprev</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setfiles</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_cotype</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_discon</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyread</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setfree</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crget</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_disdel</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keystore</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setkey</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crread</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_fillnew</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_lock</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setlock</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crset</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_findco</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_makenew</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setmm</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crtype</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_findfm</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_members</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setmo</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crwrite</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_findlm</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_off_opt</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setmr</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmget</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_findnm</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_on_opt</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setom</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmread</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_findpm</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_rdcurr</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setoo</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmset</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_freeall</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recfree</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setor</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmwrite</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_initfile</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recfrst</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setpages</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csoget</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_initializ</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_reclast</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setrm</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csoread</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_ismember</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_reclock</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_setro</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csoset</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_isowner</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recnext</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_timeout</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csowrite</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keydel</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recprev</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trabort</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_ctbpath</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyexist</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recread</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trbegin</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dbdpath</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyfind</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recset</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trend</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dbfpath</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyfree</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recwrite</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_wrcurr</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dblog</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keyfrst</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_renfile</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dbtaf</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keylast</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_rlbclr</B></FONT></P></TD>
+<TD WIDTH="24%" VALIGN="top">&nbsp;</TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+</FONT><H2><A NAME="Commands"></A>11.6   dal-Specific Commands</H2>
+<FONT SIZE="2"><P>This section describes how variables are defined for <B>dal</B> and explains the <B>dal</B>-specific commands that help make the utility more useful as a learning and prototyping tool.</P>
+<HR ></FONT><H3><A NAME="def_rec"></A>def_rec, def_fld</H3>
+<FONT SIZE="2"><P>Variables are defined in one of two ways:</P>
+<P>1.   <I>Implicitly </I>: A variable can be created from the context of a statement.  The statement below causes a variable named "<B>per</B>" to be defined as the same type as the current record.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>keyfind(pers_name,"Norm");
+recread(per);</PRE>
+</FONT><FONT SIZE="2"><P>The next statement causes a variable named "<B>addr</B>" to be defined as a field with the same type as the "<B>pers_addr</B>" field in the schema.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>crread(pers_addr,addr);</PRE>
+</FONT><FONT SIZE="2"><P>The following statement causes a variable named "<B>dba</B>" to be defined as type <B>DB_ADDR.</P></B></FONT><FONT COLOR="#0000ff"><PRE>crget(dba);</PRE>
+</FONT><FONT SIZE="2"><P>2.   <I>Explicitly</I> : Two functions are provided to explicitly create and type record or field variables:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>def_rec(rec_type,var_name);</PRE>
+</FONT><FONT SIZE="2"><P>or</P>
+</FONT><FONT COLOR="#0000ff"><PRE>def_fld(fld_type,var_name);</PRE>
+</FONT><FONT SIZE="2"><P>The <B>def_rec</B> function creates a variable (named <B>var_name</B>) that is defined with the same type as the record specified by <B>rec_type</B>.  <B>def_fld</B> creates a variable (named <B>var_name</B>) that is defined with the same type as the field specified by <B>fld_type</B>.</P>
+<HR ></FONT><H3><A NAME="abort"></A>abort</H3>
+<FONT SIZE="2"><P>Exit <B>dal</B> immediately without closing database</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>abort;</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command causes <B>dal</B> to stop immediately without closing the database.  Any data remaining in the <B><I>db.*</B></I> cache will not be written to the database.  If you have created only a few changes or additions (such that all the data fits into the cache), then none of your work will be saved.  However, be aware that indiscriminate use of the <B>abort</B> command can lead to database corruption in the event that some changes get written to disk while the remaining are lost when you abort.  You must be concerned about this only if you are not using transactions.</P>
+</FONT>
+<HR ><H3><A NAME="curr"></A>curr</H3><FONT SIZE="2"><P>Print the currency tables.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>curr;</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command causes <B>dal</B> to print out the currency tables, showing current database, current record, and current owners and members for each set.</P>
+</FONT>
+<HR><H3><A NAME="exit"></A>exit</H3>
+<FONT SIZE="2"><P>Exit <B>dal</B>.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>exit;</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command calls <B>d_close</B> to close the database, and exit with a code of zero (that is, call exit).</P>
+<HR ></FONT><H3><A NAME="input"></A>input</H3>
+<FONT SIZE="2"><P>Read values into a variable.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>input [(filename)] var_name [,var_name ]...;</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command reads variable values from the keyboard or a file.  If a variable is a record, then the individual field values will be requested with separate prompts.  If a file name is specified for input, one line from the file will be read for each variable listed.  File names must be enclosed in quotes.  Fields within a line are in fixed format with the following lengths for different field types:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="295">
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>Char</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>Length specified in schema</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>int</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT FACE="Palatino" SIZE="2"><P>6</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>short</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT FACE="Palatino" SIZE="2"><P>6</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>long</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT FACE="Palatino" SIZE="2"><P>10</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>float</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT FACE="Palatino" SIZE="2"><P>10</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT FACE="Palatino" SIZE="2"><P>double</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT FACE="Palatino" SIZE="2"><P>10</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Note that these widths are the same as those created by the <B>print</B> command.</P>
+</FONT><H5>Examples</H5>
+<FONT COLOR="#0000ff"><PRE>open("tims","o");
+def_rec(author,a);
+input a;            /* Get data from terminal */;
+fillnew(author,a);
+input ("auth.imp");      /* Get data from file */;
+fillnew(author,a);</PRE>
+</FONT><H5>Diagnostics</H5>
+<FONT SIZE="2"><P>Errors can occur when input reads from a file and the line lengths in the file are inconsistent.</P>
+<HR></FONT><H3><A NAME="print"></A>print</H3>
+<FONT SIZE="2"><P>Print values from a variable list.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>print [(filename)] var_name [,var_name ...];</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command prints one line of data to the terminal or to a file.  If a variable is a record, then the individual field values will be printed, with no spaces between the values, each field width being determined by the field type (see table under input).  Literal strings may be included in the <I>var_name</I> list.  If a file name is specified for output, one line will be written to the file for each print command.  File names must be enclosed in quotes.  If an output file is used within an input command, the file is re-opened for input.</P>
+</FONT><H5>Examples</H5>
+<FONT COLOR="#0000ff"><PRE>open("tims","o");
+findfm(author_list);
+recread(a);
+print "author:",a;
+crget(dba);
+print("author.lst") "dba:",dba,"author:",author;</PRE>
+<HR ></FONT><H3><A NAME="rewind"></A>rewind</H3>
+<FONT SIZE="2"><P>Rewind (or reset back to the beginning of) a file.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>rewind "<I>filename</I>";</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command rewinds a file.  If the file was opened for reading, then subsequent reads will start from the beginning (that is, the first line will be reread).  If the file was opened for writing, it will be truncated and all previous data will be lost.</P>
+<HR></FONT><H3><A NAME="schema"></A>schema</H3>
+<FONT SIZE="2"><P>Print schema information.</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>schema <I>[spec]</I>;</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command prints information about a database schema, including the record types, field types, and set information.  The <B>schema</B> command with no arguments produces a list of the record names and set names.  If <I>spec</I> is a record, then detailed information about the record is printed, including a list of the fields, and the field information for each field.  If <I>spec</I> is a field name, then the type and length is printed.  Additionally, if the field is a key, then the kind of key, and the key file containing the key is printed.  If <I>spec</I> is a set name, then order, owner type, member type(s), and sorting information is printed.</P>
+<HR ></FONT><H3><A NAME="whileok"></A>whileok</H3>
+<FONT SIZE="2"><P>Repeat statements while (<B>db_status </B>== S_OKAY).</P>
+</FONT><H5>Summary</H5>
+<FONT COLOR="#0000ff"><PRE>whileok {
+   statements;
+      ...
+}</PRE>
+</FONT><H5>Description</H5>
+<FONT SIZE="2"><P>This command functions in the same manner as the following C code:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>while (db_status == S_OKAY) {
+   statements;
+   ...
+}</PRE>
+</FONT><FONT SIZE="2"><P>Note that<B> whileok</B> statements can be nested.</P>
+</FONT>
+<H5>Examples</H5>
+<FONT COLOR="#0000ff"><PRE>/* List all authors and their publications */
+open("tims","o");
+findfm(author_list);
+whileok {
+   recread(a);
+   print "Author:",a;
+   setor(has_published);
+   findfm(has_published);
+   whileok {
+      recread(b);
+      print "Published:",b;
+      findnm(has_published);
+   }
+   findnm(author_list);
+}</PRE>
+</FONT><H2><A NAME="Limitations"></A>11.7   dal Limitations</H2>
+<FONT SIZE="2"><P>The following is a list of <B><I>db.*</B></I> functions and functionalities <I>not</I> supported by <B>dal</B>:</P>
+<P>1.   Group locking function (that is, <B>d_lock()</B>)<BR>
+2.   Timestamping functions<BR>
+3.   Currency functions (<B>d_rdcurr()</B>, <B>d_rerdcurr()</B>, and <B>d_wrcurr()</B>)<BR>
+4.   File rename functions (<B>d_renfile()</B> and <B>d_renclean()</B>)<BR>
+5.   Alternate initialization file location (<B>d_dbini()</B>)</P>
+<P>In addition,</P>
+<P>1.   <B>dal</B> does not support multiple databases.<BR>
+2.   <B>dal</B> does not support arrays.</P>
+
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

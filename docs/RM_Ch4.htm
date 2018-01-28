@@ -1,0 +1,661 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 4</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="ReturnCodes"></A>Chapter 4<BR>
+Return Codes</H1>
+<H2><A name="Introduction"></A>4.1  Introduction</H2>
+<FONT SIZE="2"><P>This chapter describes the status and error codes returned by the <B><I>db.*</B></I> runtime functions.  Table 4-1 lists all the return codes by their numeric value.  Section 4.2 is an alphabetical listing of all codes, and includes detailed descriptions of the error messages.</P>
+<P>When your program returns an error or status code,</P>
+<OL>
+
+<LI>Note the number. 
+  
+<LI>Refer the number to Table 4-1 to get the character 
+  code. 
+  
+<LI>Look up the character code in section 4.2, and read a detailed description of the error message.</LI></OL>
+
+<P>The descriptions in section 4.2 explain the conditions under which that code would be returned, and, where possible, guidelines are given for resolving the problem. For more information on <B><I>db.*</B></I> error handling, see section 5.8, "Database Error Reporting," in the <B><I>db.*</B></I> <I>User's Guide</I>.</P>
+<P>Note that if you are testing the bounds of error messages within your <B>dberr</B> routine, you can use the following <B>#define</B>s:</P>
+
+<UL>
+<LI>S_USER_FIRST and S_USER_LAST 
+  
+<LI>S_SYSTEM_FIRST and S_SYSTEM_LAST 
+  
+<LI>S_FUNCTION_FIRST and S_FUNCTION_LAST</LI></UL>
+
+<P>For example, to test for a user error, use the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>if ((errnum &lt;= S_USER_FIRST) &amp;&amp; (errnum &gt;= S_USER_LAST))</PRE>
+</FONT><B><FONT SIZE="2"><P ALIGN="center">Table 4-1.  Number Listing of Return Codes</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" >
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">0</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_OKAY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">4</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_KEYSEQ</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">8</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_LOCKED</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">1</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_EOS</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">5</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_UNAVAIL</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">9</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_UNLOCKED</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">2</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTFOUND</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">6</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_DELETED</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">10</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_SETCLASH</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">3</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_DUPLICATE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">7</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_UPDATED</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="22%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="23%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-1</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_DBOPEN</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-18</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVOWN</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-36</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_RENAME</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-2</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVSET</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-19</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVMEM</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-37</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTOPTKEY</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-3</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVREC</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-20</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_SETPAGES</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-38</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADFIELD</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-4</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVDB</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-21</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_INCOMPAT</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-39</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_COMKEY</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-5</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVFLD</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-22</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_DELSYS</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-40</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVNUM</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-6</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVADDR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-23</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTFREE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-41</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_TIMESTAMP</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-7</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOCR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-24</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTLOCKED</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-42</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADUSERID</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-8</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOCO</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-25</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_TRANSID</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-43</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOPROTOCOL</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-9</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOCM</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-26</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_TRACTIVE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-46</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTYPE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-10</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_KEYREQD</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-27</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_TRNOTACT</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-47</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVSORT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-11</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADTYPE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-29</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_TRFREE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-48</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_DBCLOSE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-12</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_HASMEM</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-30</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_RECOVERY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-49</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVPTR</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-13</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_ISMEM</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-31</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTRANS</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-50</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVID</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-14</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_ISOWNED</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-32</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_EXCLUSIVE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-51</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVLOCK</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-15</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_ISCOMKEY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-33</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_STATIC</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-52</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_INVTASK</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-16</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTCON</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-34</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_USERID</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-53</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOLOCKCOMM</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-17</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTKEY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-35</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NAMELEN</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-54</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOTIMPLEMENTED</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="22%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="23%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-900</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOSPACE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-913</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_LOGIO</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-935</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_TAFCREATE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-901</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_SYSERR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-914</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADREAD</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-936</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_TAFREOPEN</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-902</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_FAULT</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-915</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NETSYNC</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-937</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_CLOSE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-903</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOWORK</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-916</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_DEBUG</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-939</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_READONLY</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-904</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOMEMORY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-917</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NETERR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-940</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_EACCESS</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-905</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOFILE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-919</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADWRITE</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-943</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_RECFAIL</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-906</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_DBLACCESS</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-920</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_NOLOCKMGR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-944</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_TAFSYNC</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-907</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_DBLERR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-921</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_DUPUSERID</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-945</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_TAFLOCK</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-908</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_BADLOCKS</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-922</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_LMBUSY</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-947</FONT></P></TD>
+<TD WIDTH="31%" VALIGN="top">
+<FONT SIZE="1"><P>S_REENTER</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-909</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_RECLIMIT</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-924</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_SEM</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-910</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_KEYERR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-925</FONT></P></TD>
+<TD WIDTH="23%" VALIGN="top">
+<FONT SIZE="1"><P>S_LMCERROR</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="8%" VALIGN="top">
+<FONT SIZE="1"><P ALIGN="right">-912</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="1"><P>S_FSEEK</FONT></P></TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="23%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="8%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="31%" VALIGN="top">&nbsp;</TD>
+</TR>
+</TABLE>
+
+<H2><A name="Descriptions" ></A>4.2  Return Code Descriptions</H2>
+<FONT SIZE="2"><P>S_BADFIELD<BR>
+The field specified is not a field in the current record.</P>
+<P>S_BADLOCKS<BR>
+Inconsistent database lock states have been detected.  This error generally occurs when the <B><I>db.*</B></I> runtime memory has been corrupted.</P>
+<P>S_BADREAD<BR>
+A read error was returned on a data or key file.  Check C's "errno" variable for any additional information.</P>
+<P>S_BADTYPE<BR>
+An invalid access mode argument has been specified in the <B>d_open</B> function.  A lock request function returns S_BADTYPE when an invalid lock type is specified.</P>
+<P>S_BADUSERID<BR>
+The user ID contains invalid characters.  Since the user ID is usually used to create the log filename, it must contain only alphanumeric characters or underscores ('_').</P>
+<P>S_BADWRITE<BR>
+A write error on database file has occurred.  Check C's "errno" variable for additional information.</P>
+<P>S_CLOSE<BR>
+There was an error closing a file.  Check C's "errno" for the reason why.  This error can indicate that memory has been corrupted.</P>
+<P>S_COMKEY<BR>
+Records containing compound keys cannot be created using function <B>d_makenew</B>, or modified using the field write functions.</P>
+<P>S_DBCLOSE<BR>
+All databases must be closed before calling this function.</P>
+<P>S_DBLACCESS<BR>
+An error has occurred while trying to open the TAF, log, or DBL file, or while trying to get exclusive access to the TAF or DBL file.  Be sure that you have read, write, and shareable access to the files and that the application's DBTAF and/or LOCKMGR settings are correct.  C's "errno" may be able to give some information about the problem.</P>
+<P>S_DBLERR<BR>
+An error occurred while trying to read or write the TAF or DBL file.  Check C's "errno" for the specific error code.</P>
+<P>S_DBOPEN<BR>
+The opened state of the database is not correct for this function.  This error code is returned when the database is <I>not</I> opened by functions that must be called after <B>d_open</B>.  It is also returned when the database is <I>opened</I> by functions that must be called before <B>d_open</B>.</P>
+<P>S_DEBUG<BR>
+The special debugging checks have been turned on so that the application can be stopped at critical times to test certain features of <B><I>db.*</B></I>.</P>
+<P>S_DELETED<BR>
+The record or set has been deleted (since last accessed) by a read function or a timestamp status function.</P>
+<P>S_DELSYS<BR>
+An illegal attempt to delete the system record was made.</P>
+<P>S_DUPLICATE<BR>
+An attempt was made to store a duplicate value into a <I>unique</I> key field.  This code is also returned by <B>d_checkid</B> if the proposed user ID is already in use.</P>
+<P>S_DUPUSERID<BR>
+The user ID for this DB_TASK is already being used by another DB_TASK on the system.  If you are using a DBUSERID that has been used on another workstation, it may be necessary to run <B>lmclear</B> on the previous workstation to remove the DBUSERID from the name table and other locations.</P>
+<P>S_EACCESS<BR>
+The file is in use, or the file user does not have rights to the file.  When possible, under one-user open mode, <B><I>db.*</B></I> will open files in a non-shareable state to help the programmer prevent database corruption.  This error indicates that the file is opened by <B><I>db.*</B></I>, but the file is not under lock manager control.</P>
+<P>S_EOS<BR>
+The end of a set was reached.  When a set navigation function or function <B>d_discon</B> has reached the end of the set, S_EOS is returned.  Functions <B>d_isowner</B> and <B>d_ismember</B> also return S_EOS when the current record is not currently an owner or member of the set.</P>
+<P>S_EXCLUSIVE<BR>
+Exclusive access is required.  The database must be opened in one-user mode or exclusive mode, or exclusive locks must be placed on the appropriate files.</P>
+<P>S_FAULT<BR>
+A page fault has occurred in the <B><I>db.*</B></I> cache.  Usually this happens with a small cache being shared by multiple DB_TASKs where all the pages are locked; none can be swapped out, but another page is required to be swapped in.  This error can also occur when the <B><I>db.*</B></I> runtime memory has been corrupted.</P>
+<P>S_FSEEK<BR>
+A seek error was returned on a database file.  You can check C's "errno" for the particular error code.  If this error occurs during normal operation, it occurred on the log file and could indicate a lack of available disk space.  If this error occurs during a recovery, it probably means that the log file has been corrupted.  If you get this error during a recovery, you should run <B>dbcheck</B>.  If no errors are reported, decide whether you want to continue.  (<B><I>db.*</B></I> will run smoothly, but <B>dbcheck</B> only detects system-dependent inconsistencies, not application-dependent inconsistencies.)</P>
+<P>S_HASMEM<BR>
+In a call to the <B>d_delete</B> function, the current record is an owner of a non-empty set.</P>
+<P>S_INCOMPAT<BR>
+Incompatible database dictionaries were specified.  This code is returned from <B>d_open</B> when the database dictionary for the specified database is not compatible with the version of the <B><I>db.*</B></I> runtime that is being executed.  You need to run a more recent version of <B>ddlp</B> on your DDL specification, and then retry your <B>d_open</B> call.</P>
+<P>S_INVADDR<BR>
+The database address is invalid.  You may have passed the database address variable by value (for example, <B>d_crset</B>(dba)) instead of by reference (for example, <B>d_crset</B>(&amp;dba)).  Also, <B>d_recread</B> can return this error if the record slot in the database is corrupted.</P>
+<P>S_INVDB<BR>
+The database name or number is invalid.  Function <B>d_open</B> was unable to open the &lt;<B>dbname</B>&gt;<B>.dbd</B> file.  You may have incorrectly specified (or not specified) the DBDPATH variable; or you executed from a directory that does not contain the dictionary file.  Check C's "errno" variable for additional information.  Other functions also return S_INVDB if an incorrect database number is passed to them.</P>
+<P>S_INVFLD<BR>
+The field type is invalid.  You may have passed a set or record type to a function that requires a field type.  If the current record is of a type other than the one anticipated, S_INVFLD will result, because the field is inappropriate for the current record type.</P>
+<P>S_INVID<BR>
+The <B>d_internals</B> function has been passed an invalid topic or subtopic value.</P>
+<P>S_INVLOCK<BR>
+An invalid lock manager communication type was specified.  Make sure the number passed to <B>d_lockcomm</B>, or the string in the INI file, is correct for the types being allowed by the application's LOCKCOMM_DATA table.</P>
+<P>S_INVMEM<BR>
+The record type is not a legal member of the specified set.  You may not know what the current record is.  Confirm that the previous <B><I>db.*</B></I> calls were successful.</P>
+<P>S_INVNUM<BR>
+An invalid record or set type was specified for a locking function.  This error code also can be returned from <B>d_setfiles</B> and <B>d_setpages</B> when a number passed in exceeds the limits of the function.</P>
+<P>S_INVOWN<BR>
+The record type is not a legal owner of the specified set.  The current record may not be what you think it is.  Confirm that the previous <B><I>db.*</B></I> calls were successful.</P>
+<P>S_INVPTR<BR>
+A pointer argument to a <B><I>db.*</B></I> function is NULL, or a string parameter is the empty string ("") when that is not allowed.  This error code can also indicate memory corruption.</P>
+<P>S_INVREC<BR>
+The record type is invalid.  You may have passed a set or field type to a function that requires a record type.</P>
+<P>S_INVSET<BR>
+The set type is invalid.  You may have passed a record or field type to a function that requires a set type.</P>
+<P>S_INVSORT<BR>
+The specified sort string in a <B>d_mapchar</B> function call is longer than two characters.</P>
+<P>S_INVTASK<BR>
+An invalid DB_TASK is referenced.  Be sure that the DB_TASK has been opened and has been passed by reference.  Also, be sure that you are not attempting to share the DB_TASKs across applications.</P>
+<P>S_ISCOMKEY<BR>
+Functions that write individual fields cannot be used on fields that make up compound keys.  Use <B>d_recwrite</B> instead.</P>
+<P>S_ISMEM<BR>
+In a call to the <B>d_delete</B> function, the current record is still a member of a set occurrence.</P>
+<P>S_ISOWNED<BR>
+In a call to the <B>d_connect</B> function, the current record is already connected to an instance of the specified set.</P>
+<P>S_KEYERR<BR>
+A key file inconsistency has been detected.  This usually occurs when either the OS cache or the <B><I>db.*</B></I> cache is not being synchronized properly with other processes.  This error can also occur when the <B><I>db.*</B></I> runtime memory has been corrupted.  Run <B>keybuild</B> if <B>dbcheck</B> reveals a corrupted key file.</P>
+<P>S_KEYREQD<BR>
+A key value is required.  Function <B>d_makenew</B> returns S_KEYREQD when <B>d_setkey</B> has not previously set all key fields.</P>
+<P>S_KEYSEQ<BR>
+A key sequence error was detected.  The function <B>d_keyread</B> was called before a key locate function (for example, <B>d_keynext</B>) had located a key.</P>
+<P>S_LMBUSY<BR>
+The lock manager is busy; and there is no more room in its request queue.  Retry the request.  Try increasing the number of users (via the <B>-u</B> option) when running the lock manager.</P>
+<P>S_LMCERROR<BR>
+A lock manager communication error has occurred.  The error string describes the specific problem.</P>
+<P>S_LOCKED<BR>
+The current record is locked according to the record lock bits.</P>
+<P>S_LOGIO<BR>
+An error has occurred during file I/O on the log file.  This error code is used to help distinguish between errors on data and key files, log files, and TAF/DBL files.  Check C's "errno" variable for additional information.</P>
+<P>S_NAMELEN<BR>
+The database file or path name is too long.  The <B>d_open</B> function returns S_NAMELEN when the 255-character file name limit has been exceeded.  The limit is checked after all complete file specifications have been generated from sources such as environment variables.</P>
+<P>S_NETERR<BR>
+A network error occurred.  Recovery from this error will depend on your network.  A retry of the operation may be all that is necessary.  If the lock manager has failed for some reason (for example, if the lock manager host has been re-booted), most active <B><I>db.*</B></I> applications will eventually receive this error.  The application and the lock manager need to be restarted.</P>
+<P>S_NETSYNC<BR>
+A network synchronization error was detected.  An invalid message packet was received from the lock manager.  There could have been a transmission error.  If only one process has received this error, take it down and bring it back up.  If this fails to resolve the problem or if other processes are getting the error, take the entire system down, including the lock manager, and restart.  If the error persists, there is probably an error in your network.</P>
+<P>S_NOCM<BR>
+No current member exists.  The current member is NULL_DBA.</P>
+<P>S_NOCO<BR>
+No current owner exists.  The current owner is NULL_DBA.  This can occur when <B>d_findfm</B> is called without first having set the current owner.</P>
+<P>S_NOCR<BR>
+No current record exists.  The current record is NULL_DBA.</P>
+<P>S_NOFILE<BR>
+The <B><I>db.*</B></I> program is unable to open the specified file.  An error occurred when the runtime tried to open a data file, key file, or log file.  The <B><I>db.*</B></I> program may need more file handles than the current <B>d_setfiles</B> call allows.  You may have exceeded the OS limit for file handles.  Make sure the data and key files exist.</P>
+<P>S_NOLOCKCOMM<BR>
+No lock manager protocol has been specified.  Call the <B>d_lockcomm</B> function or specify a "type" in the [lockmgr] section of the <B>db.star.ini</B> file.</P>
+<P>S_NOLOCKMGR<BR>
+The <B><I>db.*</B></I> program was unable to open a lock manager session.  The lock manager has probably not been installed.</P>
+<P>S_NOMEMORY<BR>
+Your system is unable to allocate sufficient memory.  There is not enough available memory for all of the required <B><I>db.*</B></I> runtime tables.  Try calling <B>d_setpages</B> with fewer pages before calling <B>d_open</B>.</P>
+<P>S_NOPROTOCOL<BR>
+The chosen communication software has not been loaded, or a path cannot be found.  The computer may not be connected to a network, or the network dynamic-link libraries cannot be found.</P>
+<P>S_NOSPACE<BR>
+No more space is available on the disk.  See function <B>d_trend</B> in the <B><I>db.*</B></I> <I>Reference Manual</I>; a note in the Description explains a technique for dealing with this error under normal operations.  However, this error can also occur when the <B><I>db.*</B></I> runtime memory has been corrupted.</P>
+<P>S_NOTCON<BR>
+A record is not connected to the specified set.</P>
+<P>S_NOTFOUND<BR>
+A record was not found.  The key find function returns S_NOTFOUND when the requested key is not found.  The first, last, next, and previous functions return this value when there are no more records to find.  The next and previous functions will wrap to the beginning and end of the files, respectively, after this status is returned.</P>
+<P>S_NOTFREE<BR>
+An attempt was made to lock a record, set, or key type that your application had already locked.</P>
+<P>S_NOTIMPLEMENTED<BR>
+A function was called that is not available in this implementation of the <B><I>db.*</B></I> library.  This may be a debug function that was called in a non-debug implementation of <B><I>db.*</B></I>, or it may be a system-specific function.</P>
+<P>S_NOTKEY<BR>
+The specified field used in a key operation is not a key field.</P>
+<P>S_NOTLOCKED<BR>
+An attempt was made to access or free an unlocked record, set, or key type.  This may occur when attempting to change a field that is included in a sorted set, and that set is not locked.</P>
+<P>S_NOTOPTKEY<BR>
+A field specified in an optional key operation is not an optional key field.</P>
+<P>S_NOTRANS<BR>
+No transaction has been started.  An attempt was made to update the database in shared mode outside a transaction.  Database changes can only be made in shared mode from within a transaction.</P>
+<P>S_NOTYPE<BR>
+In a call to <B>d_recnext</B> or <B>d_recprev</B>, a current record type has not been established by a prior call to <B>d_recfrst</B>, <B>d_reclast</B>, or <B>d_recset</B>.</P>
+<P>S_NOWORK<BR>
+No working key file is available.  This error generally occurs when the <B><I>db.*</B></I> runtime memory has been corrupted.</P>
+<P>S_OKAY<BR>
+A normal return; everything worked successfully.</P>
+<P>S_READONLY<BR>
+Unable to update file due to READONLY option.</P>
+<P>S_RECFAIL<BR>
+Automatic recovery failed.  This will be the last of a set of error messages that display.  The preceding messages will give more information.  For example, an S_BADREAD or S_BADWRITE might be returned before the S_RECFAIL error.</P>
+<P>S_RECLIMIT<BR>
+You have reached the maximum records per file limit for this data file.  The first step is to determine if old data can be purged or off-loaded.  If so, you will need to write a program to do this.  If not, you will need to reorganize your database somewhat.  If there are multiple record types in the file, you can split them into separate files (using <B>dbexp</B> and <B>dbimp</B>).  You might explore splitting the offending record type into several new record types and dividing the record occurrences based on the content of a principal key field (for example, all names beginning with A-M in record 1 and those with N-Z in record 2).</P>
+<P>S_RECOVERY<BR>
+In a lock request or <B>d_open</B> function call, an automatic recovery operation is about to occur.</P>
+<P>S_REENTER<BR>
+A database task (DB_TASK) was used by two threads simultaneously.  Although the <B><I>db.*</B></I> library is reentrant, it does not allow reentrant calls with the same database task parameter.  Each thread must open its own database task.</P>
+<P>S_RENAME<BR>
+An invalid file number was passed to the function <B>d_renfile</B>.</P>
+<P>S_SEM<BR>
+The <B><I>db.*</B></I> program is unable to create a semaphore or mutex.</P>
+<P>S_SETCLASH<BR>
+The internal set pointers changed after you retrieved the record, making further set navigation from this record invalid.</P>
+<P>S_SETPAGES<BR>
+The function <B>d_setpages</B> was called after <B>d_open</B>.  The size of the cache cannot be changed once a database has been opened.</P>
+<P>S_STATIC<BR>
+An attempt was made to place a lock on a static record or file.  A database must be opened in exclusive (or one-user-only) mode to modify a static record.</P>
+<P>S_SYSERR<BR>
+A system error has occurred.  This error generally occurs when the <B><I>db.*</B></I> runtime memory has been corrupted.</P>
+<P>S_TAFCREATE<BR>
+The <B><I>db.*</B></I> program could not create the transaction activity file (TAF).  Check that the TAF name is valid, that the target directory exists, and that the target directory is accessible by your application.  The default name of the TAF is <B>db.star.taf</B>, and its path can be specified through a call to <B>d_dbtaf</B>, in the environment variable DBTAF, or in the <B>db.star.ini</B> file.  Note that this path should end with a '/' character (on UNIX), or else it will be treated as a file name.</P>
+<P>S_TAFLOCK<BR>
+The <B><I>db.*</B></I> program could not access the TAF.  This probably means that the TAF was accessed by two applications at the same time, and at least one of those applications opened a database in one-user mode.</P>
+<P>S_TAFREOPEN<BR>
+The <B><I>db.*</B></I> program could not open an existing TAF.  This may indicate a network error.</P>
+<P>S_TAFSYNC<BR>
+A TAF-lock manager synchronization error has occurred.  The TAF tracks the name and type of the lock manager controlling this database family and TAF.  To prevent database corruption, the function <B>d_open</B> checks the name and type of the lock manager the application wants to use, against the ones recorded in the TAF to be certain that they match.  These values in the TAF can only be changed when the user count in the TAF is zero.  The <B>d_open</B> function increments this count, and <B>d_close</B> decrements this count.</P>
+<P>S_TIMESTAMP<BR>
+A record or set is not timestamped.  A timestamp function was called for a record or set type that is not being timestamped.</P>
+<P>S_TRACTIVE<BR>
+A transaction was already active.  An incremental open cannot be performed during an active transaction.  Transactions cannot be nested.  That is, you cannot begin a new transaction within an active transaction.</P>
+<P>S_TRANSID<BR>
+A transaction ID was not supplied in a call to <B>d_trbegin</B> or is invalid.</P>
+<P>S_TRFREE<BR>
+An attempt was made to free a lock inside a transaction in shared mode.  Only <B>d_trend</B> or <B>d_trabort</B> can free locks once a transaction has begun.</P>
+<P>S_TRNOTACT<BR>
+A transaction was not active.  An attempt was made to place a write or keep lock outside of a transaction.  Only read locks and exclusive locks can be requested outside of a transaction.</P>
+<P>S_UNAVAIL<BR>
+One or more files that were requested in a lock request function call did not become available before the request timed out, or the database was not available in a call to the <B>d_open</B> function.  If the code is returned by <B>d_open</B>, either another user has the database opened in a mode not compatible with your mode, or there is currently not enough room in the lock manager tables to add your user ID and/or your database files.</P>
+<P>S_UNLOCKED<BR>
+The current record is not locked according to the record lock bits.</P>
+<P>S_UPDATED<BR>
+In a call to a timestamp status function, the record or set has been updated since last accessed.</P>
+<P>S_USERID<BR>
+No user ID was specified.</P></FONT></BODY>
+</HTML>

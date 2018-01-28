@@ -1,0 +1,795 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 4</TITLE>
+</HEAD>
+<BODY>
+<H1><A name="Design"></A>Chapter 4<BR>Database Design</H1>
+<H2><A name="Introduction"></A>4.1 Introduction</H2><FONT size="2">
+<P>A database design is a description of the data that will 
+be stored in a database and the relationships that will exist within that data. 
+The design of a particular database is driven by the requirements of the 
+application it will support and is therefore a major part of the total 
+application design process.</P>
+<P>Our purpose in this chapter is to provide you with the 
+information necessary to design <B><I>db.*</B></I> databases. If you carefully study this chapter 
+and the example database design, you should be able to design a workable <B><I>db.*</B></I> database, even if you 
+have no database design experience.</P>
+<P>The chapter begins with a detailed description of the <B><I>db.*</B></I> Database Definition 
+Language (DDL). Each DDL statement is explained and illustrated through 
+examples. The operation of the DDL processor is explained followed by a section 
+on database design considerations. The final section builds on the <B>tims</B> database example introduced in Chapter 3 by 
+expanding the requirements and describing how the database design supports those 
+requirements.</P></FONT>
+<H2><A name="Language"></A>4.2 Database Definition Language (DDL)</H2>
+<H3><A name="Basics"></A>4.2.1 DDL Basics</H3><FONT size="2">
+<P>A <B><I>db.*</B></I> database design is specified in the Database 
+Definition Language. One DDL specification file exists for each <B><I>db.*</B></I> database. In general 
+there is one database per application, although some applications may require 
+the use of several databases. (Section 4.4.1, "Logical Design Considerations," 
+discusses multiple database design.) A DDL specification identifies the 
+database, defines the files that comprise the database, and contains 
+declarations for all record types, data and key fields, and set relationships 
+that will exist in the database.</P>
+<P>Below is an example DDL specification. It is an expanded 
+version of the checking account schema given in Chapter 3. It is provided here 
+to illustrate some additional DDL statements and to serve as a baseline example 
+in the descriptions that follow. A complete DDL syntax summary can be found in 
+Chapter 2, "Utility Descriptions," of the <B><I>db.*</B> Reference Manual</I>.</P></FONT><FONT color="#0000ff"><PRE>database ckngacct[512]
+{
+   timestamp records budget;
+
+   data file datfile = "chkg.dat" contains budget, check;
+   key file[1024] keyfile1 = "chkg.k01" contains code;
+   key file[2048] keyfile2 = "chkg.k02" contains check_no, check_date;
+
+   record budget 
+   {
+      unique key char code[6];
+      char cat_desc[48];
+      float alloc;
+      float balance;
+   }
+
+   record check 
+   {
+      unique key int check_no;
+      key int check_date;
+      char paid_to[48];
+      float amount;
+   }
+   set transactions 
+   {
+      order last;
+      owner budget;
+      member check;
+   }
+}
+</PRE></FONT><FONT size="2">
+<P>The DDL specification is stored in a text file and is 
+created using your usual text editor. Input is free form with comments 
+specified, as in C, between /* */ pairs. Comments do not nest.</P>
+<P>Identifiers are used to name the database, files, 
+records, fields, and sets. They are formed, as in C, from any combination of 
+letters, digits, and underscores (_) beginning with a letter.</P>
+<P>File, record, and set statements may be interspersed 
+provided that:</P>
+<UL>
+  <LI>Data and key file statements are specified ahead of 
+  the declarations of the records and key fields they contain. 
+  <LI>The declarations of set owner and member record types 
+  are specified ahead of their respective set declarations.</LI></UL>
+<P>Timestamp statements may appear anywhere within a DDL 
+specification.</P>
+<P>General practice is to place all file statements first, 
+followed by all timestamp statements, followed by all record type declarations, 
+followed by all set declarations. The <B>ddlp</B> can, 
+optionally, produce a record, field, and set name cross-reference listing to 
+help you locate names contained in a long DDL specification (see section 4.3, 
+"DDL Processor Operation").</P></FONT>
+<H3><A name="Database"></A>4.2.2 Database Statement</H3><B><FONT size="2">
+<P>Syntax:</P></B></FONT><FONT size="+0"><PRE>database <I>dbname [</I> [<I>pgsize</I>] <I>]</I> {
+   ddl statements ...
+}
+</PRE>
+<P><B>Description:</B></P>
+<P><FONT size="2">The database statement 
+is used to specify the name of the database and, optionally, the default page 
+size of all files.</FONT></P>
+<P><FONT size="2">The name of the database 
+<I>dbname</I> is an identifier and is used by <B>ddlp </B>to form the names of the database dictionary file 
+and the C or C++ header file. The dictionary file is named <B><EM>dbname</EM>.dbd </B>and the header 
+file is named <B><EM>dbname</EM>.h</B>. 
+Note that the length of this name can be up to 31 characters. </FONT></P>
+<P><FONT size="2">The database name, <I>dbname</I>, is passed to function <B>d_open </B>to identify the name of the database to be opened 
+and subsequently accessed. It is also passed to utilities such as initdb to 
+identify the database to be operated on (initialized) by the particular utility. 
+</FONT></P>
+<P><FONT size="2">The<I>db.*</I> data and key files are blocked or divided into 
+fixed-length pages, each containing as many record or key occurrences as will 
+fit on a page. The <I>pgsize</I> parameter determines the 
+default database page size in bytes. This value should, for performance reasons, 
+always be a multiple of the basic block size for your operating system (a 
+multiple of 512 will work for most systems). If not specified, the default 
+database page size is at least 1024 bytes, but will be the first number 
+divisible by 512 that is large enough to contain the largest record. 
+</FONT></P></FONT>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>database ckngacct[512] { ... }
+</PRE></FONT><FONT size="2">
+<P>For the checking account example, the name of the 
+database is <B>ckngacct</B> and it has a default database 
+page size of 512 bytes. The name of the dictionary file created by <B>ddlp</B> is <B>ckngacct.dbd</B>. The 
+name of the C header file created by <B>ddlp</B> is <B>ckngacct.h.</P></B></FONT><FONT color="#0000ff"><PRE>database acctsrec { ... }
+</PRE></FONT><FONT size="2">
+<P>The above is a possible database statement for an 
+accounts receivable database. Since no page size parameter is specified the 
+default database page size is 1024 bytes. The dictionary will be stored in file 
+<B>acctsrec.dbd</B> and the C header file will be named <B>acctsrec.h</B>.</P></FONT>
+<H3><A name="Timestamp"></A>4.2.3 Timestamp Statement</H3><B><FONT size="2">
+<P>Syntax:</P></B></FONT><FONT color="#0000ff"><PRE>timestamp records [ recname [, recname...] ] ;
+timestamp sets [ setname [, setname...] ] ;
+</PRE></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>Timestamping is a multi-user database technique used to 
+detect possible changes to record and set occurrences since the last time they 
+were accessed by a particular user. Refer to section 7.4, "Timestamping," for a 
+complete discussion of the use of timestamping. </P>
+<P>Timestamp statements may appear anywhere within a DDL 
+specification. </P>
+<P>Record types or set types to be timestamped are listed, 
+separated by commas, in the <B>timestamp</B> statement. If 
+no record or set names appear in the <B>timestamp</B> 
+statement then all record types or set types will be timestamped.</P>
+<P>Record timestamping adds eight bytes of additional disk 
+space overhead to each timestamped record slot. Set timestamping adds four bytes 
+of additional overhead to each set pointer contained in set owner records. 
+(Section 4.4.2, "Physical Design Considerations," describes all record and set 
+space overhead.)</P></FONT>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>timestamp records budget;
+</PRE></FONT><FONT size="2">
+<P>In the checking account database, only the <B>budget</B> record type is to be timestamped. This allows an 
+appraisal to see if another user has modified or deleted a particular budget 
+record before a check is written to the database, which updates the balance for 
+that budget category.</P></FONT><FONT color="#0000ff"><PRE>timestamp records;
+timestamp sets;
+</PRE></FONT><FONT size="2">
+<P>The database for the above example requires that all 
+record and set types be timestamped.</P></FONT>
+<H3><A name="File"></A>4.2.4 File Declarations</H3><B><FONT size="2">
+<P>Syntax:</P></B></FONT><FONT color="#0000ff"><PRE>data file [[pgsize]] [fileid =] filename contains recname[, recname]... ;
+<B>
+</B>key  file [[pgsize]] [fileid =] filename contains [recname.]keyfld
+   [, [recname.]keyfld]... ;
+</PRE></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>File declarations identify the physical files to contain 
+the data stored in the database. The <B>data file</B> 
+statement defines a file that will contain the occurrences of one or more record 
+types. The <B>key file</B> statement defines a file that 
+will contain the index for one or more key fields.</P>
+<P>The <B><I>db.*</B></I> data and key files are blocked or divided into 
+fixed-length pages, each containing as many record or key occurrences as will 
+fit on a page. The optional <I>pgsize</I> parameter 
+specifies the page size for the file. If not specified, the page size for the 
+file will be the default database page size. This value should always be a 
+multiple of the basic block size for your operating system (a multiple of 512 
+will work for most systems). Otherwise, the operating system's file access 
+performance will be impaired.</P>
+<P>The name of the file, <I>filename</I>, is a string enclosed in quotation marks (") 
+containing the physical (operating system) name of the file. It may be a fully 
+qualified path name but must not exceed 47 characters in length. If the name of 
+the file is not qualified (that is, it does not include a directory name), 
+applications using the database must be executed from within the directory 
+containing the database files, subject to the environmental conditions discussed 
+in section 5.2.2, "Operational Environment." </P>
+<P>Associated with a database file is an optional file, <I>fileid</I>, which is used to identify files within an 
+application program independent of the physical name of the file. It is intended 
+to be used for dynamic initialization of individual files using the <B>d_initfile</B> function (section 5.2.3, "Dynamic Database 
+Initialization") or for dynamically substituting files using the <B>d_renfile</B> function (section 5.2.2, "Operational 
+Environment"). </P>
+<P>All record types defined in the DDL must be contained in 
+a data file. All occurrences of the record types listed in the <B>contains</B> clause will be stored in that file. Occurrences 
+of a given record type can only be stored in a single file. Each page in the 
+data file consists of one or more fixed-length record slots. The size of the 
+record slot is based upon the size of the largest record type contained in the 
+file. Smaller record types will occupy the same record slots, thus leaving 
+unused space. You can define all record types to be contained in one file or you 
+can have a separate data file for each individual record type. The choice is 
+yours.</P>
+<P>A special system-defined record named <B>system</B> may be listed as the first record type in the <B>contains</B> clause of one (and only one) of the data files. 
+Only one occurrence of the system record exists in the database. It is used as 
+the owner of any number of sets to provide the means for records to be connected 
+to the top or root of the network. When the database is opened, the current 
+record and the current owners of all system-owned sets are initialized to the 
+system record.</P>
+<P>All key fields defined in the DDL must be contained in a 
+key file. All occurrences of the key fields listed in the <B>contains</B> clause will be stored in the file. Occurrences 
+of a given key type can only be stored in a single file. Each page in the key 
+file consists of one or more fixed-length key slots. The size of the key slot is 
+based upon the size of the largest key field contained in the file. Smaller key 
+fields will occupy the same slots, thus leaving unused space. You can define all 
+key fields to be contained in one file or you can have a separate key file for 
+each individual key field. The choice is yours.</P>
+<P>Section 4.4.2, "Physical Design Considerations," provides 
+some guidelines to help you determine the best file organization for your 
+particular application.</P></FONT>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>data file datfile = "chkg.dat" contains budget, check;
+key file[1024] keyfile1 = "chkg.k01" contains code;
+key file[2048] keyfile2 = "chkg.k02" contains check_no;
+</PRE></FONT><FONT size="2">
+<P>The checking account database consists of one data file 
+and two key files. The data file identified as <B>datfile</B> contains occurrences of both the budget and 
+check record types in the physical file named <B>chkg.dat</B>. From the database statement the page size for 
+<B>datfile</B> is 512 bytes. The key file identified as <B>keyfile1</B> has a page size of 1024 bytes and contains the 
+index for key field code in file <B>chkg.k01</B>. Key file 
+<B>keyfile2</B> has a page size of 2048 bytes and contains 
+the index for key field <B>check_no</B> in file <B>chkg.k02</B>.</P></FONT><FONT color="#0000ff"><PRE>data file "/client/master.dat" contains system, master;
+</PRE></FONT><FONT size="2">
+<P>The above file name specified in this data file statement 
+includes the fully qualified path for file <B>master.dat</B> 
+located in the <B>client</B> directory. In addition to the 
+occurrences of the <B>master</B> record, this file will 
+contain the <B>system</B> record.</P></FONT><FONT color="#0000ff"><PRE>key file "invnt.k01" contains stock.id_code;
+key file "invnt.k02" contains bkorder.id_code;
+</PRE></FONT><FONT size="2">
+<P>The above example shows duplicate key names that are 
+qualified by the record type in which they are defined. When duplicate field 
+names are used, it is necessary to use the <B>-d</B> option 
+with the<B> ddlp</B> command (see section 4.3, "DDL 
+Processor Operation").</P></FONT>
+<H3><A name="Record"></A>4.2.5 Record Declarations</H3><B><FONT size="2">
+<P>Syntax:</P></B></FONT><I><FONT color="#0000ff"><PRE>[</I>static<I>]</I> record <I>recname</I> {
+   <I>[</I>field_stmt<I>]</I>
+   ...
+   <I>[</I>comkey_stmt<I>]</I>
+   ...
+}
+</PRE></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>The <B>record</B> statement defines a 
+group of related data fields named <I>recname</I> that will 
+be stored and accessed together on the database as a single unit. The record 
+declaration consists of zero or more field statements followed by zero or more 
+compound key statements. A record specification with no data fields is valid, 
+and often is used in the implementation of many-to-many sets (see "Use of Sets" 
+in section 4.4.1).</P>
+<P>The <B>ddlp</B> utility will use the 
+identifier <I>recname</I> to create two C identifiers in the 
+<B>dbname.h</B> file. A <B>struct</B> 
+named <B>recname</B>, containing the C declarations for the 
+data fields defined in the record, will be declared in <B>dbname.h</B>. The name of the <B>struct</B> or class will identically match the name of the 
+record as specified in the DDL. An upper-case form of <I>recname</I> will define an integer constant record number to 
+be passed to those <B><I>db.*</B></I> 
+runtime functions that manipulate records. Record names, therefore, should never 
+be specified entirely in upper-case. </P>
+<P>The <B>static</B> attribute specifies 
+that the records are never updated when the database is opened in shared mode. 
+This allows the <B><I>db.*</B></I> 
+runtime to optimize access to the static record occurrence, yielding much better 
+performance. Static records are used for storing information such as menus, data 
+entry forms, help screens, system messages, coded value information, etc. 
+Multi-user database programs are not required to place locks on this data in 
+order to access it. Static records can only be modified when the database is 
+opened in exclusive access mode. Single-user applications may modify static 
+records at any time. The data and key files containing static record information 
+can only contain static data. The system record is a special case and can be 
+included in a data file that contains either static or not static records. 
+Static records can only be used in sets which themselves are not modified except 
+in exclusive access mode.</P></FONT>
+<H5>Example:</H5><FONT color="#0000ff"><PRE>record check {
+   unique key int check_no;
+   key int check_date;
+   char paid_to[49];
+   float amount;
+}
+</PRE></FONT><FONT size="2">
+<P>The <B>check</B> record type in the 
+checking account database contains two integer fields (one of which is a key), a 
+character string field, and a floating point field. File <B>chkgacct.h</B> will contain the following definitions 
+associated with the check record type:</P></FONT><FONT color="#0000ff"><PRE>struct check {
+   int  check_no;
+   int  check_date;
+   char  paid_to[49];
+   float  amount;
+};
+#define CHECK 10001
+</PRE></FONT><FONT size="2">
+<P>Record <B>trans</B> below contains 
+two compound key field declarations. (For more information, see "Use of Keys" in 
+section 4.4.1, "Logical Design Considerations."</P></FONT><FONT color="#0000ff"><PRE>record trans {
+   unique key int checkno;
+   int trdate;
+   char vendid[8];
+   long amount;
+   compound key tr_key {
+      trdate descending;
+      vendid ascending;
+   }
+   compound key ven_chks {
+      vendid; checkno;
+   }
+}
+</PRE></FONT><FONT size="2">
+<P>Below are two record types and a set that might be 
+defined for a multi-user data entry, forms management system. Note that both 
+records are declared to be static, since during normal operation of an 
+application using the forms manager, form and field records are not modified. 
+</P></FONT><FONT color="#0000ff"><PRE>   static record form {
+   unique key char form_id[11];
+}
+static record field {
+   unique key char field_id[21]; /* Display name of field */
+   int  id_row;         /* Row where field_id displayed */
+   int  id_col;         /* Column where field_id displayed /
+   int  data_row;      /* Row where data starts */
+   int  data_col;      /* Column where data starts */
+   int  field_len;      /* Editable field length */
+   char required;      /* Required field */
+   int  edit_fcn;      /* Editing function called on entry */
+   int  disp_fcn;      /* Display function called on output /
+   int  rtype;         /* Record type containing the field */
+   long ftype;         /* db.* field type */
+}
+set form_fields {
+   order last;
+   owner form;
+   member field;
+}
+</PRE></FONT>
+<H3><A name="Field"></A>4.2.6 Field Declarations</H3>
+<H4><A name="Data"></A>Data Fields</H4><B><FONT size="2">
+<P>Syntax:</P></B></FONT><FONT color="#0000ff"><PRE>   <I>[[</I>optional<I>] [</I>unique<I>]</I> key<I>]</I> type <I>fldname [ [dim]...] [</I>om_field<I>]</I> ;
+or 
+   <I>[[</I>optional<I>] [</I>unique<I>]</I> key<I>]</I> struct {
+      field_stmt
+      ...
+   } <I>fldname [[dim]...]</I> ;
+
+type =
+   <I>[</I>unsigned<I>]</I> int | <I>[</I>unsigned<I>]</I> short | <I>[</I>unsigned<I>]</I> long | 
+   char | float | double | DB_ADDR
+
+om_field = 
+   directref <I>recname</I>
+or
+   relatedto <I>recname</I> thru <I>fldname
+</PRE></I></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>The <I>fldname</I> is an identifier 
+that names the particular data field. Field names may not duplicate record or 
+set names, nor by default other field names. </P>
+<P>The syntax for a data field statement is similar to, 
+although not as general as, a C data declaration. In fact, most of the basic 
+data types in C are directly supported in the DDL. Arrays of any type are 
+available, where <I>dim</I> specifies the size of a given 
+array dimension.</P>
+<P>One-dimensional character arrays are treated by the <B><I>db.*</B></I> runtime functions as C 
+strings. Thus, these fields should always be terminated by a null byte, and the 
+length as specified in the field declaration should include the null byte. If a 
+one-dimensional character array is needed that is not intended to be treated 
+like a string (for example, a byte array), it should be declared as a 
+two-dimensional array where the second dimension is one.</P>
+<P>A data field that is also to be used as a key to the 
+record has the <B>key</B> attribute. Key field values are 
+stored on the key file in the natural order based on the data type. If only 
+unique keys are allowed then the field should be qualified as a <B>unique key</B> field. The maximum length of a key field is 
+246 bytes. Fields defined as a <B>unique key</B> must 
+contain a value that does not already exist on the key file at the time its 
+associated record is entered into the database. If a record is entered 
+(modified) with a duplicate value value; in a <B>unique</B> 
+<B>key</B> field, the status code S_DUPLICATE is returned 
+and the record is not entered (or modified).</P>
+<P>The <B>optional</B> attribute 
+indicates that the data field is an <B>optional key</B>. <B>Optional key</B> values are not inserted into the key file 
+until the application program calls function <B>d_keystore</B>. Optional keys can be manually deleted using 
+function <B>d_keydel</B>. When an optional key is modified 
+(through a <B>d_recwrite</B> or <B>d_crwrite</B> call), the key file will be updated only if 
+the current value exists in the key file.</P>
+<P>Fields declared as <B>struct</B> 
+cannot be nested. Sub-fields of an arrayed <B>struct</B> 
+field cannot be defined as key fields nor accessed individually.</P>
+<P>Data fields of type <B>DB_ADDR</B> 
+contain the database addresses of specific record occurrences in the database. 
+Database addresses can be directly accessed using the currency table access 
+functions described in section 5.3, "Currency Tables." This allows you to 
+maintain your own record linkages directly, if desired.</P>
+<P>Data fields will be aligned within the record in order to 
+match the <B>struct</B> field alignment rules followed by 
+your particular compiler and computer. A <B>ddlp</B> option 
+can be used to disable this alignment if desired (see section 4.3, "DDL 
+Processor Operation").</P></FONT>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>unique key char code[6];
+</PRE></FONT><FONT size="2">
+<P>Field<B> code</B> is a character 
+string field of six characters long (five characters plus one null terminator) 
+that is defined as a <B>unique key</B>.</P></FONT><FONT color="#0000ff"><PRE>float balance;
+</PRE></FONT><FONT size="2">
+<P>Field <B>balance</B> is a floating 
+point field which, in the checking account database, contains a monetary 
+value.</P></FONT><FONT color="#0000ff"><PRE>key int check_date;
+</PRE></FONT><FONT size="2">
+<P>Key field <B>check_date</B> is used 
+to store a date in the application-defined Julian format (for example, number of 
+elapsed days since January 1, 1900). Its values are stored on the key file in 
+integer order. Thus, check records can be retrieved in check date order through 
+use of the key retrieval functions (see section 5.4.1, "Data Retrieval Using 
+Keys").</P></FONT><FONT color="#0000ff"><PRE>struct {
+   double imag;
+   double real;
+} complex[3];
+</PRE></FONT><FONT size="2">
+<P>This field statement defines a structure array field, <B>complex</B>, which stores an array of three complex numbers 
+composed of an imaginary part and a real part. </P></FONT><FONT color="#0000ff"><PRE>key long coordinates[3];
+</PRE></FONT><B><FONT size="2">
+<P>Coordinates</B> is an array of three long type variables, 
+and is also a key. It may be used to locate an object on a large 
+three-dimensional grid.</P></FONT><FONT color="#0000ff"><PRE>int bitmap;
+</PRE></FONT><FONT size="2">
+<P>Field <B>bitmap</B> is used to store 
+a bitmap of attribute flags, which are tested using binary operators and masks. 
+For example, assuming this field was declared in record type <B>rec, rec.bitmap &amp; 0x0001</B> is non-zero if the low 
+order bit is set. (Note that <B><I>db.*</B></I> does not directly support C bit 
+fields.)</P></FONT><FONT color="#0000ff"><PRE>char byte_array[16][1];
+</PRE></FONT><FONT size="2">
+<P>Byte array fields are implemented, as in <B>byte_array</B>, as a two-dimensional character array where 
+the second dimension is one. This will force the <B><I>db.*</B></I> runtime to manipulate all 16 bytes of the field 
+rather than stopping at the first null byte as it does with string 
+fields.</P></FONT><FONT color="#0000ff"><PRE>DB_ADDR ptr_array[20];
+</PRE></FONT><FONT size="2">
+<P>Field <B>ptr_array</B> is an array of 
+type <B>DB_ADDR</B>. It is used to store an array of the 
+database addresses of record occurrences that are related to the record type in 
+which <B>ptr_array</B> is defined. Use of <B>DB_ADDR</B> fields provides unlimited data organization 
+possibilities to the programmer. However, these alternatives should only be used 
+in those rare instances when the standard capabilities provided by keys and sets 
+are insufficient for a particular requirement.</P></FONT><FONT color="#0000ff"><PRE>optional key struct {
+   char last_name[21];
+   char first_name[21];
+   char initial[2];
+} name;
+</PRE></FONT><FONT size="2">
+<P><B>Name</B> is a <B>struct</B> field to contain person names and is composed of 
+three string fields for the last and first names and the middle initial. <B>Last_name</B> is the first field specified since, because <B>name</B> is a key field, the last name can be used in a 
+partial key search to find, for example, all the Smiths on file. Thus, the order 
+of the fields in a keyed <B>struct</B> field specifies the 
+major and minor sort sequences for the key on the key file.</P>
+<P>This field is defined as an <B>optional key</B>. Optional keys are often used to defer the 
+overhead associated with storing keys to a time when the system is less busy. 
+For example, it might be that the record which contains <B>name</B> needs to be stored as rapidly as possible during 
+the day. At night a batch program can be run to create the optional 
+keys.</P></FONT>
+<H4><A name="Compound"></A>Compound Key Fields</H4><B><FONT size="2">
+<P>Syntax:</P></B></FONT><FONT color="#0000ff"><PRE>compound <I>[</I>optional<I>] [</I>unique<I>]</I> key <I>keyname</I> {
+   <I>fldname</I> <I>[</I> <U>asc</U><I>[</I>ending<I>]</I> | desc<I>[</I>ending<I>] ]</I> ;
+   ...
+}
+</PRE></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>The preceding syntax is used to define a compound key 
+field named <I>keyname</I>. Compound keys are key field 
+definitions consisting of any combination of fields (not necessarily contiguous) 
+from a given record. Each sub-field of the compound key can be specified to be 
+sorted in either ascending (default) or descending sequence. Compound keys 
+differ from normal key fields in that they do not define additional data fields 
+in the record. By using compound keys, you can have a field appear in multiple 
+keys within a record, without needing to duplicate the field's value in the data 
+file. </P>
+<P>The compound key specifications must follow all other 
+field statements in a record declaration. The order in which the sub-fields are 
+specified determines the major and minor sort sequences. The <I>fldname</I> must be the name of a field that is defined in 
+the record and is not defined as a <B>struct</B>. If the <B>optional</B> qualifier is specified, the key will only be 
+stored when <B>d_keystore</B> is called. Otherwise, the key 
+is created when the record is created. All of the key functions that apply to 
+normal key fields also apply to compound keys. </P><B>
+<P>ddlp</B> will create in the <B>dbname.h</B> file a <B>struct</B> 
+declaration named <I>keyname</I> for each compound key 
+defined in the schema, similar to the <B>struct</B> 
+declarations associated with records. These can be used in conjunction with the 
+key manipulation functions of the <B><I>db.*</B></I> runtime library.</P>
+<P>Because of the nature of compound keys, records 
+containing them can only be created using function <B>d_fillnew</B> (not <B>d_makenew).</B>). 
+</P></FONT>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>compound key tr_key {
+   trdate descending;
+   vendid ascending;
+}
+compound key ven_chks {
+   vendid;
+   checkno;
+}
+</PRE></FONT><FONT size="2">
+<P>Assume that a record type called<B> 
+</B>trans (transaction) contains two compound key definitions. Key <B>tr_key</B> is composed of fields <B>trdate</B> and <B>vendid</B>. Scanning 
+through transaction records by <B>tr_key</B> would produce a 
+sorted list in descending transaction date order, and ascending vendor id order 
+within each date. Key <B>ven_chks</B> consists of two 
+fields: <B>vendid</B> and <B>checkno</B>. Scanning through transaction records by <B>ven_chks</B> would give a sorted list in ascending vendor id 
+order, and in ascending check number order within each vendor. </P></FONT>
+<H3><A name="Set"></A>4.2.7 Set Declarations</H3><B><FONT size="2">
+<P>Syntax:</P></B></FONT><I><FONT color="#0000ff"><PRE>[</I> bitmap <I>|</I> blob <I>|</I> varilen <I>]</I> set <I>setname</I> {
+   order <I>{</I> asc<I>[</I>ending<I>]</I> | desc<I>[</I>ending<I>]</I> | first | last | next<I> }</I> 
+   owner <I>recname</I> ;
+   member <I>recname</I> <I>[</I> by <I>fldname</I> <I>[, fldname...]</I> <I>]</I>;
+   ...
+}
+</PRE></FONT>
+<H5>Description:</H5><FONT size="2">
+<P>Set declarations define explicit, one-to-many 
+relationships between record types. Sets are implemented as a linked list of 
+member record instances connected to a single instance of an owner record, which 
+serves as the root or head of the list (see "Set and Member Pointers" in section 
+14.2.2, "Data File Organization"). The order in which member records are 
+inserted into this list is specified in the <B>set order</B> 
+clause.</P>
+<P>Possible set orderings are defined as follows:</P></FONT>
+<TABLE border="0" cellPadding="7" cellSpacing="0" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>first</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>New member records are connected (that is, 
+      inserted) at the front of the list.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>last</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>New member records are connected at the end of the 
+      list.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>ascending</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>New member records are connected in ascending order 
+      based on the contents of the data fields specified in the <B >by</B> part of the <B>member</B> 
+      clause of the <B>set</B> statement.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>descending</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>New member records are connected in descending 
+      order based on the contents of the data fields specified in the <B >by</B> part of the <B>member</B> 
+      clause of the <B>set</B> statement.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>next</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>New member records are connected immediately 
+      following the current member of the set, or, if the current member is 
+      null, at the front of the list.</FONT></P></TD></TR></TABLE><FONT size="2">
+<P>The <B>by</B> part of the <B>member</B> clause is only supplied when <B>ascending</B> or <B>descending</B> order 
+is specified. For sorted sets having more than one member record type, the sort 
+field(s) of those record types should correspondingly be of the same type and 
+length and be listed on the <B>by</B> clause in the same 
+order.</P>
+<P>When the sort field values of new member records of a 
+sorted set duplicate existing members, the new members are added in front of the 
+members with matching values.</P>
+<P>The set owner may be specified as <B>system</B>. Use of the system record is not required. If one 
+is used, do not declare it in a DDL record statement. <B>ddlp</B> automatically creates the system record when it is 
+specified in a data file statement. There is only one occurrence of the system 
+record in the database. It is used as the owner of any number of sets providing 
+the means whereby records can be connected to the top or root of the network. 
+When a database is opened, the current record and the current owner of all 
+system-owned sets are initialized to the system record (see section 5.3, 
+"Currency Tables," for a discussion of currency). </P>
+<P>Connecting member records to sets of order <B>first</B>, <B>last</B>, or <B>next</B> is faster than connecting to sets of order <B>ascending</B> or <B>descending</B>. This 
+is because the list of member records associated with <B>ascending</B> or <B>descending</B> sets 
+must be scanned each time a new member is connected, in order to find the proper 
+insertion point. Thus, a connection to an <B>ascending</B> 
+or <B>descending</B> set with a large number of members can 
+be relatively slow. If you need a large sorted set, explore alternative 
+approaches using keys or reverse ordering to maintain the ordering.</P></FONT><I>
+<BLOCKQUOTE>Note</I>: <B><I >db.*</B></I> does not implement <B >ascending</B> or <B>descending</B> 
+  sets through an index. As with all sets, they are implemented as a linked list 
+  (or chained) structure. <B><I >db.*</B></I> does provide a keyed record access (through a 
+  B-tree index) but it is totally distinct from sets. A record can both have 
+  keys and be an owner and/or member of sets, but sets do not use keys and keys 
+  do not use sets. Thus, sort fields of ascending or descending sets do not need 
+  to be declared as key fields.</BLOCKQUOTE>
+<H5>Examples:</H5><FONT color="#0000ff"><PRE>set transactions {
+   order last;
+   owner budget;
+   member check;
+}
+</PRE></FONT><FONT size="2">
+<P><B>Transactions</B> is a set between 
+the <B>budget</B> record and the <B>check</B> record in the checking account database. Each 
+check written is to be applied to a particular budget account. Each budget 
+account has a set of checks that have been written against it. As a new check is 
+written and entered into the database, it is connected to the <B>transactions</B> set instance, where the appropriate <B>budget</B> record has been identified as the current owner 
+of the set. The new <B>check</B> record will be connected to 
+the end of the set. Thus (assuming checks are written in order), they will be 
+stored in check number order (and probably date order as well). </P>
+<P>To ensure that checks are stored in date order, the set 
+specification could be modified as follows:</P></FONT><FONT color="#0000ff"><PRE>set transactions {
+   order ascending;
+   owner budget;
+   member check by check_date;
+}
+</PRE></FONT><FONT size="2">
+<P>Here the order has been changed to <B>ascending</B> and the member clause now includes the <B>by</B> part to indicate that the set is to be sorted on the 
+<B>check_date</B> field of the <B>check</B> record. Again, the connect operation will be 
+slower than if the order is <B>last</B>. However, if the 
+sort field is known to usually force the insertion to be at the end of the set 
+instance, the ordering of the set could be reversed so that the set remained 
+sorted and so that the insertion was usually made quickly at the front of the 
+list.</P></FONT><FONT color="#0000ff"><PRE>set comment {
+   order first;
+   owner note;
+   member project;
+   member task;
+   member work_day;
+}
+</PRE></FONT><FONT size="2">
+<P>The <B>comment</B> set illustrates a 
+use of multiple member sets to reduce unnecessary space overhead. Each of the <B>project</B>, <B>task</B>, and <B>work_day</B> record types in a project management database 
+can have an optional comment associated with it in the <B>note</B> record. In this example, an occurrence of <B>project</B>, <B>task</B>, or <B>work_day</B> can be associated with only a single occurrence 
+of <B>note</B>. Thus each set instance is strictly 
+one-to-one. Use of a single set is preferred over three separate sets because it 
+will use less space for the set overhead (one set pointer is needed instead of 
+three). See section 4.4.2, "Physical Design Considerations," for more 
+information.</P></FONT>
+<H2><A name="Operation"></A>4.3 DDL Processor Operation</H2>
+<H3><A name="Execution"></A>4.3.1 DDL Processor Execution</H3><FONT size="2">
+<P>The Database Definition Language Processor, <B>ddlp</B>, is executed as follows:</P><B>
+<P>ddlp</B> <I>[</I>-r<I>] [</I>-x<I>] [[</I>-c<I>] [</I>-l<I>n]] [</I>-d<I>] [</I>-n<I>] [</I>-s<I>[</I>-<I>]] [</I>-oxxxx<I>] [</I>-z<I>] [</I>-axxx<I>]</I> <I>ddlspec</P></I>
+<P>File <B>ddlspec</B> is the name of 
+the text file containing the DDL specification. This file is sometimes called 
+the schema file. </P>
+<P>The <B>ddlp</B> will compile the DDL 
+in file <B>ddlspec</B> and report any errors to <B>stdout</B> with the line number where the error was 
+detected.</P>
+<P>The compiled DDL is stored in the database dictionary 
+file for use by the <B><I>db.*</B></I> 
+runtime library functions. The name of the dictionary is taken from the <I>dbname</I> of the database DDL statement and given an 
+extension <B>.dbd</B>, forming <B>dbname.dbd</B>. The amount of dynamically allocated memory 
+required by the <B><I>db.*</B></I> 
+runtime for storage of the dictionary is reported by <B>ddlp</B> upon completion, if no errors were detected. 
+Otherwise, the dictionary file is not created.</P>
+<P>If the <B>-r</B> option is specified, 
+<B>ddlp</B> will display (in <B>stdout</B>) the File Structure Report. (See "<B>ddlp</B> File Structure Report" in section 4.4.2 for an 
+explanation of the use of this report.)</P>
+<P>If the <B>-x</B> option is given, a 
+cross-reference listing of the records, fields, and set identifiers is displayed 
+in <B>stdout</B>. An example report is shown below for the 
+checking account schema.</P></FONT><FONT color="#0000ff"><PRE>db.* 1.0.0, DDL X-Ref Listing of File: ckngacct.ddl
+Tue Feb 29 14:12:24 2000
+alloc        field      13
+amount       field      22
+balance      field      14
+budget       record     3   5    9    27
+cat_desc     field      12
+check        record     5   17   28
+check_date   field      7   20
+check_no     field      7   19
+code         field      6   11
+paid_to      field      21
+transactions set        24
+</PRE></FONT><FONT size="2">
+<P>The names are listed in alphabetical order, with the 
+associated type and the line numbers in the DDL file where the name is 
+referenced.</P>
+<P>With the <B>-d</B> option, <B>ddlp</B> allows duplicate field names, such that field types 
+within different record types may have the same name. The record structures 
+created by <B>ddlp</B> will contain the name as specified in 
+the schema. The constant definitions for all fields will be a concatenation of 
+the record type and field type, separated by an underscore. For 
+example:</P></FONT><FONT color="#0000ff"><PRE>record ticket {
+   .
+   .
+   float unit_cost;
+}
+
+record invoice {
+   .
+   float unit_cost
+}
+</PRE></FONT><FONT size="2">
+<P>will cause the following constant 
+definitions:</P></FONT><FONT color="#0000ff"><PRE>#define TICKET_UNIT_COST 4005
+#define INVOICE_UNIT_COST 6014
+</PRE></FONT><FONT size="2">
+<P>If duplicate field names are used with key fields, then 
+each reference to the key field name in the <B>key file</B> 
+statement must have a prefix showing the record type that contains the field. 
+The syntax is <B>recname.fldname</B>.</P>
+<P>The <B>-n</B> option instructs <B>ddlp</B> to omit writing the ASCII record, set, and field 
+names to the dictionary file. This creates a smaller dictionary file, but makes 
+names unavailable to utilities such as <B>ida</B>, <B>dal</B>, and <B>dbimp</B>.</P><B>
+<P>ddlp</B> creates C <B>struct</B> 
+declarations for each record type and compound key field defined in the DDL and 
+stored with file id, record, field, and set constants in a header file also 
+named from the <I>dbname</I> of the <B>database</B> statement forming <B>dbname.h</B>. By default, case is preserved on all of the 
+names used. The <B>-s-</B> option may be used to instruct <B>ddlp</B> to convert all of the names to lowercase to be 
+compatible with previous versions.</P>
+<P>The <B>ddlp</B> can process 
+constants, <B>#define</B>s, predefined structures, and 
+typedefs. All of these keywords must be used before <B>ddlp</B> recognizes the keyword <B>database</B>. Everything before the keyword <B>database</B> is copied to the resulting header file, so the 
+application will not need to redefine anything.</P>
+<P>As an example, the contents of file <B>ckngacct.h</B>, which was created when the checking account 
+schema (as given in section 4.2.1, "DDL Basics") was processed by <B>ddlp</B>, is shown below.</P></FONT><FONT color="#0000ff"><PRE>#ifndef CKNGACCT_H
+#define CKNGACCT_H
+
+/* db.* 1.0.0 */
+
+/* database ckngacct record/key structure declarations */
+
+struct budget {
+   char  code[6];
+   char  cat_desc[48];
+   float  alloc;
+   float  balance;
+};
+struct check {
+   int  check_no;
+   int  check_date;
+   char  paid_to[48];
+   float  amount;
+};
+/* record, field and set table entry definitions */
+
+/* File Id Constants */
+#define DATFILE 0
+#define KEYFILE1 1
+#define KEYFILE2 2
+
+/* Record Name Constants */
+#define BUDGET 10000
+#define CHECK 10001
+
+/* Field Name Constants */
+#define CODE 0L
+#define CAT_DESC 1L
+#define ALLOC 2L
+#define BALANCE 3L
+#define CHECK_NO 1000L
+#define CHECK_DATE 1001L
+#define PAID_TO 1002L
+#define AMOUNT 1003L
+/* Set Name Constants */
+#define TRANSACTIONS 20000
+/* Field Sizes */
+#define SIZEOF_CODE 6
+#define SIZEOF_CAT_DESC 48
+#define SIZEOF_ALLOC 4
+#define SIZEOF_BALANCE 4
+#define SIZEOF_CHECK_NO 2
+#define SIZEOF_CHECK_DATE 2
+#define SIZEOF_PAID_TO 48
+#define SIZEOF_AMOUNT 4
+
+#endef    /* CKNGACCT_H */
+</PRE></FONT><FONT size="2">
+<P>The <B>#define</B> constants are 
+passed to runtime library functions to identify the particular file, record, 
+field, or set type involved in the operation. The actual values represent 
+entries into the tables that make up the database dictionary. The constants also 
+have some additional control information encoded, as follows:</P>
+<DIR><I>
+<P>Record name constants</I> consist of a record number 
+(record 0 is the first record defined in the DDL, record 1 is the second, and so 
+on) plus 10000. </P><I>
+<P>Set name constants</I> consist of a set number (numbered 
+sequentially, as are records) plus 20000. This information is used by <B><I>db.*</B></I> runtime functions to 
+distinguish between record and set constants.</P></DIR>
+<DIR></DIR>
+<P>Field name constants are formed using the following 
+formula:</P>
+<DIR>
+<P>(record number * 1000) + number of field within 
+record</P></DIR>
+<P>This can simplify the work involved in adding a new field 
+to a record. With this technique, if a new field is only added to the end of a 
+record, only those modules that need to reference the new field need to be 
+recompiled. Note that field constants are long integers, whereas file, record, 
+and set constants are standard integers.</P>
+<P>The <B>SIZEOF_??????</B> constants 
+are added in the header file as a convenience of the user. If they are not 
+needed, or are causing problems with large databases, they can be removed with a 
+<B>-z</B> option.</P>
+<P>The database header file should be <B>#include</B>d in every C source module that needs to access 
+the database.</P></FONT>
+</BODY>
+</HTML>

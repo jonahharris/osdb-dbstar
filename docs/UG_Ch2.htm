@@ -1,0 +1,168 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 2</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Concepts"></A>Chapter 2<BR>
+Database Concepts</H1>
+<H2><A name="Introduction"></A>2.1   Introduction</H2><FONT size="2"><P >This chapter presents the basic database concepts of the <B><I>db.*</B></I> system.  The database terms used in this manual are defined in section 2.2.  The network database model, which forms the basis of the <B><I>db.*</B></FONT></I><FONT size="2" > system, is described in section 2.3.  Section 2.4, "Other Database Models," describes the hierarchical and relational database models.  Section 2.5 describes the advantages of the network model over the relational database model.  Specific elements of a <B><I>db.*</B> 
+</FONT></I><FONT size="2">database are described in the final section.</FONT></P>
+<P>To use <B><I>db.*</B></I> productively, you need to understand <B><I>db.*</B></I> database concepts.  This chapter intends to provide sufficient information for a database novice to use <B><I>db.*</B></I> effectively.  As part of our efforts to familiarize you with database concepts, we have provided a Glossary of database terms at the end of this manual.  </P><H2><A name="Definitions"></A>2.2   Definitions</H2>
+<FONT SIZE="2"><P>The basic unit of information in a database is a field.  A field (or data field) is an item of data with attributes such as name, type (for example, a character or an integer), and length.  Examples of fields are employee name, date of birth, social security number, inventory item code, and serial number.  Other database systems or books may use other terms (such as attribute, entity, or column) for field.</P>
+<P>A record is a named collection of related fields, which are stored and accessed as a unit.  Other database systems or books may use other terms (such as table or file) for record.  For example, a record named <B>check</B> in a checking account database may have the following fields:</P><DIR>
+<DIR>
+
+<B><P>date<BR>check number<BR>paid 
+to<BR>amount</P></DIR>
+</DIR></B><P>Each occurrence (or instance) of a <B>check</B> record in the database contains a value for each of these fields.  The definition of a record (made up by its fields) is called the record type and is similar to C structures.  </P>
+<P>All occurrences of a particular record type are stored in an operating system file.  Files are the primary physical storage units of database organization.  A database, therefore, is a collection of related files.</P>
+<P>A key is a field through which rapid or sorted access to a record is possible.  In the <B>check</B> record, you might define <B>check number</B> as a key field, to allow quick retrieval of a <B>check</B> record occurrence through specification of a check number.</P>
+<P>An index is a file containing only keys.  It is synonymously referred to as a key file.  The index to this manual demonstrates the features of a key file:  the individual subject entries in the index are the "keys," while the page where the subject is discussed is analogous to the associated "records."  You can find the page that discusses a desired subject much more quickly by using the index than by reading through each page.  And, because the keys are sorted in the index, you can quickly find a specific key.  Key files are similar, except the computer does the sorting and look-ups for you.  To maintain its key files, <B><I>db.*</B></I> uses the B-tree method, one of the most efficient techniques for implementing an index.</P>
+<P>In a key scan operation, the keys in an index are read in the order they appear.  Key scans are used to produce sorted listings of records and for fast search operations requiring inspection of a large number of record occurrences (for example, retrieving all checks entered between two dates).</P>
+<P>Data relationships often exist between record types.  For example, the checking account database may include budget categories.  A second record type named <B>budget</B> could be defined with the following data fields:</P><DIR>
+<DIR>
+
+<B><P>budget code (a key field)<BR>category 
+description<BR>monthly allocation<BR>    balance</P></DIR>
+</DIR></B><P>To associate a particular budget category with each <B>check</B> record, we add a <B>budget code</B> field to the <B>check</B> record type, forming a relationship between the <B>budget</B> record and the <B>check</B> record.  Whenever a check is entered, the related <B>budget</B> record is located via the budget code, and the balance for that budget is updated by the amount specified in the <B>check</B> record.  </P>
+<P>The schema is the conceptual definition of the content and organization of a database.  A schema will include the definitions of all record types, with their fields and keys.  The form of the schema used by the DBMS is called the dictionary.  In <B><I>db.*</B></I> (and most other DBMSs) a Database Definition Language, or DDL, specifies the schema.  A <B><I>db.*</B></I> DDL specification for the checking account database is shown below.  The specifics of the actual DDL statements are explained in Chapter 4, "Database Design." </P>
+</FONT><FONT COLOR="#0000ff"><PRE>database ckngacct {
+   data file "chkng.dat" contains budget, check;
+   key  file "chkng.key" contains code, check_no;
+
+   record budget {
+      key char code[6];
+      char cat_desc[48];
+      float allocation;
+          float balance;
+   }
+   record check {
+      key int check_no;
+      int check_date;
+      char bud_code[6];
+      char paid_to[48];
+   float amount;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>A data model (or database model) is a conceptual representation of inter-record relationships.  The relational database model establishes and maintains inter-record relationships through common data fields.  For example, in the checking account example a common data field, <B>budget code</B>, establishes the relationship between the <B>budget</B> record and the <B>check</B> record.  </P>
+<P>Other database models, in particular the network database model, establish inter-record relationships directly, through physical links between the related records, rather than through common data fields.  These models are discussed in the following sections.  Since <B><I>db.*</B></I> supports both the relational and the network database models, you can combine the features of these models to meet the needs of your particular application.  </P>
+</FONT><H2><A name="NetworkModel"></A>2.3   The Network Database Model</H2>
+<FONT SIZE="2"><P>In the network database model, the relationships between record types are explicitly defined and directly maintained through sets.  A set defines a one-to-many relationship between two record types.  Examples of sets are:</P><DIR>
+<DIR>
+
+<P>one baseball league has many teams<BR>one baseball team has many players</P></DIR>
+</DIR>
+
+<P>Sets are implemented with linked lists of pointers to the record locations of the set <A NAME="member">member<A NAME="owner">s and owners.  The result is a network of interconnected records.</P>
+<P>Figure 2-1 illustrates the set relationships for the baseball example.  The boxes represent instances of the <B>league</B>, <B>team</B>, and <B>player</B> record types.  The arrows represent the links that connect the related records.</P>
+
+<B><P ALIGN="center"><IMG alt="Example of Set Relationships" border="0" height="342" src="dbstar_2-1.gif" width="403">      </P><P ALIGN="center">Fig. 2-1.  Example of Set Relationships</P>
+</B><P>Schema diagrams are used to illustrate graphically the inter-record relationships of the database design.  Figure 2-2 shows the schema diagram for the baseball example.  In this diagram (and in all other schema diagrams in this manual), the boxes represent record types and the arrows represent set types.  The <B>league_team</B> set forms a one-to-many relationship between the <B>league</B> record type (called the owner of set <B>league_team</B>) and the <B>team</B> record type (called the member of set <B>league_team</B>).  The <B>team_player</B> set forms a one-to-many relationship between the <B>team</B> record type and the <B>player</B> record type.</P>
+<B><P ALIGN="center"></P>
+<P ALIGN="center"><IMG alt="Example of a Schema Diagram" border="0" height="269" src="dbstar_2-2.gif" width="331">       </P>
+<P ALIGN="center">Fig. 2-2.  Example of a Schema Diagram</P>
+</B><P>In the checking account example discussed earlier, the relationship between the <B>budget</B> and <B>check</B> record types could be specified using a set called <B>transactions</B>, defining a one-to-many relationship between a <B>budget</B> record (owner) and the <B>check</B> records (members) written against a particular budget category.  In this case, the <B>bud_code</B> field in the <B>check</B> record would not be defined in the <B>check</B> record type, as it is redundant.  The <B><I>db.*</B></I> DDL would be modified as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database ckngacct {
+   data file "chkng.dat" contains budget, check;
+   key  file "chkng.key" contains code, check_no;
+
+   record budget {
+      key char code[6];
+      char cat_desc[48];
+      float allocation;
+      float balance;
+   }
+   record check {
+      key int check_no;
+      int check_date;
+      char paid_to[48];
+      float amount;
+   }
+   set transactions {
+      order last;
+      owner budget;
+      member check;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>Any given record type can be the owner of any number of different sets and also a member of any number of different sets.  Thus, network structures like that shown in Figure 2-3 are valid.</P>
+<B><P ALIGN="center"></P>
+<P ALIGN="center"><IMG alt="Example of a Network Structure" border="0" height="197" src="dbstar_2-3.gif" width="276">       </P>
+<P ALIGN="center">Fig. 2-3.  Example of a Network Structure</P>
+</B><P>Notice that records of type E may own other records of type E.  Record type C is a member of two sets (A and B) and itself owns two sets (D and E).  Records also can own other records through multiple sets, as in the case of B owning E.  All these are legitimate constructs in <B><I>db.*</B></I>.</P>
+</FONT><H2></A><A name="OtherModels"></A>2.4   Other Database Models</H2>
+<FONT SIZE="2"><P>Two other major database models are the hierarchical and relational models.  These are described below.</P>
+</FONT><H3><A name="Hierarchical"></A>2.4.1</A>   The Hierarchical Database Model</H3>
+<FONT SIZE="2"><P>In the hierarchical database model (a subset of the network model) a record type is allowed to be a member of only one set.  Record types can still, however, own more than one set.  The owner is called the parent and the member is called the child. </P>
+<P>As in the network model, sets are implemented through linked lists.  Figure 2-4 shows an example of a hierarchical schema structure.</P>
+<B><P ALIGN="center"></P>
+<P ALIGN="center"><IMG alt="Example of a Hierarchical Structure" border="0" height="171" src="dbstar_2-4.gif" width="246">       </P>
+<P ALIGN="center">Fig. 2-4.  Example of a Hierarchical Structure</P>
+</B></FONT><H3><A name="Relational"></A>2.4.2   The Relational Database Model</H3>
+<FONT SIZE="2"><P>The relational database model views the database as a set of two-dimensional tables (or relations).  The columns (also called attributes) of a table correspond to data fields, and the rows of the table correspond to record occurrences.  This tabular view of a database is particularly easy to manipulate with standard relational database operations, which are based on mathematical set theory.</P>
+<P>In the relational model, relationships between tables are usually established through common data fields.  Recall from the initial checking account example that the relationship between the <B>budget</B> and <B>check</B> records was formed by including in the <B>check</B> record a <B>budget code</B> field to identify the budget category.</P>
+<P>The principal distinction between the relational and network models is that in the relational model, relationships are formed through common data fields between the related record types, while in the network model those relationships are defined directly.</P>
+<P>Note that it is possible to transform databases from relational to network and from network to relational.</P>
+</FONT><H2><A name="Combined"></A>2.5   Advantages of the Combined Model</H2>
+<FONT SIZE="2"><P>Relational model database systems have been extremely popular, primarily because the simplicity of the underlying data model makes them easy to use.  With the network model, the primary benefits are better performance, reduced storage requirements, and greater assurance of data integrity.  Consider the diagram in Figure 2-5.</P>
+</FONT><FONT size="+0"><P ALIGN="center"></P><P ALIGN="center"><STRONG><IMG alt="Relational DBMS Overhead" border="0" height="108" src="dbstar_2-5.gif" width="251"> </STRONG>     </P>
+<P align="center"><STRONG>Fig. 2-5. Relational DBMS Overhead</STRONG></P>
+<P align="left"><FONT size="2">This diagram shows two tables that are related 
+through a common data field, C. Note that C must be defined in both tables and 
+that an index must exist in order to access the related table 2 occurrences. 
+Contrast this with the corresponding network model diagram in Figure 
+2-6.</FONT></P></FONT><FONT size="+0"><P ALIGN="left"></P><P ALIGN="center"><STRONG><IMG alt="dbstar_2-6.gif - 1962 Bytes" border="0" height="149" src="dbstar_2-6.gif" width="252"> </STRONG>     </P>
+<P align="center"><STRONG>Fig. 2-6. Network DBMS Overhead</STRONG></P>
+<P><FONT size="2">The network model eliminates data redundancy by relating the two 
+record types directly, without requiring the duplicate field and index file. 
+Moreover, the related record is accessed directly with one database read 
+operation, where the relational model forces you to read first an index and then 
+the related record.</FONT></P>
+<P><FONT size="2">For those situations where an index is more 
+efficient, db.* provides you with that option. With db.*, network access and 
+indexed access are independent methods, so you can combine them to suit the 
+needs of your particular application. Combining these technologies gives you 
+maximum database design flexibility.</FONT>                                                </P></FONT><H2><A name="Access"></A>2.6   Access Methods in <I>db.*</H2></I><FONT size="2"><P>We have already discussed two access methods available in <B><I>db.*</B></I>: indexes and sets.  A third method is called sequential access.  All three methods can be used together for navigating and searching in a database.  Each has its own ways of establishing and changing a position in the database.  The methods are nearly orthogonal, meaning that the use of one will not disrupt the use of the others.  The one value they share is the current record, which points to the record in the database that has been found most recently.  The current record is the default object for many of the <B><I>db.*</B></FONT></I><FONT size="2"> functions. All three 
+access methods set the current record.</FONT></P>
+<P><FONT size="2">The indexed method allows you to find a 
+record occurrence by supplying a key. The key can be an exact match, in which 
+case you are positioned directly on a record, or a near match, which will 
+position you just before the record containing a key value higher in the 
+collating sequence. You can also position yourself to the first or last keys of 
+a given key type, regardless of their values. Once at a position, you can move 
+to the previous or next key in the collating sequence. The keys are maintained 
+and navigated in the order maintained in the index, regardless of the physical 
+order of the records to which they point.</FONT>                                                                                                                     </P>
+<P><FONT size="2">The set method allows you to move through 
+set connections in various directions. You can move from the owner of a set 
+instance to the first or last member of the set. From a set member, you can move 
+to the next or previous member record, or to the owner record. During the 
+navigation of sets, positions are established on a per-set basis: the current 
+owner and current member is indicated for each set type that has been used. If 
+defined, a system record can be used as the entry point into a database. When 
+the database is opened, the system record is the current owner of all sets owned 
+by the system record.</FONT>                                                                                                                      </P><FONT size="2">
+<P >The sequential method allows you to find the first, last, next, or previous physical instance of a given record type.  <B><I>db.*</B></I> does not allow the 
+programmer to insert records at specific physical positions in a file. Their 
+insertion is normally at the end of a file, but this is not guaranteed if you 
+are using the delete chain (see the entry on Option Settings in section 5.2.4, 
+"Option Settings," of Chapter 5). The sequential method is useful when you are 
+searching all records of a given type, but do not care about the 
+order.</FONT></P><H2><A name="Elements"></A>2.7   Elements of a <I>db.*</I> Database</H2>
+<FONT SIZE="2"><P>A <B><I>db.*</B></I> database consists of:</P>
+
+<UL>
+<LI>A dictionary, which stores information describing the 
+  content and organization of the database 
+  
+<LI>Data files, which contain occurrences of one or more 
+  record types 
+  
+<LI>Key files, which contain an index for one or more key fields</LI></UL>
+
+<P>Records contain data fields, key fields, and set linkages (which are transparent to the user).  They can be accessed through set navigation (that is, traversing through the linked lists associated with specific sets), through key fields (using a fast look-up of the index), sequentially, or through a combination of all three methods.</P>
+<P>Details relating to these elements are fully discussed in Chapters 4 and 5, "Database Design," and "Database Manipulation" respectively</P>
+</FONT></BODY>
+</HTML>

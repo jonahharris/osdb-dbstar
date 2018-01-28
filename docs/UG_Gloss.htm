@@ -1,0 +1,148 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Glossary</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="Glossary"></A>Glossary of<FONT SIZE="2"> <BR>
+</FONT>Database Terms</H1>
+<FONT SIZE="2"><P><STRONG>B-tree<BR></STRONG>
+Also called a <I>multiway tree</I>, a <I>B-tree</I> is a fast data-indexing method that organizes the index into a multi-level set of nodes.  Each node contains a sorted array of key values (the indexed data).  Two important properties of a <I>B-tree</I> are that all nodes are at least half-full and that the tree is always balanced (that is, an identical number of nodes must be read in order to locate all keys at any given level in the tree).  A well-organized <I>B-tree</I> will have only three or four levels.</P>
+<P><STRONG>Buffer</STRONG><BR>
+An in-memory store of data read from a disk file, in which database operations are performed.  </P>
+<P><STRONG>Cache</STRONG><BR>
+A set of <I>buffers</I> used to optimize database input and output operations.  All <B><I>db*</B></I> database input and output is performed using a cache.</P>
+<P><STRONG>Commit</STRONG><BR>
+The point at which database changes made during a single <I>transaction</I> are actually written to the database files.</P>
+<P><STRONG>Compound key<BR></STRONG>
+A <I>key</I> field composed of any combination of fields (not necessarily contiguous) from a record.  Each field of a <I>compound key</I> may be stored in ascending or descending order.</P>
+<P><STRONG>Connect</STRONG><BR>
+The process of inserting a member record occurrence into a set occurrence.</P>
+<P><STRONG>Currency tables<BR></STRONG>
+A table of database addresses maintained by the <B><I>db.*</B></I> runtime system for controlling record access and set navigation.  The <I>currency tables</I> consist of the <I>current member table</I>, <I>current owner table</I>, and the <I>current record</I>.</P>
+<P><STRONG>Current database<BR></STRONG>
+The database that is currently accessible by the <B><I>db.*</B></I> runtime functions when multiple databases have been opened.  The current database is changed by the database number function argument or by function <B>d_setdb</B>.</P>
+<P><STRONG>Current member<BR></STRONG>
+Contains, for each set, the <I>database address</I> of a record occurrence that is a valid member of that set.  Usually, the <I>current member</I> of a set is the last record accessed using a set navigation function (<B>d_findfm</B>, <B>d_findlm</B>, <B>d_findnm</B>, or <B>d_findpm</B>).</P>
+<P><STRONG>Current owner<BR></STRONG>
+Contains for each set, the <I>database address</I> of a record occurrence that is a valid owner of that set.  Usually, the <I>current owner</I> of a set is established using the set navigation function <B>d_findco</B> or by using a currency manipulation function.</P>
+<P><STRONG>Current record<BR></STRONG>
+Contains the <I>database address</I> of the most recently accessed record occurrence.</P>
+<P><STRONG>Data Field<BR></STRONG>
+See <B>Field</B>.</P>
+<P><STRONG>Data file<BR></STRONG>
+A <B><I>db.*</B></I> file defined in a DDL specification that contains occurrences of one or more <I>record types</I>.</P>
+<P><STRONG>Database</STRONG><BR>
+An organized collection of related <I>files</I>.</P>
+<P><STRONG>Database address<BR></STRONG>
+The location in the database of a record occurrence.</P>
+<P><STRONG>Database Definition Language<BR></STRONG>
+A programming-like language used to define the structure and content of a database.  <B><I>db*</B></I>'s <I>Database Definition Language</I> has been designed to be used with the C programming language.</P>
+<P><STRONG>DDL</STRONG><BR>
+See <B>Database Definition Language</B>.</P>
+<P><STRONG>Deadlock</STRONG><BR>
+A situation in which multiple processes accessing the same database each hold locks needed by the other processes in such a way that none of the processes can proceed.  Sometimes called <I>deadly embrace</I>.</P>
+<P><STRONG>Delete chain<BR></STRONG>
+A linked list containing deleted records or nodes to be reused when a new record or node is created.</P>
+<P><STRONG>Dictionary</STRONG><BR>
+A repository containing a definition of the content and structure of a database.  It is used by the <B><I>db.*</B></I> runtime library functions for accessing and manipulating information from that database.</P>
+<P><STRONG>Disconnect</STRONG><BR>
+The process of removing a member record from a set occurrence.  </P>
+<P><STRONG>Environment variable<BR></STRONG>
+A programmer-specified operating system parameter that is used to identify configuration information to the runtime system.</P>
+<P><STRONG>Field</STRONG><BR>
+Also called <I>data field</I>, it represents the basic unit of information storage in a database and is always defined to be an element of a record.  A <I>field</I> has associated with it attributes such as name, type (for example, <B>char</B> or <B>int</B>), and length.  Other terms used for <I>field</I> include:  <I>attribute</I>, <I>entity</I>, or <I>column</I>.</P>
+<P><STRONG>File</STRONG><BR>
+The primary physical storage unit into which a database is organized.  In <B><I>db.*</B></I>, files are used to store records and keys.</P>
+<P><STRONG>Hierarchical database model<BR></STRONG>
+A data representation in which the relationships between record types are formed from parent-child structures, such that a record type may have many child relationships but only one parent relationship.  </P>
+<P><STRONG>Index</STRONG><BR>
+A set of key values through which rapid retrieval of a record is provided, similar to the index of a book.  The term is often used synonymously with <I>key file</I>. </P>
+<P><STRONG>Key file<BR></STRONG>
+A file that only contains keys.  It may, in fact, contain more than one <I>index</I> because multiple key types can be contained in a single <B><I>db.*</B></I> <I>key file</I>.</P>
+<P><STRONG>Key scan<BR></STRONG>
+The process of performing an ordered traversal through all (or a subset of all) occurrences of a given key field.</P>
+<P><STRONG>Key</STRONG><BR>
+A <I>field</I> through which rapid and/or sorted access to a record is desired.</P>
+<P><STRONG>Leaf node<BR></STRONG>
+A <I>node</I> at the lowest level of a <I>B-tree</I>, having no child nodes.</P>
+<P><STRONG>Lock</STRONG><BR>
+A multi-user database <I>synchronization</I> mechanism, used to prevent simultaneous updates to shared data.  Locks can be applied to the entire database, to files, or to record occurrences.</P>
+<P><STRONG>Logging</STRONG><BR>
+The process of making a copy of the database changes made during a <I>transaction</I> prior to a <I>commit</I>.  <I>Logging</I> is used to support the ability to perform a <I>recovery</I> in the event a failure occurs during a <I>commit</I>.  </P>
+<P><STRONG>Many-to-many relationship<BR></STRONG>
+A relationship between two record types, A and B, such that for each occurrence of type A, there are many related occurrences of type B and, for each occurrence of type B, there are many related occurrences of type A.  In <B><I>db.*</B></I>, <I>many-to-many relationships</I> can be implemented using two <I>one-to-many</I> sets through a third, intermediate record type.</P>
+<P><STRONG>Member of set<BR></STRONG>See <STRONG>Set</STRONG>
+ .</P>
+<P><STRONG>Member pointer<BR></STRONG>
+Stores set membership linkage information.  There is one <I>member pointer</I> stored with a record per set for which the record is a member.  Each one contains the <I>database addresses</I> of the owner record, previous member in the set, and next member in the set.</P>
+<P><STRONG>Navigation</STRONG><BR>
+The process of retrieving records from a database by moving through various set occurrences.</P>
+<P><STRONG>Network database model<BR></STRONG>
+A data representation in which the relationships are explicitly defined and maintained through <I>sets</I>.</P>
+<P><STRONG>Node</STRONG><BR>
+A component of a <I>B-tree</I>, consisting of a page of sorted keys stored in a key file.</P>
+<P>One-to-many relationship<BR>
+A relationship between two record types, A and B, such that for each occurrence of type A, there are many related occurrences of type B and, for each occurrence of type B, there is only one related occurrence of type A.  </P>
+<P><STRONG>Owner of set<BR></STRONG>See <STRONG>Set</STRONG>
+ .</P>
+<P><STRONG>Page</STRONG><BR>
+Files are blocked into contiguous fixed-length segments called <I>pages</I>.  A <I>page</I> is the unit of database I/O performed in <B><I>db.*</B></I>.</P>
+<P><STRONG>Path name<BR></STRONG>
+The sequence of directories in a hierarchical file system that must be traversed to locate a particular file.</P>
+<P><STRONG>Pointer</STRONG><BR>
+In a database, a <I>pointer</I> is data stored in a record occurrence that provides the necessary information for locating related record occurrences.  In a C program, a pointer is a variable that contains a memory address.</P>
+<P><STRONG>Process</STRONG><BR>
+An independently executing task or program.  An individual execution of a <B><I>db.*</B></I> application program.</P>
+<P><STRONG>Queue</STRONG><BR>
+A <I>first-in-first-out</I> waiting list.  Lock requests for a locked resource will be placed at the end of a <I>queue</I>.  When the locked resource becomes available, the first lock request on the queue will be granted.</P>
+<P><STRONG>Record occurrence<BR></STRONG>
+One individual instance in a database of a record of a particular type.  A database consists of many occurrences of many different <I>record types</I>.  For example, an employee record type may consist of the fields name, employee_id, job_title, and pay.  An employee record occurrence could be "<B>name: Jones, Jim; employee_id: c87101, job_title: engr, pay: 3400</B>".</P>
+<P><STRONG>Record type<BR></STRONG>
+A named collection of related <I>fields</I> that are stored and accessed as a unit.  See also <B>Record occurrence</B>.</P>
+<P><STRONG>Record</STRONG><BR>
+Used synonymously with <I>record type</I> or <I>record occurrence</I> depending on the context in which the term is used.</P>
+<P><STRONG>Recovery</STRONG><BR>
+The process of completing the <I>transaction</I> of a process that failed during a <I>commit</I>.</P>
+<P><STRONG>Redundant data<BR></STRONG>
+Identical data that is stored in multiple locations in a database.  Typically used to form relationships between tables in a relational database management system.</P>
+<P><STRONG>Relational database model<BR></STRONG>
+A data representation in which a database is viewed as consisting of two-dimensional tables, each composed of one or more columns.  Inter-table relationships are defined through use of common column names and data.  Tables and columns are analogous to <B><I>db.*</B></I> records and fields, respectively.</P>
+<P><STRONG>Root node<BR></STRONG>
+The top or start node of a <I>B-tree</I>.</P>
+<P><STRONG>Runtime system<BR></STRONG>
+The <B><I>db.*</B></I> C language library functions that perform all of the database access required by an application program while it is executing.</P>
+<P><STRONG>Schema</STRONG><BR>
+A conceptual model of the structure of a database that defines the data contents and relationships.  A <I>database definition language</I> specification is an implementation of a particular <I>schema</I>.</P>
+<P><STRONG>Semaphore</STRONG><BR>
+An interprocess synchronization mechanism typically used to inform processes of the occurrence of a particular event.  It is used in the UNIX version of <B><I>db.*</B></I> to inform the lock manager of an abnormal process termination.</P>
+<P><STRONG>Set</STRONG><BR>
+Specifies a <I>one-to-many</I> relationship between record types.  One occurrence of the <I>owner</I> record type is related to many occurrences of a <I>member</I> record type.  Also called a <I>set type</I>.</P>
+<P><STRONG>Set occurrence<BR></STRONG>
+An individual instance of a <I>set</I> in which one <I>owner</I> record occurrence has one or more <I>member</I> record occurrences connected to it.  </P>
+<P><STRONG>Set pointer<BR></STRONG>
+Stores set ownership linkage information.  There is one <I>set pointer</I> stored with a record per set for which the record is an owner.  Each one contains a count of the number of members in the set, the <I>database address</I> of the first member record occurrence, and the <I>database address</I> of the last member record occurrence in the set.</P>
+<P><STRONG>Set scan<BR></STRONG>
+The process of performing an ordered traversal through all (or a subset of all) member record occurrences of a given <I>set occurrence</I>.</P>
+<P><STRONG>Slot</STRONG><BR>
+A position in a data or key file for storage of a single record or key occurrence.  </P>
+<P><STRONG>Static record<BR></STRONG>
+A <I>record type</I> containing only data that seldom, if ever, changes.  </P>
+<B><P>Synchronization<BR>
+</B>The process 
+of ensuring that, in a multi-user database environment, updates to shared data 
+are performed serially, one user at a time.</P>
+<P><STRONG>System record<BR></STRONG>
+A special record type used to define the "top" record in a network database.  There is only one occurrence of the system record.  It allows the definition of a set owned by system so that access to records through set relationships can be achieved.</P>
+<P><STRONG>Timeout</STRONG><BR>
+An event that occurs when a lock request has waited on a queue longer than a pre-determined amount of time.  It is used to avoid <I>deadlock</I>.</P>
+<P><STRONG>Timestamping</STRONG><BR>
+A multi-user database technique that allows a process to detect deletions and updates made by other processes.</P>
+<P><STRONG>Transaction activity file<BR></STRONG>
+A database family-wide <B><I>db.*</B></I> file that stores the names of all log files currently involved in a transaction <I>commit</I>.  It provides for automatic recovery in the event the lock manager fails, or for one-user configurations.</P>
+<P><STRONG>Transaction</STRONG><BR>
+A group of related database changes that are written to the database as a single unit during a <I>commit</I>.  The logical consistency of a database is maintained by placing all related updates within transactions.</P>
+</FONT></BODY>
+</HTML>

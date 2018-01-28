@@ -1,0 +1,1230 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H3><A name="d_iclose"></A>d_iclose</H3>
+<FONT SIZE="2"><P>Close a database incrementally</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_iclose</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will close one database, selected by its database number, <I>dbn</I>.  If only one database is open, a <B>d_iclose</B> of database 0 is equivalent to <B>d_close</B>.  If multiple databases are open when this function is called, all database numbers above this one are shifted down one.</P>
+<P>If a transaction is active when this function is called, the transaction is aborted.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>If the current database is closed, database 0 becomes the current database.  Otherwise, the current database remains the same.  The number of the current database will be shifted down one if it was greater than <I>dbn</I>.  The function <B>d_dbnum</B> can be used to help the application account for this shifting of database numbers.  The currency tables for all open databases will <I>not</I> be affected.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVDB<BR>
+Invalid database number.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_open("sales;invntory", "x", task);
+...
+/* eliminate sales and add payroll */
+d_iclose(task, 0);
+d_iopen("payroll", task);
+...
+/* close all databases */
+d_close(task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_close, d_iopen, d_open</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_initfile"></A>d_initfile</H3>
+<FONT SIZE="2"><P>Initialize database file</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_initfile</B>(int <I>FILEID</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FILEID<BR>
+The file identifier constant (from <B>ddlp</B>) of the database file to be initialized.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_initfile</B> can be used to initialize (or re-initialize) individual data and key files within a database.  The <I>FILEID</I> is the file identifier constant defined in the <B>ddlp</B> generated file, <B>&lt;dbname&gt;.dbd</B>, when the "<I>fileid = filename</I>" clause occurs in a data or key file statement in the DDL.</P>
+</FONT><B><I><BLOCKQUOTE>Notes:</BLOCKQUOTE>
+</B></I><BLOCKQUOTE>1) This function can cause database corruption if not used properly.  It does not clean up <I>SET</I> pointers within other files that may point to an initialized file.  It will not delete keys from a key file (if a data file is initialized) and will not delete records in a data file (if a key file is initialized).  Care must be taken to only initialize independent groups of files.</BLOCKQUOTE>
+<BLOCKQUOTE>2) This function can only be called when the database is opened in exclusive or one-user-only access mode, or when the file is exclusively locked.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The data and key files do not need to exist for this function to work.  However, you may get an S_NOFILE error from <B>d_open</B> if any file is missing.  If <B>d_open </B>does require that the files exist due to any platform restrictions, then directory entries are the only requirement so that I-node/device numbers or a file's "true name" can be sent to the lock manager.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_EXCLUSIVE<BR>
+Function requires exclusive or one-user database access.</P>
+<P>S_NOFILE<BR>
+Unable to open the specified file.  Check the C <B>errno</B> flag for specific file system error.</P>
+</FONT><H4>Example</H4>
+<B><FONT SIZE="2"><P>DDL</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>database work {
+   data file work_data = "work.dat" contains ...
+   key file work_key = "work.key" contains ...
+   ...
+}</PRE>
+</FONT><B><FONT SIZE="2"><P>C Code</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>char dbnames[80];
+...
+strcpy(dbnames, "work;");  /* db 0 will be work database */
+strcat(dbnames, userdb);   /* db 1 will be user database */
+d_open(dbnames, "x", task);
+
+/* initialize work database files */
+d_initfile(WORK_DATA, task, 0);
+d_initfile(WORK_KEY, task, 0);
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_initialize</P>
+</B><P>&nbsp;</P></FONT><H3 >
+<HR>
+<A name="d_initialize"></A>d_initialize</H3>
+<FONT SIZE="2"><P>Initialize database</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_initialize</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The number of the database to be initialized.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function initializes (or re-initializes) the database data and key files in the open <B><I>db.*</B></I> database specified by <I>dbn</I>.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>This function can only be called 
+  when the database is opened in exclusive or one-user-only access mode or when 
+  the files are exclusively locked.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The data and key files do not need to exist for this function to work.  However, you may get an S_NOFILE error from <B>d_open </B>if any file is missing.  If <B>d_open </B>does require that the files exist due to any platform restrictions, then directory entries are the only thing that is required so that I-node/device numbers or a file's "true name" can be sent to the lock manager.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_EXCLUSIVE<BR>
+This function requires exclusive or one-user database access.</P>
+<P>S_NOFILE<BR>
+Unable to open a database file.  Check the C <B>errno </B>flag for specific file system error.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_open("work", "o", task);
+d_initialize(task, CURR_DB);
+
+...   /* build and access work database */
+
+/* all done - close database and delete files */
+d_destroy("work", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_destroy, d_initfile</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_internals"></A>d_internals</H3>
+<FONT SIZE="2"><P>Access internal <B><I>db.*</B></I> data</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_internals</B>(DB_TASK* <I>task</I>, int <I>topic</I>, int <I>id</I>, int <I>elem</I>, void *<I>ptr</I>, unsigned <I>size</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+The application's task variable; usually <B>Currtask</B>.</P>
+<P>topic<BR>
+The topic of data requested.</P>
+<P>id<BR>
+The identifier of a selection within the TOPIC_GLOBALS topic.</P>
+<P>elem<BR>
+The element of a table, if topic is a table.</P>
+<P>ptr<BR>
+A pointer to the area to copy the data.</P>
+<P>size<BR>
+The size of the area referenced by <I>ptr</I>.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies a data item from the <I>topic</I> (a <B><I>db.*</B></I> internal table), <I>id</I> (a subtopic within the table), and <I>elem</I> (an index into the table), to <I>ptr</I>, the pointer supplied for the <I>size</I> given.</P>
+<P>The topics (shown below) and IDs are provided in the file <B>internal.h</B>.  </P><DIR>
+<DIR>
+
+<P>TOPIC_APP_LOCKS_TABLE<BR>
+TOPIC_CURR_MEMBER_TABLE<BR>
+TOPIC_CURR_OWNER_TABLE<BR>
+TOPIC_DB_TABLE<BR>
+TOPIC_EXCL_LOCKS_TABLE<BR>
+TOPIC_FIELD_NAMES<BR>
+TOPIC_FIELD_TABLE<BR>
+TOPIC_FILE_TABLE<BR>
+TOPIC_GLOBALS<BR>
+TOPIC_KEPT_LOCKS_TABLE<BR>
+TOPIC_KEY_LOCK_TABLE<BR>
+TOPIC_KEY_TABLE<BR>
+TOPIC_MEMBER_TABLE<BR>
+TOPIC_PGZERO_TABLE<BR>
+TOPIC_REC_LOCK_TABLE<BR>
+TOPIC_RECORD_NAMES<BR>
+TOPIC_RECORD_TABLE<BR>
+TOPIC_SET_LOCK_TABLE<BR>
+TOPIC_SET_NAMES<BR>
+TOPIC_SET_TABLE<BR>
+TOPIC_SORT_TABLE<BR>
+TOPIC_TASK</P></DIR>
+</DIR>
+
+<P>The table topics do not use an ID, but need an element.</P>
+<P>The TOPIC_GLOBALS must use one of the following IDs but do not need an element.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="460">
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_ARC_NAME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBOPTIONS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_NO_COUNTRY</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CACHE_HITS</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBTAF</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_NO_OF_DBS</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CACHE_LOOKUP</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBUSERID</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_NO_OF_KEYS</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CACHE_OVFL</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBWAIT_TIME</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_OF_TAF</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CM_TIME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_ERROR_FUNC</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_OV_FILE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CO_TIME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_FILE_REFS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_OV_INITADDR</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_COUNTRY_TBL</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_FP_SIZE</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_OV_NEXTADDR</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CR_TIME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_FREE_PKT</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_OV_ROOTADDR</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CS_TIME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_FT_OFFSET</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_PAGE_SIZE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CTBL_ACTIV</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_KEY_INFO</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_REN_LIST</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CTBPATH</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_KEY_TYPE</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_RN_DBA</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CURR_DB</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_KEYL_CNT</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_RN_TABLE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CURR_DB_TABLE</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LAST_MTYPE</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_RN_TYPE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CURR_REC</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LMC_OPTIONS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_ROOT_IX</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_CURR_RN_TABLE</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LMC_STATUS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SESSION_ACTIVE</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_LOCKMGR</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCK_LVL</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SET_DB</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_NAME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCK_PKT</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_FD</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_PATH</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCK_STACK</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_FT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_STATUS</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCK_TRIES</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_KT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_TIMEOUT</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCKCOMM</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_MT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_TSRECS</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LOCKMGRN</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_RT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DB_TSSETS</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LP_SIZE</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_SRT</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBDPATH</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_LSN</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SIZE_ST</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBFPATH</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_MAX_CACHEPGS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SK_LIST</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBLOG</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_MAX_FILES</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_SYSDBA</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBNAME</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_MAX_OVIXPGS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_TRANS_ID</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>ID_DBOPEN</FONT></P></TD>
+<TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>ID_NET_STATUS</FONT></P></TD>
+<TD WIDTH="34%" VALIGN="top">
+<FONT SIZE="2"><P>ID_TRUENAME_FUNC</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>This data is not required by most applications.  Its interpretation by the programmer requires knowledge of the <B><I>db.*</B></I> internals.  A good source of information (such as structure definitions) can be found in the <B>dbtype.h</B> header file.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVID<BR>
+A bad topic or subtopic ID was given.</P>
+<P>S_INVPTR<BR>
+The DB_TASK is invalid.  Probably <B>d_opentask</B> has not been called.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>#define LOCKCOMM_DATA
+#include &lt;stdio.h&gt;
+#include "db.star.h"
+#include "internal.h"
+#include "tims.h"
+
+main()
+{
+   int no_of_files, i;
+   FILE_ENTRY fEntry;    /* defined in dbtype.h */
+   DB_TASK *task;
+
+    /* Open the tims database in one user mode */
+   d_opentask(&amp;task);
+   d_open("tims", "o", task);
+
+    /* Get the number of files in the file table.
+       ID_SIZE_FT is defined in dbty */
+   d_internals(task, TOPIC_GLOBALS, ID_SIZE_FT, 0, &amp;no_of_files,
+               sizeof(no_of_files));
+
+    /* Get the file names from the internal file table.
+       ".ft_name" is a member */
+   for (i = 0; i &lt; no_of_files; i++) {
+      d_internals(task, TOPIC_FILE_TABLE, 0, i, &amp;fEntry, sizeof(fEntry));
+      printf("File name is %s\n", fEntry.ft_name);
+   }
+
+   d_close(task);            /* Close the database */
+   d_closetask(task);
+}</PRE>
+</FONT><FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_iopen"></A>d_iopen</H3>
+<FONT SIZE="2"><P>Open database incrementally</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_iopen</B>(const char *<I>dbnames</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dbnames<BR>
+A semicolon-separated list of names of the databases to be opened.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function opens the databases identified in the string pointed to by <I>dbnames</I>.  If more than one database is to be opened, the names are separated in the list by semi-colons (";").  No white space (for example, spaces, tabs, etc.) should be embedded in the string.  The type of access to all of the databases is determined by the type specified in the preceding <B>d_open</B> call.  This function cannot be called before <B>d_open</B>.</P>
+<P>Each database name can include a path name of the directory that contains the dictionary and database files.  Note that if the specified path is absolute (that is, begins with '/'), it will override the DBDPATH and DBFPATH environment variables for that database.</P>
+<P>When multiple databases are being opened, the databases are assigned sequential numbers from left to right in the order specified in the list, with the first being one greater than the highest previously opened database.  The current database will be the first one in the <I>dbnames</I> list upon return from the call.  The database number is passed either to function <B>d_setdb</B> or to each database access function, thus setting the current database when multiple databases have been opened.</P>
+<P>For example, if your application opens two accounting databases named <B><I>AR_DB</I> </B>and <B><I>AP_DB</B></I>, their database numbers would be assigned as follows in the table below.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="47%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Name</B></FONT></P></TD>
+<TD WIDTH="53%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Number</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="47%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>AR_DB</B></I></FONT></P></TD>
+<TD WIDTH="53%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="47%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>AP_DB</B></I></FONT></P></TD>
+<TD WIDTH="53%" VALIGN="top">
+<FONT SIZE="2"><P>1</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The current database is 0.</P>
+<P>Then you might open two additional databases, <B><I>PR_DB</B></I> and <B><I>GL_DB</B></I>, resulting in the following assignments.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Name</B></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Number</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>AR_DB</B></I></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>AP_DB</B></I></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>1</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>PR_DB</B></I></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>GL_DB</B></I></FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>3</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The current database is 2.</P>
+<P>After closing the database <B><I>AP_DB</B></I> using<B> d_iclose</B>, the database numbers would be coalesced as shown below.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Name</B></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>Database Number</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>AR_DB</B></I></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>PR_DB</B></I></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<FONT SIZE="2"><P>1</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>GL_DB</B></I></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>If the current database was still 2 before the <B>d_iclose</B>, the current database is now 1, representing the same database, <B><I>PR_DB</B></I>.</P>
+<P>Your application must track the coalesced database numbers in your application.  The <B>d_dbnum</B> function is helpful for this task. </P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = system record (or NULL_DBA, if no system record);</P>
+<P>curr_own[system owned sets] = system record;</P>
+<P>curr_own[all other sets] = NULL_DBA;</P>
+<P>curr_mem[of all sets] = NULL_DBA;</P>
+<P>curr_db = <I>dbn</I> of first database in <I>dbnames</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+The <B>d_open</B> function has not been called before this one.</P>
+<P>S_INVDB<BR>
+One of the database dictionaries could not be opened.</P>
+<P>S_NAMELEN<BR>
+The name of a database file was too long.</P>
+<P>S_NOMEMORY<BR>
+There is not enough available memory for all of the required <B><I>db.*</B></I> runtime tables.  Try calling function <B>d_setpages</B> with fewer pages before calling <B>d_open</B>.</P>
+<P>S_TRACTIVE<BR>
+A transaction is active.  It must be ended or aborted before performing an incremental open.</P>
+<P>S_UNAVAIL<BR>
+The database is not available.  Either (1) another user has exclusive access or your exclusive access request cannot be satisfied because others are using the database or (2) There is no more room in the lock manager tables.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_open("sales;invntory", "x", task);
+...
+/* eliminate sales and add payroll */
+d_iclose(task, 0);
+d_iopen("payroll", task);
+   ...
+/* close all databases */
+d_close(task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_close, d_iclose, d_open</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_ismember"></A>d_ismember</H3>
+<FONT SIZE="2"><P>Determine whether the current record is a member of a set</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_ismember</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current record's membership will be checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function determines whether the current record is connected as a member of <I>SET</I>.  If it is, status S_OKAY is returned.  If not, status S_EOS is returned.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If the current record type is not the owner record type of <I>SET</I>, <B>d_ismember</B> will call <B>dberr</B> 
+  with the S_INVMEM error code.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_EOS<BR>
+The current record is not connected as a member of <I>SET</I>.</P>
+<P>S_INVMEM<BR>
+Current record is not a legal member of <I>SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_OKAY<BR>
+The current record is connected as a member of <I>SET</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* annual corporate awards */
+while ( d_keynext(EMPLOYEE_ID, task, MY_DBN) == S_OKAY )
+{
+   if ( d_ismember(DIVISION_MANAGER, task, MY_DBN) == S_OKAY )
+   {
+      /* award fat dividend */
+      ...
+   }
+   else
+   {
+      if ( d_ismember(DEPT_MANAGER, task, MY_DBN) == S_OKAY )
+      {
+         /* award nice raise */
+         ...
+      }
+      else
+      {
+         /* give a nice pat on the back */
+         ...
+      }
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_isowner</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_isowner"></A>d_isowner</H3>
+<FONT SIZE="2"><P>Determine whether the current record is the owner of a set</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_isowner</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current record's ownership will be checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function determines whether the current record has any members connected to it through<I> SET</I>.  If it does, status S_OKAY is returned.  If not, status S_EOS is returned.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If the current record type is not of the owner record type of <I>SET</I>, <B>d_isowner</B> will call <B>dberr</B> 
+  with the error code S_INVOWN.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_EOS<BR>
+The current record is not currently connected as an owner of <I>SET</I>.</P>
+<P>S_INVOWN<BR>
+Current record is not a legal owner of <I>SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_OKAY<BR>
+The current record is an owner of a non-empty occurrence of <I>SET</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_isowner(ALTERNATE_SET_1, task, CURR_DB) == S_OKAY )
+{
+   /* process set 1 records */
+   ...
+}
+else
+{
+   if ( d_isowner(ALTERNATE_SET_2, task, CURR_DB) == S_OKAY )
+   {
+      /* process set 2 records */
+      ...
+   }
+   else
+   {
+      if ( d_isowner(ALTERNATE_SET_3, task, CURR_DB) == S_OKAY )
+      {
+         /* process set 3 records */
+         ...
+      }
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_ismember</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keybuild"></A>d_keybuild</H3>
+<FONT SIZE="2"><P>Rebuild all keys for the database</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keybuild</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keybuild</B> recreates all the key files for the given database.  First, the key files are initialized.  Then the data files are scanned to re-create the keys from the records.  Optional keys are also recreated for the ones that have been stored by <B>d_keystore</B>.  Depending on the size of the database, the rebuilding of the keys can be a very time consuming process, especially if the <B><I>db.*</B></I> cache is small.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>If the database is opened in shared mode, exclusive locks are required on all data and key files.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_EXCLUSIVE<BR>
+This function requires exclusive access to the database through either exclusive locks or non-shared open modes.</P>
+<P>S_NOFILE<BR>
+Cannot open a needed data or key file.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_setpages(307, 1, task);
+d_setfiles(12, task);
+if (d_open("tims", "x", task ) == S_OKAY)
+{
+   d_keybuild(task, 0);
+   d_close(task);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_initfile</B>, <B>keybuild</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keydel"></A>d_keydel</H3>
+<FONT SIZE="2"><P>Delete optional key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keydel</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the optional key field for which the value is to be deleted.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keydel</B> deletes the key entry associated with the current record's optional key <I>FIELD</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on record type of current record.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADFIELD<BR>
+Specified field type not defined in current record.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+Optional key value not found.  You probably did not call <B>d_keystore</B> to originally store the key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_NOTOPTKEY<BR>
+Specified field type not defined as an optional key.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_keyfind(EMP_ID, "8505", task, CURR_DB) ) == S_OKAY )
+{
+   /* upgrade employee to manager */
+   d_keydel(EMP_ID, task, CURR_DB);
+   d_keystore(MGR_ID, task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyexist, d_keystore</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyexist"></A>d_keyexist</H3>
+<FONT SIZE="2"><P>Determine whether an optional key exists</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyexist</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the optional key field whose existence will be checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function determines if the key for optional key <I>FIELD</I> in the current record has been stored.  Status S_OKAY is returned if the key has been stored.  Status S_NOTFOUND is returned if the key has not been stored.  This function reads the optional key bit from the record header stored in the data file.  Thus, in shared access mode, the data file must be locked.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on record type of current record.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADFIELD<BR>
+Specified field type not defined in current record.</P>
+<P>S_INVFLD<BR>
+Invalid field type.</P>
+<P>S_NOTFOUND<BR>
+Optional key value not stored.</P>
+<P>S_NOTLOCKED<BR>
+Data file containing current record is not locked.</P>
+<P>S_NOTOPTKEY<BR>
+Specified field type is not defined as an optional key.</P>
+<P>S_OKAY<BR>
+Optional key value has been stored.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_keyexist(EMP_ID, task, CURR_DB) ) == S_NOTFOUND )
+{
+   /* store employee ID */
+   d_keystore(EMP_ID, task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keydel, d_keystore</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyfind"></A>d_keyfind</H3>
+<FONT SIZE="2"><P>Find record by key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyfind</B>(long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field on which to search.</P>
+<P>value<BR>
+The pointer to the data to be searched.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keyfind</B> finds a record occurrence based on the value supplied for the specified key field.  Regardless of whether the key is found, the key field remains positioned so that a subsequent <B>d_keynext</B> (or <B>d_keyprev</B>) call will return the record with the next higher (or lower) key value.  If value is NULL, the key field is positioned at the beginning so that <B>d_keynext</B> will return the first key on file.</P>
+<P>If <B>d_keyfind</B> returns S_NOTFOUND, and the file locks are freed before the internal key pointers are set to an existing record (for example, <B>d_keynext</B> or <B>d_keyprev</B> is called), then after the locks are re-established, a call to <B>d_keynext</B> will return the next logical record as if the <B>d_keyfind</B> had returned S_OKAY.  However, the record returned by <B>d_keyprev</B> will be undefined.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = found record;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>, or on record type containing field.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+A matching key occurrence was not found.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not defined as a key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_OKAY<BR>
+A matching key occurrence was found.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char id[16];
+...
+/* display all database related info records (those for which id begins with "db") */
+
+/* position to start of "db"s */
+if ( d_keyfind(ID_CODE, "db", task, 7) == S_NOTFOUND )
+   d_keyprev(ID_CODE, task, 7);
+while ( d_keynext(ID_CODE, task, 7) == S_OKAY )
+{
+   d_keyread(id, task);
+   if ( strncmp(id, "db", 2) != 0 ) 
+      break; /* no more "db"s */
+   d_recread(&amp;irec, task, 7);
+   ...   /* print info record contents */
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfrst, d_keylast, d_keynext, d_keyprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyfree"></A>d_keyfree</H3>
+<FONT SIZE="2"><P>Free a read lock from a key type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyfree</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field number of the key field to be freed.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function<B> d_keyfree</B> frees the read or exclusively locked key file which contains occurrences of key field <I>FIELD</I>.  This function can only be executed outside a transaction.  Inside transactions, locks are freed by functions <B>d_trend</B> or <B>d_trabort</B>.  If the key type is exclusively locked, all changed database pages in the cache are flushed.</P>
+<P>This function is present in the one-user version of <B><I>db.*</B></I> but performs no action.  Thus, multi-user applications are able to link with the one-user version for operation on standalone computers.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  </P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not a key field.</P>
+<P>S_NOTLOCKED<BR>
+Key type is not locked.</P>
+<P>S_TRFREE<BR>
+Attempt to free a read lock inside a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int count, stat = S_OKAY;
+   ...
+/* list info record in id_code order */
+while ( stat == S_OKAY )
+{
+   d_keylock(ID_CODE, "r", task, CURR_DB);
+   for ( count = 0 ; 
+      (count &lt; 20) &amp;&amp; ((stat = d_keynext(ID_CODE, task, CURR_DB)) == S_OKAY);
+      ++count) 
+   {
+      /* hold lock for only 20 records at a time */
+      if ( d_recread(&amp;irec, task, CURR_DB) == S_OKAY ) 
+         pr_info();
+   }
+   d_keyfree(ID_CODE, task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keylock, d_keylstat, d_lock, d_recfree, d_reclock, d_reclstat, d_setfree, d_setlock, d_setlstat, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyfrst"></A>d_keyfrst</H3>
+<FONT SIZE="2"><P>Find record with first key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyfrst</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field for which the first key will be found.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keyfrst</B> finds the record occurrence associated with the first occurrence of the key <I>FIELD</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record with first key;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+There are no keys on file for the specified key field.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not defined as a key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_OKAY<BR>
+First key was found.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int status;
+
+/* display all info records in id_code order */
+for ( status = d_keyfrst(ID_CODE, task, CURR_DB); 
+   status == S_OKAY; 
+   status = d_keynext(ID_CODE, task, CURR_DB) ) 
+{
+   d_recread(&amp;irec, task, CURR_DB);
+   /* print info record contents */
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfind, d_keylast, d_keynext, d_keyprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keylast"></A>d_keylast</H3>
+<FONT SIZE="2"><P>Find record with last key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keylast</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field for which the last key will be found.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function<B> d_keylast</B> finds the record occurrence associated with the last occurrence of the key <I>FIELD</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record with last key;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+No keys are on file for specified key field.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not defined as a key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_OKAY<BR>
+Last key was found.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int status;
+
+/* display all info records in reverse id_code order */
+for ( status = d_keylast(ID_CODE, task, 0); 
+   status == S_OKAY;
+   status = d_keyprev(ID_CODE, task, 0) ) 
+{
+   d_recread(&amp;irec, task);
+   /* print info record contents */
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfind, d_keyfrst, d_keynext, d_keyprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keylock"></A>d_keylock</H3>
+<FONT SIZE="2"><P>Lock key file associated with key type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keylock</B>(long <I>FIELD</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field that will be locked.</P>
+<P>type<BR>
+A pointer to a string containing the type of lock to be applied.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keylock</B> places a lock on the key file which contains occurrences of key field <I>FIELD</I>.  The type of lock is specified as follows:</P>
+
+<UL>
+<LI>"r" (read lock) 
+  
+<LI>"w" (write lock) 
+  
+<LI>"x" (exclusive lock) 
+  
+<LI>"k" (keep lock)</LI></UL>
+
+<P>Read locks allow other programs to read but not update the locked files.  Write locks prevent all other programs from accessing the locked files and can only be issued from within a transaction.  Exclusive locks also prevent all other programs from accessing the locked files but can be issued independent of transactions.  Keep locks can only be issued from within a transaction, and they will keep read and write-locked files read-locked after a transaction ends (<B>d_trend</B> normally frees all read and write-locked files).  The record type must be locked in order to apply a keep lock; otherwise, status S_NOTLOCKED is returned.</P>
+<P>Within a transaction, a read-locked file can be upgraded to a write or exclusive lock by calling <B>d_reclock</B> with a write or exclusive lock where a read lock already exists.  If the upgrade lock request is denied, the read lock will remain in effect.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADTYPE<BR>
+Invalid lock type specified.  You may have passed a character (for example, 'r') instead of a string (for example, "r").</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Possibly you passed a record or set type by mistake.</P>
+<P>S_NOTFREE<BR>
+Key type already locked by your application.</P>
+<P>S_NOTKEY<BR>
+Specified field is not a key field.</P>
+<P>S_NOTRANS<BR>
+Requested a write lock outside of a transaction.</P>
+<P>S_UNAVAIL<BR>
+The requested key file is not available (that is, you were on the queue waiting for the file longer than your current time out value).</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int status;
+
+/* display all info records in id_code order */
+while ( d_keylock(ID_CODE, "r", task, MY_DBN) == S_UNAVAIL )
+   ;
+for ( status = d_keyfrst(ID_CODE, task, MY_DBN); 
+   status == S_OKAY;
+   status = d_keynext(ID_CODE, task, MY_DBN) ) 
+{
+   if ( d_recread(&amp;irec, task, MY_DBN) == S_OKAY )
+   {
+      /* print info record contents */
+      ...
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keylstat, d_lock, d_recfree, d_reclock, d_reclstat, d_setfree, d_setlock, d_setlstat,  d_timeout, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keylstat"></A>d_keylstat</H3>
+<FONT SIZE="2"><P>Get lock status of key type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keylstat</B>(long <I>FIELD</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field that will be locked.</P>
+<P>type<BR>
+A pointer to a character variable that contains the current lock type status.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function returns the calling process's current lock status for key field, <I>FIELD</I>, in the character variable pointed to by <I>type</I>.  The lock types which can be returned are as follows:</P>
+
+<UL>
+<LI>'r' (read lock) 
+  
+<LI>'w' (write lock) 
+  
+<LI>'x' (exclusive lock) 
+  
+<LI>'k' (keep lock) 
+  
+<LI>'s' (static record) 
+  
+<LI>'f' (free; one-user mode always returns an 'f' status)</LI></UL>
+
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  </P>
+<P>S_NOTKEY<I><BR>
+FIELD</I> is not a key field.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char lstat;
+...
+d_keylstat(ID_CODE, &amp;lstat, task, CURR_DB);
+if ( lstat == 'f' )
+   d_keylock(ID_CODE, "r", task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keylock, d_reclstat, d_setlstat</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keynext"></A>d_keynext</H3>
+<FONT SIZE="2"><P>Find record with next key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keynext</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field for which the next key will be found.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keynext</B> finds the record occurrence associated with the next occurrence of the key <I>FIELD</I>.  Status S_NOTFOUND is returned if there are no more keys.  The <B><I>db.*</B></I> program keeps track of the relative position of each key field so that <B>d_keynext</B> can be performed for multiple keys at a time.  </P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The first call to <B>d_keynext</B> (or the first one after status S_NOTFOUND 
+  was returned at the end of the file) will return the first key on 
+file.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record with next key;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+There are no more keys on file for specified key field.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not defined as a key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_OKAY<BR>
+Next key was found.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int status;
+
+/* display all info records in id_code order */
+for ( status = d_keyfrst(ID_CODE, task, TIMS_DBN); 
+   status == S_OKAY;
+   status = d_keynext(ID_CODE, task, TIMS_DBN) ) 
+{
+   d_recread(&amp;irec, task, TIMS_DBN);
+   /* print info record contents */
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfind,  d_keyfrst, d_keylast, d_keyprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyprev"></A>d_keyprev</H3>
+<FONT SIZE="2"><P>Find record with previous key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyprev</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field for which the previous key will be found.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_keyprev</B> finds the record occurrence associated with the previous occurrence of <I>FIELD</I>.  Status S_NOTFOUND is returned if there are no more keys.  The <B><I>db.*</B></I> program keeps track of the relative position of each key field so that <B>d_keyprev</B> can be performed for multiple keys at a time.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The first call to <B>d_keyprev</B> (or the first one after status S_NOTFOUND 
+  was returned at the beginning of the file) will return the last key on 
+file.</BLOCKQUOTE>
+<FONT SIZE="2"><P>If the locks are freed between a <B>d_keyfind</B> that returns S_NOTFOUND and <B>d_keyprev</B>, then the position of <B>d_keyprev</B> is undefined.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = record with previous key;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTFOUND<BR>
+There are no more keys on file for specified key field.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not defined as a key.</P>
+<P>S_NOTLOCKED<BR>
+Key file containing <I>FIELD</I> is not locked.</P>
+<P>S_OKAY<BR>
+The previous key was found.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* display all info records in reverse id_code order */
+while ( d_keyprev(ID_CODE, task, CURR_DB) == S_OKAY )
+{
+   d_recread(&amp;irec, task, CURR_DB);
+   /* print info record contents */
+   ....
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfind,  d_keyfrst, d_keylast, d_keynext</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keyread"></A>d_keyread</H3>
+<FONT SIZE="2"><P>Read value of last found key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keyread</B>(void *<I>value</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>value<BR>
+A pointer to the area where the value of the last scanned key will be copied.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function reads the value of the last key found by a key retrieval function.  It is intended to provide a mechanism whereby a key's value can be checked without having to read its associated record.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>This function does not take a 
+  database number. The function will read the data from the last key found by 
+  the other key access functions.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_KEYSEQ<BR>
+Call to <B>d_keyread</B> before a key retrieval function was called.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char id[16];
+...
+/* display all database related info records: those for 
+   which the id_code begins with "db" */
+if ( d_keyfind(ID_CODE, "db", task, CURR_DB) == S_NOTFOUND )
+   d_keyprev(ID_CODE, task, CURR_DB);
+while ( d_keynext(ID_CODE, task, CURR_DB) == S_OKAY )
+{
+   d_keyread(id, task);
+   if ( strncmp(id, "db", 2) ) 
+      break;      /* no more "db"s */
+   d_recread(&amp;irec, task, CURR_DB);
+   /* print info record contents */
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keyfind, d_keyfrst, d_keylast, d_keynext, d_keyprev</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_keystore"></A>d_keystore</H3>
+<FONT SIZE="2"><P>Store optional key</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_keystore</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the optional key field for which the value is to be stored.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function creates a key entry from the data contained in the current record for the optional key <I>FIELD</I>.  This function can only be called after the record has been created.  Once stored, an optional key is automatically modified whenever its field contents are modified in the data file (for example, by <B>d_recwrite</B>).</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on record type of current record.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADFIELD<BR>
+Specified field type not defined in current record.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTLOCKED<BR>
+The key file containing <I>FIELD</I> is not locked.</P>
+<P>S_NOTOPTKEY<BR>
+Specified field type is not defined as an optional key.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* batch load key for daily stock tracking record */
+for ( d_recfrst(STOCK, task, 3); db_status == S_OKAY;
+      d_recnext(STOCK, task, 3) )
+{
+   d_keystore(ID_CODE, task, 3);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keydel</B>, <B>d_keyexist</P>
+</B></FONT></BODY>
+</HTML>

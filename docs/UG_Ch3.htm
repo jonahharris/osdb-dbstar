@@ -1,0 +1,669 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Overview"></A>Chapter 3<BR>
+Operational Overview</H1>
+<H2><A name="Introduction"></A>3.1   Introduction</H2>
+<FONT SIZE="2"><P>This chapter presents an overview of the basic operation of the <B><I>db.*</B></I> DBMS.  Each system component is identified and described, and the operational flow of a <B><I>db.*</B></I> C or C++ program is given.  A simple, introductory example is then developed illustrating the basic use of the system.  Your understanding of what each component does and how it fits into the overall system is essential to your ability to use <B><I>db.*</B></I> effectively.  </P>
+</FONT><H2><A name="Components"></A>3.2   System Components</H2>
+<FONT SIZE="2"><P>Figure 3-1 is a diagram of all of the <B><I>db.*</B></I> system components.  Arrows indicate input and output between the components and text files (for example, schema), specific file types in the database (for example, key files), or the database in general.</P>
+</FONT><H4>ddlp</H4>
+<FONT SIZE="2"><P>The Database Definition Language Processor, <B>ddlp</B>, is a utility that compiles a DDL specification, called a schema, and produces the database dictionary.  The dictionary contains database content and organization data that is used by the <B><I>db.*</B></I> runtime library functions (see below).</P>
+<P>A C or C++ header file (not shown in Figure 3-1) also is created by the <B>ddlp</B>.  This file contains constants and declarations associated with a specific database for use by the C or C++ programs that access the database.</P>
+<P ALIGN="center"></P>
+<B><P ALIGN="center"><IMG alt="db.* System Components" border="0" height="603" src="dbstar_3-1.gif" width="375">  </P>
+<P align="center">Fig. 3-1.  <I>db.*</I> System 
+Components</P>
+</B></FONT><H4>initdb</H4>
+<FONT SIZE="2"><P>The initialization of the data and key files for a new database is performed by the database initialization utility, <B>initdb</B>.</P>
+</FONT><H4>The <I>db.*</I> Runtime Library</H4>
+<FONT SIZE="2"><P>Database manipulation and control is performed through calls to C functions contained in the <B><I>db.*</B></I> runtime library.  The library is linked with the object code for a C or C++ database application program to produce the executable program.</P>
+<P>The runtime library functions contained in the library perform such operations as opening and closing the database, creating and modifying records and fields, connecting and disconnecting sets, searching for records through keys and sets, and controlling multi-user access through interaction with the system lock manager.</P>
+</FONT><H4>lock manager</H4>
+<FONT SIZE="2"><P>Management of system-wide multi-user lock information and database recovery control is performed by the <B><I>db.*</B></I> lock manager.  The lock manager runs as a background task under the UNIX/Linux operating systems.</P>
+<P>All multi-user <B><I>db.*</B></I> programs communicate with the lock manager to request permission to access data and key files contained in a <B><I>db.*</B></I> database.</P>
+</FONT><H4>lmclear</H4>
+<B><FONT SIZE="2"><P>lmclear</B> is a utility used to clear a database user process that has failed or terminated without having properly closed a database.  The actual effect of the operation depends upon the operating environment but, in general, <B>lmclear</B> informs the lock manager of the 
+failed condition (when the lock manager cannot get this information from the 
+operating system on its own) so that certain user tables maintained by the lock 
+manager can be properly cleared.</P></FONT><H4>dbclrlb</H4>
+<FONT SIZE="2"><P>The clear lock bit utility, <B>dbclrlb</B>, clears any set record lock bits in the specified data files.  It is usually considered to be an error for these advisory record instance locks to remain set after the application terminates.</P>
+</FONT><H4>ida</H4>
+<FONT SIZE="2"><P>The Interactive Database Access utility, <B>ida</B>, is a menu-driven database manipulation tool that provides an easy-to-use interface for entering, modifying, and retrieving database information through most of the <B><I>db.*</B></I> functions.</P>
+<P>The<B> ida</B> utility is a useful tool for learning to use <B><I>db.*</B></I> as well as a tool for maintaining existing databases.</P>
+</FONT><H4>dal</H4>
+<FONT SIZE="2"><P>The Database Access Language, <B>dal</B>, is a simple, interpreted language that includes most of the <B><I>db.*</B></I> user-level functions as its commands.  With built-in variables and a looping construct, it allows quick prototyping of simple sequences of <B><I>db.*</B></I> function calls.  In addition, a database programmer can learn more about <B><I>db.*</B></I> by using <B>dal</B>.</P>
+</FONT><H4>dbcheck</H4>
+<FONT SIZE="2"><P>The consistency of a <B><I>db.*</B></I> database can be checked using the <B>dbcheck</B> utility.  This utility checks to ensure that data and key files are consistent and that all set linkages are correct.  Thus, <B>dbcheck</B> is used to check for database corruption.</P>
+</FONT><H4>dbedit</H4>
+<FONT SIZE="2"><P>The <B>dbedit</B> utility is a low-level database editor that allows a skilled developer to change a <B><I>db.*</B></I> data file.  It interprets the database dictionary, but does not perform a formal database open.  Editing of all portions of all records is allowed.</P>
+</FONT><H4>dbimp</H4>
+<FONT SIZE="2"><P>Data from ASCII text files can be imported into a <B><I>db.*</B></I> database using the <B>dbimp</B> utility.  This utility is able to create, store, and form set connections involving one or more record types from data in a standard ASCII format.</P>
+<P>The <B>dbimp</B> utility is useful in setting up test data, transporting <B><I>db.*</B></I> data between systems, importing data from another DBMS, and, in conjunction with <B>dbexp</B>, performing ASCII file dumps and reloads of a <B><I>db.*</B></I> database.</P>
+</FONT><H4>dbexp</H4>
+<FONT SIZE="2"><P>The database export utility, <B>dbexp</B>, is used to output the contents of a <B><I>db.*</B></I> database into a standard ASCII format.  The exported data can then be used by another DBMS.  You may also use <B>dbexp</B> with <B>dbimp</B> to transfer a database to a different environment or for performing an ASCII file dump and reload.</P>
+</FONT><H4>keybuild</H4>
+<FONT SIZE="2"><P>Utility <B>keybuild</B> is used to recreate key (index) files from the contents of data files.  It is useful for implementing DDL changes where non-key fields are changed to key fields or key fields are changed to non-key fields.  It can also be used to rebuild the key files after a database corruption (for example, as reported by <B>dbcheck</B>).</P>
+</FONT><H4>keypack</H4>
+<FONT SIZE="2"><P>The Key File Packing utility can be used to decrease the size of existing key files.  This utility is designed especially for large, static key files which will require very little or no modification after they are packed.  The <B>keypack</B> utility places as many keys as possible into each B-tree node so that the key file is smaller and lookups are quicker.  However, modification of the key file after it has been packed becomes a very expensive operation.</P>
+</FONT><H4>prdbd</H4>
+<FONT SIZE="2"><P>The print database dictionary utility, <B>prdbd</B>, prints a formatted report showing the contents of all the dictionary tables for a particular database.  This detailed information on the structure of the dictionary enables you to write database utilities or to perform database maintenance.</P>
+</FONT><H4>console<FONT FACE="Palatino,Book Antiqua"> </H4></FONT><FONT SIZE="2"><P>The <B>console</B> utility will display the lock manager tables.  This information can be useful to system administrators.  </P>
+</FONT><H4>datdump</H4>
+<FONT SIZE="2"><P>The data file dump utility, <B>datdump</B>, produces a formatted dump of the contents of a data file.  This report shows the data field contents and set linkage pointers for each record occurrence on a data file.  It is primarily for use in performing database maintenance and for learning how data files are organized.</P>
+</FONT><H4>keydump</H4>
+<FONT SIZE="2"><P>Similar to <B>datdump</B>, the <B>keydump</B> utility produces a formatted dump of the contents of a key file.  It is primarily for use in performing database maintenance and for learning how key files are organized.</P>
+</FONT><H2><A name="Flow"></A>3.3   Operational Flow</H2>
+<FONT SIZE="2"><P>The basic operational flow for creating a <B><I>db.*</B></I> C or C++ application program is shown in Figure 3-2.</P>
+<P ALIGN="center"></P>
+<B><P ALIGN="center"><IMG alt="db.* Operation" border="0" height="401" src="dbstar_3-2.gif" width="287"> </P>
+<P align="center">Fig. 3-2.  <I>db.*</I> Operation</P>
+</B><P>The Database Definition Language specification is submitted to the DDL processor, which compiles the DDL and creates the database dictionary.  The DDL processor also creates a C or C++ header file of structure, constant, and class declarations for use with the C or C++ programs that access the database.</P>
+<P>The source code for your C or C++ application program, which includes the header file created by <B>ddlp</B> and the standard <B><I>db.*</B></I> header file (<B>db.star.h)</B>, is then compiled, and the resulting object code is linked with the <B><I>db.*</B></I> runtime library to create the executable application program.  The <B><I>db.*</B></I> library functions called from within the program manipulate the database content as defined by the dictionary.</P>
+<P>The following procedure summarizes the basic steps necessary to create a <B><I>db.*</B></I> application.</P>
+<OL>
+
+<LI>Design the database. That is, determine what data is 
+  to be stored in the database and how it should be organized. 
+  
+<LI>Prepare the DDL specification using your usual text 
+  editor. 
+  
+<LI>Compile the DDL specification using the DDL processor, <B>ddlp</B>. 
+  
+<LI>Correct any DDL errors reported by <B>ddlp</B>. 
+  
+<LI>Initialize the database using <B>initdb</B>. 
+  
+<LI>Experiment with the database, using <B>dal</B> or <B>ida</B> to create and 
+  access some test data. Refine your database design as necessary. 
+  
+<LI>Design and code your C or C++ application program, incorporating the appropriate calls to the <B><I>db.*</B></I> functions.  Your program should include the <B>db.star.h</B> header and the header file created by <B>ddlp</B>. 
+  
+<LI>Compile the C or C++ program. 
+  
+<LI>Link the program with the <B><I>db.*</B></I> library to create your executable. 
+  
+<LI>If it is a multi-user application, start the lock 
+  manager. 
+  
+<LI>Run your <B><I>db.*</B></I> application program.</LI></OL>
+
+<P>The following section illustrates each of these steps by describing the development of a simple database application.</P>
+</FONT><H2><A name="Example"></A>3.4   Introductory Example</H2>
+<FONT SIZE="2"><P>This section introduces the use of <B><I>db.*</B></I> through the development of a simple database application.  A description of the program requirements is given in the next section.  The database design is then explained followed by the program design.  Finally, the program code is described with particular attention paid to the <B><I>db.*</B></I> function calls.</P>
+</FONT><H3><A name="Requirements"></A>3.4.1   Requirements</H3>
+<FONT SIZE="2"><P>The purpose of the example project is to write a program that will maintain a database of books, magazines (journals), and articles contained in a technical library.  Information to be stored in the database includes:</P>
+
+<UL>
+<LI>Identification code: a text field containing a 
+  Dewey-Decimal code or other kind of code to be determined by a user. 
+  
+<LI>Author name: a text field containing the name of the 
+  author in "last, first, middle" format. 
+  
+<LI>Title: a text field containing the title of the book, 
+  magazine, or article. 
+  
+<LI>Publisher: a text field containing the name of the 
+  publisher. 
+  
+<LI>Date published: a date field containing the copyright 
+  date of the publication. 
+  
+<LI>Information type: an integer field containing a code that identifies whether the information is a book, magazine, or article.</LI></UL>
+
+<P>The stored information must be retrievable by either the identification code or author name.  If an author has more than one publication in the library, all of the publications  must be displayed.</P>
+<P>User interaction will be performed by using simple text input and output.  Five commands will be provided:</P>
+
+<UL>
+<LI>Enter technical information 
+  
+<LI>Delete technical information 
+  
+<LI>Find technical information by id code 
+  
+<LI>Find technical information by author 
+  
+<LI>Close database and quit</LI></UL>
+
+<P>The commands will be selected from a simple menu.</P>
+</FONT><H3><A name="DatabaseDesign"></A>3.4.2   Database Design</H3>
+<FONT SIZE="2"><P>The database will be composed of one record type which contains the following data fields:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><EM><P>id_code</FONT></EM></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>15-character field containing the identification code</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><EM><P>info_title</FONT></EM></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>79-character field containing the title</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P><EM>author</EM></FONT></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>31-character field containing author name</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P><EM>publisher</EM></FONT></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>31-character field containing publisher name</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><EM><P>pub_date</FONT></EM></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>11-character field containing publication date</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><EM><P>info_type</FONT></EM></P></TD>
+<TD WIDTH="80%" VALIGN="top">
+<FONT SIZE="2"><P>Integer code field which identifies the information type <BR>
+as follows: 0 =
+ book, 1 =
+ magazine, 2 =
+   
+           article</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>Field id_code will be a unique key field.  That is, it will be used to uniquely access a single record occurrence in the database.</P>
+<P>The author field will be a non-unique key field.  This will provide access to all information records associated with a particular author.  This is because keys are maintained in the index in sorted order and, thus, all duplicate keys will be grouped together.</P>
+<P>The <B><I>db.*</B></I> DDL that implements this database design (assume it is contained in file <B>tims.ddl</B>) is given below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE><A NAME="DDE_LINK1">/* Technical Information Management System*/<BR>database tims</A><BR>{<BR>   data file "tims.d01" contains info;<BR>               key file  "tims.k01" contains id_code;
+   key file  "tims.k02" contains author;
+
+   record info
+   {
+      unique key char id_code[16];
+      char info_title[80];
+      key char author[32];
+      char publisher[32];
+      char pub_date[12];
+      int info_type;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The first line is a comment that describes the database.  As in C, comments are specified in DDL between "/*" and "*/" pairs.  Although comments may be placed throughout the database definition file, those comments before the keyword <B>database</B> will be copied into the resulting header file.</P>
+<P>The database statement names the database. The name chosen here, <B>tims</B>, is an acronym for "Technical Information Management System."</P>
+<P>The DDL file (or schema) defines the database to be composed of one data file, <B>tims.d01</B>, and two key files, <B>tims.k01</B> (containing id_code keys) and <B>tims.k02</B> (containing author keys).</P>
+<P>One record type named <B>info</B> is declared to contain each of the data fields.  To accommodate the null byte that terminates strings in C,  each character field is one character longer than specified in the requirements .  Note that id_code is identified as a unique key and that author is identified as a key.  (Duplicate keys are allowed unless the unique qualifier is present).</P>
+<P>The schema is compiled with the following command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>ddlp tims.ddl</PRE>
+</FONT><FONT SIZE="2"><P>The <B>ddlp</B> will display the following text:</P>
+</FONT><FONT COLOR="#0000ff"><PRE >
+   db.* 1.0.0 Database Definition Language
+Processor Utility Copyright (C) 2000 Centura Corporation, All
+
+Rights Reserved Runtime dictionary
+   memory requirements:   file
+   table :&nbsp;876   record
+   table:&nbsp;&nbsp;12 field   table
+   :&nbsp;120 set   table
+   :&nbsp;&nbsp;&nbsp;0 member   table:&nbsp;&nbsp;&nbsp;0
+   sort table   :&nbsp;&nbsp;&nbsp;0
+   key table   :&nbsp;&nbsp;&nbsp;0
+
+   total   :&nbsp;1008
+
+0 errors detected</PRE>
+</FONT><FONT SIZE="2"><P>The <B>ddlp</B> reports the amount of dynamic memory that will be allocated by the <B><I>db.*</B></I> runtime system for the dictionary.</P>
+<P>Upon successful completion, the <B>ddlp</B> will have created two files.  File <B>tims.dbd</B> contains the database dictionary.  File <B>tims.h</B> is the header file to be included in each C source file using the tims database.  The contents of <B>tims.h</B> are shown below.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#ifndef TIMS_H
+#define TIMS_H
+
+/* <B><I>db.*</B></I> 1.0.0 */
+
+/* Technical Information Management System*/    
+
+/* database tims record/key structure declarations */
+
+struct info {
+   char  id_code[16];
+   char  info_title[80];
+   char  author[32];
+   char  publisher[32];
+   char  pub_date[12];
+   int  info_type;
+};
+
+/* record, field and set table entry definitions */
+
+/* File Id Constants */
+
+/* Record Name Constants */
+#define INFO 10000
+
+/* Field Name Constants */
+#define ID_CODE 0L
+#define INFO_TITLE 1L
+#define AUTHOR 2L
+#define PUBLISHER 3L
+#define PUB_DATE 4L
+#define INFO_TYPE 5L
+
+/* Set Name Constants */
+/* Field Sizes */
+#define SIZEOF_ID_CODE 16
+#define SIZEOF_INFO_TITLE 80
+#define SIZEOF_AUTHOR 32
+#define SIZEOF_PUBLISHER 32
+#define SIZEOF_PUB_DATE 12
+#define SIZEOF_INFO_TYPE 2
+
+#endif    /* TIMS_H */</PRE>
+</FONT><FONT SIZE="2"><P>This file contains a <B>struct</B> declaration for the <B>info</B> record.  This <B>struct</B> is for use by the C/C++ application in declaring variables that contain occurrences of the <B>info</B> record from the database.  Also included in this file are constant definitions for the <B>info</B> record and for each data field.  These constants will be passed to the <B><I>db.*</B></I> C functions that require them.</P>
+<P>The next step is to initialize the database with the following command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>initdb tims</PRE>
+</FONT><FONT SIZE="2"><P>Then <B><I>db.*</B></I> will display the following text and, except in the very first initialization, prompt you for confirmation:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>
+Database Initialization Utility  db.* 1.0.0
+Copyright (C) 2000 Centura Corporation, All Rights Reserved
+
+Initialization of database: tims
+
+WARNING: this will destroy contents of the following files:
+
+   tims.d01
+   tims.k01
+   tims.k02
+
+continue? (y/n)
+</PRE>
+</FONT><FONT SIZE="2"><P>A "y"<B> </B>(yes) response will complete the initialization of the database files; the listed files will be overwritten.</P>
+</FONT><H3><A name="ProgramDesign"></A>3.4.3   Program Design</H3>
+<FONT SIZE="2"><P>The program for this example consists of the following functions:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>main</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Main program, command menu control</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>ent_info</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Enter technical information data</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>del_info</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Delete technical information data</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>by_id</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Find technical information by <B>id_code</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>by_author</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Find technical information by author</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>get_info</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Get technical information data from user</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>pr_info</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Print technical information data</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>Figure 3-3 shows the function call structure for the program.</P>
+</FONT><FONT FACE="Helvetica" SIZE="2"><P ALIGN="center"></P>
+</FONT><B><FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_3-3.gif - 2237 Bytes" border="0" height="151" src="dbstar_3-3.gif" width="307">        </P>
+<P align="center">Fig. 3-3. Call Structure of the Example Program</P>
+</B><P>The <B><I>db.*</B></I> runtime library functions to be used in the example are summarized in the following table.  Note that, by convention, all <B><I>db.*</B></I> runtime functions begin with a <B>d_</B>  prefix.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="535">
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_lockcomm</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Select a lock manager communication protocol</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_open</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Open a database</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_close</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Close a database</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_fillnew</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Fill and store a new record occurrence</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_keyfind</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Find a key occurrence</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_keynext</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Find the next key occurrence</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_keyread</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Read a record contents</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_recread</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Read a record contents</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>d_delete</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT FACE="Palatino,Book Antiqua" SIZE="2"><P>Delete a record occurrence</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H3><A name="Description"></A>3.4.4   Program Description</H3>
+<FONT SIZE="2"><P>The C code for the main program is given below.  The first four lines include directives to incorporate the standard C header file <B>stdio.h</B>, the standard <B><I>db.*</B></I> header file <B>db.star.h</B>, and the <B>tims</B> database header file <B>tims.h</B>.  The <B><I>db.*</B></I> header file contains the constant definitions for the <B><I>db.*</B></I> function return status code.  The definition of LOCKCOMM_DATA needs to be done before <B>db.star.h</B> is included in one module in your application.</P>
+<P>A variable called <B>irec</B> is a globally declared <B>info</B> structure (declared in <B>tims.h</B>) to be used by all of the functions for storing <B>info</B> record data.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include &lt;stdio.h&gt;
+#define LOCKCOMM_DATA
+#include "db.star.h"
+#include "tims.h"
+DB_TASK *Currtask;
+
+struct info irec;   
+
+/* Technical Information Management System */
+main()
+{
+   char cmd[20];  /* command entry string */
+   int err;
+
+/* open the "tims" database */
+   if ((err=d_opentask(&amp;Currtask)) != S_OKAY ||
+       (err=d_open("tims","o", Currtask)) != S_OKAY) 
+   {
+      printf("Failure to open database, error=%d\n", err);
+      return (0);
+   }
+
+   for ( ; ; )
+   {
+      /* display command menu */
+      printf("\nTIMS Commands:\n");
+      printf("   1 - Enter technical information\n");
+      printf("   2 - Delete technical information\n");
+      printf("   3 - Find technical info by id_code\n");
+      printf("   4 - Find technical info by author\n");
+      printf("   q - Quit\n");
+      printf("enter command: ");
+      gets(cmd);
+      switch (cmd[0]) 
+      {
+         case '1':    ent_info();   break;
+         case '2':    del_info();   break;
+         case '3':    by_id();      break;
+         case '4':    by_author();   break;
+         case 'q':    d_close(Currtask);   exit(0);
+         default :
+             printf("*** bad command--re-enter\n");
+            break;
+      }
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>In this example we are opening the database in single user mode, so we are using no lock manager.  For a full explanation of the various lock manager communication options and issues, see the <B><I>db.*</B></I> <I>Multi-User Guide</I>. </P>
+<P>The <B>d_opentask</B> call requires one parameter, a pointer to the task pointer.  <B>db.*</B> will allocate a task structure and return the pointer to the program for use in all subsequent calls that are associated with the task.  The <B>d_open</B> call requires three arguments.  The first argument is the name of the database to be opened.  The second argument (<B>o</B>) indicates that the database is to be opened in one user mode (that is, only one user will access the database, and the lock manager is not required).  In the one-user version, the second argument is required to be <B>o</B>.  The third argument is the task pointer.</P>
+<P>The main program displays the command menu, prompts for and gets a command character from the user, and calls the function associated with the command.  If <B>q</B> is entered, the database is closed (<B>d_close</B>) and execution is terminated (exit).</P>
+<P>Function <B>get_info</B> gets the <B>info</B> record data from the user and stores it in variable <B>irec</B>.  Function <B>pr_info</B> displays to the user the contents of <B>irec</B>.  These functions are given below.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Fill irec with info data from user*/
+int get_info()
+{
+   char txt[40];
+
+   printf("author   : "); 
+   if ((gets(irec.author) == NULL) || (irec.author[0] == '\0'))
+      return( EOF );
+   else 
+   {
+      for ( ; ; ) 
+      {
+         printf("id_code  : ");      gets(irec.id_code);
+         printf("title    : ");      gets(irec.info_title);
+         printf("publisher: ");      gets(irec.publisher);
+         printf("pub. date: ");      gets(irec.pub_date);
+         for ( ; ; )
+         {
+            printf("info type: ");
+            gets(txt);
+            sscanf(txt, "%d", &amp;irec.info_type);
+            if ((irec.info_type &gt;= 0) &amp;&amp; (irec.info_type &lt;= 2))
+               break;
+            printf("invalid - correct types are:\n");
+            printf("0=book, 1=magazine, 2=article\n");
+         }
+         printf("enter data (y/n)? ");
+         gets(txt);
+         if ((txt[0] == 'y') || (txt[0] == 'Y'))
+            return( 0 );
+      }
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Note that <B>get_info</B> validates the <B>info_type</B> code to ensure that it is 0, 1, or 2.  The function returns <B>EOF</B> whenever <B>gets</B> returns <B>NULL</B> or the user enters only a &lt;Return&gt;.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Print technical information record
+*/
+pr_info()
+{
+   printf("id code  : %s\n", irec.id_code);
+   printf("author   : %s\n", irec.author);
+   printf("title    : %s\n", irec.info_title);
+   printf("publisher: %s\n", irec.publisher);
+   printf("pub date : %s\n", irec.pub_date);
+   printf("info type: ");
+   switch (irec.info_type) 
+   {
+      case 0: printf("book\n");     break;
+      case 1: printf("magazine\n"); break;
+      case 2: printf("article\n");  break;
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>pr_info</B> interprets the <B>info_type</B> code to display "book", "magazine", or "article."</P>
+<P>Function <B>ent_info</B> (below) repeatedly calls <B>get_info</B> until <B>EOF</B> is returned and then calls the <B><I>db.*</B></I> function <B>d_fillnew</B> to fill and store a new occurrence of the <B>info</B> record from the contents of <B>irec</B>.  The first argument passed to <B>d_fillnew</B> is record constant <B>INFO</B> which is declared in file <B>tims.h</B>.  If the <B>id_code</B> key value exists in the database, <B>d_fillnew</B> returns status code S_DUPLICATE.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Enter technical information records into TIMS database
+*/
+ent_info()
+{
+   char s[32];  /* generic string variable */
+   
+   /* enter tech info into TIMS database */
+   while (get_info() != EOF) 
+   {
+      /* create new tech. info record */
+      if (d_fillnew(INFO, &amp;irec, Currtask, CURR_DB) == S_DUPLICATE)
+         printf("duplicate id_code: %s/n", irec.id_code);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>del_info</B> deletes an <B>info</B> record occurrence.  The record to be deleted is identified from a user-specified <B>id_code</B>.  Function <B>d_keyfind</B> is used to locate the specified <B>id_code</B> key and returns status S_NOTFOUND if the key is not on file.  If the key is found, <B>d_recread</B> is called to read the contents of the record into variable <B>irec</B>.  Then<B> pr_info</B> displays the contents of<B> irec</B>, and the user is prompted for confirmation of the delete operation.  If confirmed, <B>d_delete</B> is called to delete the record (and its keys).</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Delete technical information records from TIMS database*/
+del_info()
+{
+   char id[16];
+   
+   printf("id_code: ");
+   gets(id);
+   
+   /* search database for matching id_code key */
+   if (d_keyfind(ID_CODE, id, Currtask, CURR_DB) == S_NOTFOUND) 
+      printf("id_code %s not on file\n", id);
+   else
+   {
+      /* read record associated with the found key */
+      d_recread(&amp;irec, Currtask, CURR_DB);
+      pr_info();
+      printf("delete (y/n)? ");
+      gets(id);
+      if ((id[0] == 'Y') || (id[0] == 'y'))
+         d_delete(Currtask, CURR_DB);      /* delete the record */
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>by_id</B> is actually similar to <B>del_info</B> in that an <B>info</B> record is located through a <B>d_keyfind</B> of a user-specified <B>id_code </B>value.  If found, the contents are read by<B> d_recread</B> and are displayed by <B>pr_info</B>.  Of course, no delete occurs since the display of the record contents is all that's desired.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Find technical information by id_code*/
+by_id()
+{
+   char id[16];
+
+   printf("id_code: " );
+   gets(id);
+
+   /* search database for matching id_code key */
+   if (d_keyfind(ID_CODE, id, Currtask, CURR_DB) == S_NOTFOUND)
+      printf("id_code %s not on file\n", id);
+   else 
+   {
+      /* read found record and print contents */
+      d_recread(&amp;irec, Currtask, CURR_DB);
+      pr_info();
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Locating <B>info</B> record occurrences by the author's name is somewhat more complex in that there may be more than one record per author and all are to be displayed.</P>
+<P>Function <B>by_author</B> searches for the user-specified author name through the call to <B>d_keyfind</B>.  If found, the record contents are read into <B>irec </B>by <B>d_recread</B> and displayed by <B>pr_info</B>.  The user is prompted to press &lt;Enter&gt; when ready to continue.  The call to function <B>d_keynext</B> positions to the next higher <B>author</B> key, returning status S_OKAY if there was indeed a next key (status S_NOTFOUND is returned when at the end of the key file).  Function <B>d_keyread</B> reads the value of the key into the <B>author</B> variable, which is then compared (<B>strcmp</B>) with the <B>author</B> field in <B>irec.</P></B></FONT>
+<FONT COLOR="#0000ff">
+<PRE>/* Find technical information by author
+*/
+by_author()
+{
+   char author[32], reply[5];
+   int status;
+   
+   printf("author: ");
+   gets(author);
+   
+   /* search database for matching author key */
+   if (d_keyfind(AUTHOR, author, Currtask, CURR_DB) == S_NOTFOUND)
+      printf("author %s not on file\n", author);
+   else 
+   {
+      do 
+      {
+         /* read found record */
+         d_recread(&amp;irec, Currtask, CURR_DB);
+   
+         /* print record contents */
+         pr_info();
+         printf("--- press &lt;enter&gt; to continue");
+         gets(reply);
+         
+         /* read next key on file--keys are always sorted */
+         status = d_keynext(AUTHOR, Currtask, CURR_DB);
+         if (status == S_OKAY) 
+            status =d_keyread(author, Currtask);   /* read value */
+         /* continue while keys have same author name */
+      } while ((status == S_OKAY) &amp;&amp; 
+            (strcmp(irec.author, author) == 0));
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>Assuming that the program was contained in file <B>intro.c</B>, the following command would build the example program:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>   cc -I../include -o intro intro.c -L../lib -ldbstar</PRE>
+</FONT><FONT SIZE="2"><P>Then to execute the program simply enter:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>intro</PRE>
+</FONT><FONT SIZE="2"><P>Note that these commands all assume that you have the appropriate environment set up for locating include files and libraries.  In particular, files <B>tims.h</B> and <B>db.star.h</B> should be in either the current directory or in <B>../include</B>.  The <B><I>db.*</B></I> runtime library should be located either in the current directory or in <B>../lib</B>.</P>
+</FONT><H2><A name="Structure"></A>3.5   Directory Structure</H2>
+<FONT SIZE="2"><P>Table 3-1 describes the directory structure for the <B><I>db.*</B></I> system.  </P>
+<B><P ALIGN="center">Table 3-1.  <I>db.*</I> Directory Structure</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="522">
+<TR><TD VALIGN="top" COLSPAN="3">
+<B><FONT SIZE="2"><P>General Directories</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>bin</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top" COLSPAN="2">
+<FONT SIZE="2"><P>All the pre-made <I>db.*</I> utilities.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>lib</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top" COLSPAN="2">
+<FONT SIZE="2"><P>The pre-made libraries, divided into subdirectories by compiler.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>examples</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top" COLSPAN="2">
+<FONT SIZE="2"><P>Subdirectories of sample programs and databases.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="3">
+<B><FONT SIZE="2"><P>Directories for Non-Windows Components</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>dal</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the Database Access Language utility.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>dbedit</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the database editor utility.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>dbimp</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the database import utility.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>ida</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the Interactive Database Access utility.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>include</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Header files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>lockmgr</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the lock manager and remote console utilities.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<FONT SIZE="2"><P>psp</FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the Platform Support Pack.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>runtime</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for the <I>db.*</I> library.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top" COLSPAN="2">
+<B><FONT SIZE="2"><P>utility</B></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>Source code for most of the <I>db.*</I> utilities.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

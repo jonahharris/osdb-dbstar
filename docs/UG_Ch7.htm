@@ -1,0 +1,1020 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 7</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Control"></A>Chapter 7<BR>
+Multi-User Database Control</H1>
+<H2><A name="Introduction"></A>7.1  Introduction</H2>
+<FONT SIZE="2"><P>In the example below, two users are attempting to update a record from the database at about the same time.  The left column gives a relative time and the other columns identify the actions that occur for the respective user at each time.</P>
+<B><P ALIGN="center">Table 7-1. Two Users Updating a 
+Record</B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>Time</B></FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">
+<B><FONT SIZE="2"><P>User 1</B></FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">
+<B><FONT SIZE="2"><P>User 2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>1</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Read record</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Read record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>3</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Modify record</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Modify record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>5</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Write record</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+<TD WIDTH="41%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>Write record</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"></P><P>At Time 1, User 1 reads the record from the database.  At Time 2, User 2 reads the record.  Both users then modify and write the record back to the database.  But User 2's copy of the record does not have User 1's changes (they were made after User 2 read the record).  Thus, when User 2's record is written to the database, User 1's changes are lost.  If User 2 had not read the record until after Time 5, the changes from User 1 would not have been lost.  But without any control, there is no way to guarantee that User 2 will put off reading until User 1's updates are completed.</P>
+<P>The solution is to provide a mechanism whereby updates to shared data are synchronized, so that only one user can be updating the shared data at a time.  The mechanism usually is some form of a lock, which is used to serialize updates to data shared among multiple users.  A lock must be applied before shared data is updated, so that other users cannot update the locked data.  Thus, through use of a lock, the above example would proceed as shown in the following table:</P>
+<B><P ALIGN="center">Table 7-2.  Two Users Updating a Record, Using Locks</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>Time</B></FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<B><FONT SIZE="2"><P>User 1</B></FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<B><FONT SIZE="2"><P>User 2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>1</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Request record lock</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Lock granted</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Request record lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>3</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Read record</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Modify record</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>5</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Write record</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Free lock</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Lock granted</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>7</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Read record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>8</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Modify record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>9</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Write record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>10</FONT></P></TD>
+<TD WIDTH="43%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="43%" VALIGN="top">
+<FONT SIZE="2"><P>Free lock</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Once User 1's lock request is granted at Time 2, User 2 will wait for the record to be unlocked before continuing.  When User 1 has completed the update, the lock is freed at Time 6.  User 2 is then granted the lock, and the record (which now includes User 1's changes) is read and then updated with User 2's changes.</P>
+<P>As the above example illustrates, the key issue in multi-user database applications is data integrity, ensuring that no data is lost and that the data is logically consistent (that is, the interdata relationships that should exist do exist).  Data integrity is supported in <B><I>db.*</B></I> through three interrelated facilities:</P>
+
+<UL>
+<LI>File and record locking 
+  
+<LI>Transaction processing 
+  
+<LI>Transaction logging and recovery</LI></UL>
+
+<P>File locking and record locking are used, as in the example, to prevent loss of data by synchronizing access to shared files and records so that only one user at a time can update them.   </P>
+<P>Multi-user database application programming is a difficult task, which should be approached with careful planning and design.  The problems that can occur in multi-user programs are often very difficult to resolve.  The capabilities provided in <B><I>db.*</B></I> are sufficient for you to ensure both data integrity and good performance.  The remainder of this chapter explains the <B><I>db.*</B></I> implementation of these capabilities, including guidelines for their effective use.</P>
+</FONT><H2><A name="Environment"></A>7.2  Operational Environment</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> multi-user operational environment is depicted in Figure 7-1.  </P>
+<B><P ALIGN="center"><IMG alt="dbstar_7-1.gif - 7067 Bytes" border="0" height="301" src="dbstar_7-1.gif" width="397">     </P>
+<P align="center">Fig. 7-1. Multi-User Operational Environment</P>
+</B><P>Each process executes its own copy of the database program.  On a multi-user UNIX/Linux system, the program executes as a separate process.  Each process will be referred to as a user.  Each user must have a unique user identifier.  The user id can be specified either through the DBUSERID environment variable or through a call to function <B>d_dbuserid</B> prior to the <B>d_open</B> call.  The <B>db.star.ini</B> file cannot be used to specify the user id.</P>
+<P>If transaction logging is to be used, each user will have a unique transaction log file.  By default, the name of the log file is <B>userid.log</B>.  The log file's name and location can be specified through either the DBLOG environment variable or the <B>db.star.ini</B> file or function <B>d_dblog</B>, which also must be called before the database is opened.  The transaction log contains the database changes made by the user within a transaction, and is used to support recovery.</P>
+<P>Management of the <B><I>db.*</B></I> locks, and control of automatic recovery, is performed by the <B><I>db.*</B></I> lock manager.  Each process sends lock requests to the lock manager, which queues the requests on a "first come, first served" basis.  The process will wait for the lock manager to send a reply either granting or denying the request.  Locks are denied when the lock request has waited on the queue for a period longer than the timeout value specified by the requesting process.  The lock manager is a program that can be executed from any node on a network or as a background task on a stand-alone machine.  See the <B><I>db.*</B></I> <I>Multi-User Guide</I> for a complete description of the lock manager.  </P>
+<P>A database-family transaction activity file (TAF) is used by the <B><I>db.*</B></I> runtime to control database recovery in the event the lock manager goes down.  This file is named <B>db.star.taf</B> by default, but can be named or located through either environment variable DBTAF or function <B>d_dbtaf</B>, or the <B>db.star.ini</B> file, which must be called before <B>d_open</B>.  </P>
+<P>Each database family must use only one TAF so that automatic recovery is done correctly.  Also, all log files for the database family (TAF) must be located in the same physical directory.  The application must enforce these rules through the consistent use of the environment variables, their corresponding <B>d_</B> functions, and the <B>db.star.ini</B> file.</P>
+<P>Multi-user database programs must open the database in shared access mode.  This is done by passing an open type of "s" to function <B>d_open</B>.  For example, to open the <B>tims</B> database for multi-user access, issue the following call:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>if (d_open("tims", "s", task) == S_UNAVAIL)
+{
+   printf("database unavailable\n");
+   exit(1);
+}</PRE>
+</FONT><FONT SIZE="2"><P>Status code S_UNAVAIL is returned when some other database program has opened the <B>tims</B> database in exclusive access mode.</P>
+</FONT><H2><A name="Locking"></A>7.3  File Locking</H2>
+<H3><A name="LockingIntroduction"></A>7.3.1  Introduction</H3>
+<FONT SIZE="2"><P>The principal locking mechanism provided by <B><I>db.*</B></I> is the file lock. An advisory record locking capability, which is used in conjunction with file locking, is also provided and is described in section 7.5, "Advisory Record Locks."  Although file locking is often regarded as an inferior multi-user locking mechanism, in the <B><I>db.*</B></I> environment it can be used very effectively without sacrificing performance.  In fact, well-performing multi-user applications can and have been written using only file locking.</P>
+<P>Much of the file locking functionality provided in <B><I>db.*</B></I> has been developed to optimize multi-user performance.  In addition, section 7.6, "Program Design Considerations," gives some general program design guidelines to help you effectively use the <B><I>db.*</B></I> capabilities.  Table 7-3 lists the file locking functions.</P>
+<B><P ALIGN="center">Table 7-3.  File Locking Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="40%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_reclock(<I>REC</I>,<B> </B><I>type, task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Lock data and key files associated with record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_setlock(<I>SET</I>,<B> </B><I>type</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Lock data files associated with set type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_keylock(<I>FIELD</I>,<B> </B><I>type</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Lock key file containing key field </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_lock(<I>num</I>,<B> </B><I>pkt</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Lock group of record and set types</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_recfree(<I>REC</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Free lock on record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_setfree(<I>SET</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Free lock on set type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_keyfree(<I>FIELD</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Free lock on key field type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_freeall(<I>task</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Free all read locks</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_reclstat(<I>REC</I>,<B> </B><I>type</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get record type's lock status</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_setlstat(<I>SET</I>,<B> </B><I>type</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get set type's lock status</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_keylstat(<I>FIELD</I>,<B> </B><I>type</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get key field type's lock status</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<FONT SIZE="2"><P>d_timeout(<I>secs, task</I>)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Specify wait time before timeout</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Note that functions <B>d_trend</B> and <B>d_trabort</B> are also used with file locking although they are not listed here.  Recall that both functions free locked files.  The remaining pages of this section describe the functions listed in Table 7-3.</P>
+<P>Function <B>d_reclock</B> locks the data file containing the record type, as well as all key files containing key fields defined in the specified record type.  For example, assume the following DDL statements appear in your schema:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>data file "tims.d01" contains system, key_word, intersect;
+data file "tims.d02" contains author, borrower, info, text;
+key  file "tims.k01" contains id_code;
+key  file "tims.k02" contains friend, word;
+...
+record info {
+   unique key char id_code[16];   /* dewey dec. code */
+   char info_title[80];           /* title of book, article, mag. */
+   char publisher[32];            /* name of publisher */
+   char pub_date[12];             /* date of publication */
+   int info_type;                 /* 0=book, 1=mag, 2=art */
+}
+...
+record key_word {
+   unique key char word[32];      /* subject key words */
+}
+...
+set key_to_info {
+   order last;
+   owner key_word;
+   member intersect;
+}</PRE>
+</FONT><FONT SIZE="2"><P>The call <B>d_reclock</B>(INFO, "r", task, CURR_DB) will cause <B>tims.d02</B> and <B>tims.k01</B> to be read-locked.  The call <B>d_reclock</B>(KEY_WORD,"r", task, CURR_DB) will cause <B>tims.d01</B> and <B>tims.k02</B> to be read-locked.  Record locks are always necessary when creating a record with keys, or when modifying key fields in records, because they guarantee that all of the files related to the record will be locked.</P>
+<P>Function <B>d_setlock</B> locks the data files that contain the owner and member record types of the specified set.  The call <B>d_setlock</B>(KEY_TO_INFO, "r", CURR_DB) will cause only file <B>tims.d01</B> to be read-locked, because both record types are contained in the same file.  This function does not lock key files associated with records.  Set locks are necessary when connecting or disconnecting records in sets, or when traversing sets, because they guarantee that all of the files related to the set will be locked.  Note, however, that if record locks had already been applied to both the <B>key_word</B> and <B>intersect</B> record types, the set lock would not be needed (although it would be accepted).  Any time the correct files have been locked, even though by a different locking call, functions that use the files will execute without locking errors.</P>
+<P>Function <B>d_keylock</B> locks the key file that contains the specified key field.  The call <B>d_keylock</B>(ID_CODE, "r", CURR_DB) will lock only file <B>tims.k01</B>.  By locking only a key file, you may scan keys, as in the following code:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_keylock(ID_CODE, "r", task, CURR_DB);
+for ( (status=d_keyfrst(ID_CODE, task, CURR_DB));
+      status == S_OKAY; 
+      (status=d_keynext(ID_CODE, task, CURR_DB)) ) 
+{
+   d_keyread(id_code, task, CURR_DB);
+   printf("id code: %s\n", id_code);
+}
+d_keyfree (ID_CODE, task, CURR_DB);
+</FONT></PRE>
+<FONT SIZE="2"><P>By locking only the key file, you eliminate the overhead of obtaining locks on the data file, and possibly other key files related to the same record type.  Also, in a multi-user environment, it is important not to lock any files that are not going to be used, because you may be preventing other users from making progress.</P>
+<P>Function <B>d_lock</B> is used to lock a group of record and set types, and is described in detail in section 7.3.6, "Grouped Lock Requests."</P>
+<P>Table 7-4 lists the types of locks that can be applied.</P>
+<B><P ALIGN="center">Table 7-4.  File Lock Types</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="32%" VALIGN="top">
+<B><FONT SIZE="2"><P>Type</B></FONT></P></TD>
+<TD WIDTH="68%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>'r'</FONT></P></TD>
+<TD WIDTH="68%" VALIGN="top">
+<FONT SIZE="2"><P>Read lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>'w'</FONT></P></TD>
+<TD WIDTH="68%" VALIGN="top">
+<FONT SIZE="2"><P>Write lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>'x'</FONT></P></TD>
+<TD WIDTH="68%" VALIGN="top">
+<FONT SIZE="2"><P>Exclusive lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="32%" VALIGN="top">
+<FONT SIZE="2"><P>'k'</FONT></P></TD>
+<TD WIDTH="68%" VALIGN="top">
+<FONT SIZE="2"><P>Keep lock</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Functions <B>d_recfree</B>, <B>d_setfree</B>, and <B>d_keyfree</B> free read locks or exclusive locks on their respective record, set, or key field types for their database.  Function <B>d_freeall</B> will free all read-locked files across all databases.</P>
+<P>The current lock status of a record, set, or key type can be found by calling functions <B>d_reclstat</B>, <B>d_setlstat</B>, or <B>d_keylstat</B>. </P>
+<P>Function <B>d_timeout</B> is used to inform the lock manager of the number of seconds that lock requests from this process are to wait on the queue before being denied.</P>
+</FONT><H3><A name="Read"></A>7.3.2  Read Locks</H3>
+<FONT SIZE="2"><P>A lock type 'r' passed to a locking function specifies that the files are to be read-locked.  A read lock on a file prevents other processes from placing a write or exclusive lock on that file.  Other processes are allowed to read-lock the file.  Thus, when a file is read-locked, other processes are allowed to read the file but are prevented from updating the file.</P>
+<P>Functions that only read from the database but cannot be safely executed concurrently with updates require that the files involved be read-locked.  In addition, the key access functions and set navigation functions require that the files be read-locked.  The record access functions listed in Table 7-5 can be executed concurrently with updates and, therefore, do not require that the data file be locked.  If the record being read happens to have been deleted, status code S_DELETED will be returned by the function.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>Using these functions without a 
+  lock will retrieve data from your local cache without ensuring that it is the 
+  most up-to-date data. To ensure synchronization of cache pages, use a read 
+  lock.</BLOCKQUOTE>
+<B><FONT SIZE="2"><P ALIGN="center">Table 7-5.  Read Functions that Do Not Need a Lock</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="46%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_cmtype(<I>SET</I>,<B> </B><I>&amp;type, task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Get record type of current member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_cotype(<I>SET</I>,<B> </B><I>&amp;type</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Get record type of current owner</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_crread(<I>FIELD</I>,<B> </B><I>&amp;val</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Read field from current record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_csmread(<I>SET</I>,<B> </B><I>FIELD</I>,<B> </B><I>&amp;val</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Read field from current member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_csoread(<I>SET</I>,<B> </B><I>FIELD</I>,<B> </B><I>&amp;val</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Read field from current owner</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_members(<I>SET</I>,<B> </B><I>&amp;count</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Get count of set members</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_recfrst(<I>REC</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Position to first occurrence of record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_reclast(<I>REC</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Position to last occurrence of record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_recnext(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Position to next occurrence of record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_recprev(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Position to previous occurrence of record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="46%" VALIGN="top">
+<FONT SIZE="2"><P>d_recread(<I>&amp;val</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="54%" VALIGN="top">
+<FONT SIZE="2"><P>Read current record</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Read locks can be requested either from outside or within a transaction.  Read locks that are issued within a transaction, or are not freed prior to a call to <B>d_trbegin</B>, are freed by either <B>d_trend</B> or <B>d_trabort</B> (unless the lock is to be kept<FONT FACE="Symbol">¾</FONT>
+see section 7.3.5, "Upgrading/Downgrading of File Locks").  Read locks requested outside a transaction are freed by calling the appropriate lock freeing function, or by the termination of an intervening transaction.</P>
+</FONT><H3><A name="Write"></A>7.3.3  Write Locks</H3>
+<FONT SIZE="2"><P>In order to update the database, the files to be updated must be write-locked.  Write locks are requested by passing a 'w' lock type to the lock function.  A write lock gives the requesting process exclusive access to the locked file.</P>
+<P>Write locks can only be requested within a transaction.  Error code S_TRNOTACT will be returned by the lock function if a transaction is not active when the write lock request is made.  Write locks are freed by <B>d_trend</B> or <B>d_trabort</B>.</P>
+<P>A multi-user programming problem that often occurs is called deadlock.  Deadlock is the situation where multiple processes each hold locks on certain resources, and each is waiting to lock resources that are held by the others.  The simplest example of deadlock is where Process 1 has Resource A locked and is requesting a lock on Resource B, while Process 2 has a lock on Resource B and is requesting a lock on Resource A.  Both processes require access to both resources in order to complete their transactions, but both will wait forever for the other to free its resources.</P>
+<P>Deadlock situations can arise in <B><I>db.*</B></I> when multiple processes are attempting to write lock the same files.  Only one process will be granted the write lock, and the remaining processes will wait on the queue until the locked file is freed.  In a deadlock, those processes will wait on the queue forever because the locked file is never freed.  To avoid this situation, <B><I>db.*</B></I> provides function <B>d_timeout</B>, which allows the application to specify how long to wait on the queue before denying a lock request.  The default wait time is 10 seconds.  An integer argument is passed to <B>d_timeout</B> to specify the number of seconds before timing out.  A negative value disables timeouts (you should be certain your program is deadlock free).  A value of zero may be used to cause a timeout when a lock request cannot be immediately granted.  When status S_UNAVAIL is returned from a lock function (indicating a timeout) the program should abort the transaction and then restart it, in order to prevent deadlock.  Status S_UNAVAIL is also returned when the lock manager is temporarily unable to handle the lock request.</P>
+</FONT><H3><A name="Exclusive"></A>7.3.4  Exclusive Locks</H3>
+<FONT SIZE="2"><P>The ability to gain exclusive access to database files is provided by passing an exclusive lock type ('x') to the appropriate lock function.  Exclusive access to a record or set type differs from a write lock in that it allows updates independent of transactions and other locks.  Updates to files in exclusive access can still be made within transactions, if desired.  The purpose of this capability is to allow unlocked updates to be made to only a portion of the database while allowing other programs to have shared access to other parts of the database.</P>
+<P>Exclusive locks are only released by calling <B>d_recfree</B>, <B>d_setfree</B>, or <B>d_keyfree</B>.  Unless explicitly freed, exclusive access locks are held even after the database has been closed by the process that applied the exclusive locks.  In this case, the exclusive locks will still be in place when that same user re-opens the database.  This provides for situations (for example, month-end closings) where large time-consuming updates requiring exclusive file access aren't completed by the end of the day, and the database program doing the update needs to be terminated and will not be restarted until the next day.  Note, however, that if the lock manager goes down, any exclusive locks will be lost.</P>
+</FONT><H3><A name="Upgrading"></A>7.3.5  Upgrading/Downgrading of File Locks</H3>
+<FONT SIZE="2"><P>Record, set, and key types that are read-locked do not need to be freed when a transaction is started.  Moreover, the capability to upgrade a read lock to a write or exclusive lock is provided.  Similarly, a capability is provided to prevent <B>d_trend</B> from freeing a lock, keeping the record or set type read-locked after the transaction has ended.  This provides for improved performance by allowing database data to remain in the virtual page buffers, reducing the amount of required disk I/O.</P>
+<P>To upgrade a read lock to a write lock, leave the record, set, or key type locked and re-issue the <B>d_reclock</B>, <B>d_setlock</B>, or <B>d_keylock</B> call (with type 'w') after <B>d_trbegin</B>.  The upgrade is only granted if there are no upgrade requests queued and all other read locks have been freed.  Granted upgrade requests ensure that no changes have been made by other processes between the read and write lock activity.  If any normal write locks (that is, not upgrades) are on the queue, the requested upgrade will be granted after all read locks have been freed but before the first queued write lock.  If another upgrade request has been queued by the lock manager, the upgrade will be denied immediately (S_UNAVAIL status) but the record or set type will remain read-locked.  The proper action in this situation is as follows:</P>
+<OL>
+
+<LI>Abort the transaction. 
+  
+<LI>Start a new transaction. 
+  
+<LI>Request a normal write lock. 
+  
+<LI>Update the necessary data.</LI></OL>
+
+<P>If the normal write lock request is denied, you should abort and restart the transaction as usual.  To upgrade a read lock to an exclusive lock, simply re-issue the <B>d_reclock</B> or <B>d_setlock</B> with type 'x'.  The constraints that apply to upgrades from read locks to write locks also apply to upgrades from read locks to exclusive locks.</P>
+<P>To downgrade a write lock to a read lock, or to keep a record or set type read-locked after execution of <B>d_trend</B>, re-issue a <B>d_reclock</B> or <B>d_setlock</B> call with type 'k' prior to <B>d_trend</B>.</P>
+</FONT><H3><A name="Grouped"></A>7.3.6  Grouped Lock Requests</H3>
+<FONT SIZE="2"><P>Functions <B>d_reclock</B> and <B>d_setlock</B> only allow for locking record or set types one at a time, requiring each request to be granted by the lock manager before the next lock request is processed.  Often it is desirable to lock a group of record or set types in a single request, none of the locks being granted unless all of the requested files are available.  In fact, deadlock-free programs result when all needed locks are requested at the beginning of each transaction and processing only continues when all have been granted.  This is one of the standard techniques for avoiding deadlock.  </P>
+<P>Function <B>d_lock</B> provides this grouped lock request capability.  The first argument passed to <B>d_lock </B>is an integer containing the count of the number of items to be locked.  The second argument is a pointer to the packet of lock requests.  Each lock request is placed in a LOCK_REQUEST structure entry as defined below and declared in file <B>db.star.h</B>.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   unsigned int  item;   /* number of record or set to be locked */
+   char          type;   /* type of lock */
+} LOCK_REQUEST;</PRE>
+</FONT><FONT SIZE="2"><P>Structure field <B>item</B> contains the record or set constant (as defined in <B>dbname.h</B>) for the record or set to be locked.  Key types cannot be locked using function <B>d_lock</B>.  Field <B>type</B> contains the type of lock to be applied: 'r', 'w', 'x', or 'k'.  (Note that these are single character constants and not strings.)</P>
+<P>Grouped lock requests can be statically defined.  For example, suppose that, for transaction <B>trxc02</B>, record types <B>EMP</B> and <B>JOBS</B> and set <B>DEPT_EMPS</B> are to be locked.  The following variables could be declared and used as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>LOCK_REQUEST trxc02[] = {
+   {EMP,         'w'},
+   {JOBS,        'w'},
+   {DEPT_EMPS,   'r'}
+};
+int trxc02_count = 3;   /* sizeof(trxc02) / sizeof(trxc02[0]) */
+   ...
+d_trbegin("trxc02");
+if (d_lock(trxc02_count, trxc02, CURR_DB) == S_OKAY) {
+   ... /* process transaction */
+   d_trend();
+}
+else
+   d_trabort();</PRE>
+</FONT><FONT SIZE="2"><P>The trade-off associated with using <B>d_lock</B>, as opposed to waiting until you actually need the lock before you request it, is that the files are locked and others are prevented from using them for a longer period of time.  The actual impact will depend on how you design your application program.  The peace of mind associated with knowing your program is free of deadlock is often worth some performance penalty.</P>
+</FONT><H3><A name="Status"></A>7.3.7  Lock Status Functions</H3>
+<FONT SIZE="2"><P>Three lock status functions are provided, which return the current lock status of a record, set, or key for the requesting process.  Function <B>d_reclstat</B> returns the current lock status of the specified record type.  Function <B>d_setlstat</B> returns the current lock status of the specified set type.  Function <B>d_keylstat</B> returns the current lock status of the specified key field type.   A pointer to a character variable that is to contain the lock status is passed to each of the functions.  Note that these functions only return the status of the locks held by the requesting process.</P>
+</FONT><H3><A name="Static"></A>7.3.8  Static Records</H3>
+<FONT SIZE="2"><P>In a multi-user environment, there are applications in which certain information in the database is virtually static (that is, it does not change).  Examples of this kind of data would be menus, data entry forms, help screens, user messages, etc.  Rather than requiring database programs to place locks on this data in order to access it, a record attribute called <B>static</B> can be defined in the DDL to identify this kind of information as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>[<B>static</B>] <B>record</B> <I>recname</I> {
+   ...
+}</PRE>
+</FONT><FONT SIZE="2"><P>Data files that contain a static record must contain only static records.  Static records can be used in sets, but only when the set itself also does not change.</P>
+<P>To change static records, the database must be opened in exclusive access mode.</P>
+<P>The principal advantage in using static records is performance improvements due to better virtual paging of the static data.  Dynamic data requires that the page buffers be cleared when a file lock is requested, in order to ensure concurrent database synchronization.  Static data does not need to be cleared because no synchronization is necessary when there are no changes.</P>
+</FONT><H2><A name="Timestamping"></A>7.4  Timestamping</H2>
+<H3><A name="TimestampingIntroduction"></A>7.4.1  Introduction</H3>
+<FONT SIZE="2"><P>Consider the following <B><I>db.*</B></I> database access scenario:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_reclock(REC, "r", task, CURR_DB);    /* lock data and key files */
+d_keyfind(KEY, value, task, CURR_DB);  /* find record by key */
+d_crget(&amp;dba, task, CURR_DB);          /* save currency */
+d_recfree(REC, task, CURR_DB);         /* free record lock */
+   ...
+   ...
+d_reclock(REC, "r", task, CURR_DB);    /* relock record type */
+d_crset(&amp;dba, task, CURR_DB);          /* restore currency */
+d_recread(REC, task, CURR_DB);         /* read and process record */
+   ...</PRE>
+</FONT><FONT SIZE="2"><P>The first four statements lock a record type, locate a record occurrence through a key field, save the database address of that record, and then free the lock.  The last three statements re-lock the record type, set the current record to the saved database address, and then read the record from the database.  However, while the record type was unlocked by this process another process may have updated the database and modified or deleted the record associated with the saved database address.  Thus, when the record type is re-locked, the record occurrence is read directly through the database address, which may now contain a deleted record (which would result in a database error) or a modified record (in which case the user would not be made aware of the modifications).</P>
+<P>One way to avoid this problem is to re-access the record with another <B>d_keyfind</B>, which would return a "not found" status if the record had been deleted.  However, this would not reflect changes to the record, and it would be slower than a direct access through the database address.</P>
+<P>Timestamping is a technique whereby it is possible to detect whether a particular record occurrence still exists, and if it has been modified since it was last accessed by a given process.  This allows direct access to a record after the file has been unlocked and subsequently re-locked for those records that haven't been updated in the interim.</P>
+</FONT><H3><A name="Implementation"></A>7.4.2  Implementation</H3>
+<FONT SIZE="2"><P>Each timestamped record occurrence contains two values in its record slot header.  One is the time when the record was created and the other is the time when the record was last updated.  When a record slot is accessed, the maximum of these two values (that is, the time of last modification) is placed, along with the database address, in the currency tables.  Functions are provided that compare the value placed in the currency table against the times stored in the record, in order to determine if the record has changed.</P>
+<P>There may also be situations in which it is desirable to know if a set has changed since last accessed.  Thus, the time of last update value (connect or disconnect) is stored in the timestamped set pointers, to be used to detect changed sets.</P>
+<P>The time values cannot simply be the system clock time.  In a network environment, the clocks of the different computers are not synchronized.  What is used is a sequence counter, which is accessible by all processes.  This sequence counter is stored in the file headers (page zero) for each database file, and is incremented each time a write lock is placed on the file or the database is opened for exclusive access.  The counter is initialized to zero only when the database is initialized.</P>
+<P>Timestamping is an optional feature enabled through the following DDL specifications:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>timestamp records [ <I>recname</I> [, <I>recname</I>... ] ] ;
+
+timestamp sets [ <I>setname</I> [, <I>setname</I>... ] ] ;</PRE>
+</FONT><FONT SIZE="2"><P>These statements may appear anywhere within a DDL schema specification file.  If no record or set names are specified, all records or sets will be timestamped.</P>
+<P>Record timestamping adds eight bytes of additional space overhead to each record slot.  Set timestamping adds four bytes of additional space overhead to each set pointer contained in set owner records.</P>
+<P>The <B><I>db.*</B></I> runtime support for timestamping includes the following:</P>
+
+<UL>
+<LI>Last access timestamps, incorporated with the   currency tables 
+  
+<LI>Currency table access functions to handle the last   access timestamps 
+  
+<LI>Functions that test the timestamp status</LI></UL>
+
+<P>If timestamping is enabled for a record, the currency table will associate the most recent modification time of that record with its database address.  Whenever the currency of that record changes (current owner, current record, or current set) through the navigation functions, that modification time will be adjusted.  These timestamp values are then used by the five functions listed in Table 7-6 to test the modification status of that record.</P>
+<B><P ALIGN="center">Table 7-6.  Timestamp Status Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="41%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>d_crstat(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<FONT SIZE="2"><P>Test last access status of current record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>d_costat(<I>SET</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<FONT SIZE="2"><P>Test last access status of current owner</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>d_cmstat(<I>SET</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<FONT SIZE="2"><P>Test last access status of current member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>d_csstat(<I>SET</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<FONT SIZE="2"><P>Test last access status of current set</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="41%" VALIGN="top">
+<FONT SIZE="2"><P>d_recstat(<I>dba</I>,<I> time</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="59%" VALIGN="top">
+<FONT SIZE="2"><P>Test last access status of record</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Each of the above functions returns one of the status codes listed in Table 7-7 below.</P>
+<B><P ALIGN="center">Table 7-7.  Timestamp Status Codes</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="29%" VALIGN="top">
+<B><FONT SIZE="2"><P>Return Code</B></FONT></P></TD>
+<TD WIDTH="71%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="29%" VALIGN="top">
+<FONT SIZE="2"><P>S_OKAY</FONT></P></TD>
+<TD WIDTH="71%" VALIGN="top">
+<FONT SIZE="2"><P>The record or set has not changed</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="29%" VALIGN="top">
+<FONT SIZE="2"><P>S_UPDATED</FONT></P></TD>
+<TD WIDTH="71%" VALIGN="top">
+<FONT SIZE="2"><P>The record or set has been modified</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="29%" VALIGN="top">
+<FONT SIZE="2"><P>S_DELETED</FONT></P></TD>
+<TD WIDTH="71%" VALIGN="top">
+<FONT SIZE="2"><P>The record has been deleted</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Status S_DELETED is returned if the record slot contains either a deleted record, or a record with a creation date that is later than the current last access timestamp.  Status S_UPDATED is returned if the record or set has been updated since it was last accessed.</P>
+<P>The functions listed in Table 7-8 provide the ability to get and set the last access (or currency) timestamp values stored with the timestamps.  All timestamp variables are of type "unsigned long."</P>
+<B><P ALIGN="center">Table 7-8.  Timestamp Currency Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="38%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_gtscr(<I>&amp;ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Get last access timestamp of current record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_gtsco(<I>set</I>,<B> </B><I>&amp;ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Get last access timestamp of current owner</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_gtscm(<I>set</I>,<B> </B><I>&amp;ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Get last access timestamp of current member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_gtscs(<I>set</I>,<B> </B><I>&amp;ts, task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Get last access timestamp of current set</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_stscr(<I>ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Set last access timestamp of current record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_stsco(<I>set</I>,<B> </B><I>ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Set last access timestamp of current owner</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_stscm(<I>set</I>,<B> </B><I>ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Set last access timestamp of current member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>d_stscs(<I>set</I>,<B> </B><I>ts</I>,<B> </B><I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Set last access timestamp of current set</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Whenever a database address in the currency table is to be saved and restored, it is imperative that its corresponding last access timestamp be saved and restored along with it, if the record type is timestamped.  Table 7-9 lists the standard currency access functions from Chapter 5, "Database Manipulation," and their timestamp counterparts.  These must be called together when the subject record type is timestamped.  Functions <B>d_gtscs</B> and <B>d_stscs</B> need to be called with <B>d_csoget</B> and <B>d_csoset</B> when the specified set type is timestamped.</P>
+<B><P ALIGN="center">Table 7-9.  Corresponding Currency Access Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>If called</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>Also call</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crget</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_gtscr</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csoget</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_gtsco, d_gtscs</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmget</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_gtscm</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_crset</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_stscr</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csoset</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_stsco, d_stscs</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_csmset</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_stscm</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Using these capabilities, the example given in the introduction could be coded as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>DB_ADDR dba;
+ULONG rts;
+...
+d_reclock(REC, "r", task, CURR_DB);    /* lock data and key files */
+d_keyfind(KEY, value, task, CURR_DB);  /* find record by KEY */
+d_crget(&amp;dba, task, CURR_DB);          /* save current record */
+d_gtscr(&amp;rts, task, CURR_DB);          /* and its timestamp */
+d_recfree(REC, task, CURR_DB);         /* free record lock */
+...
+...
+d_reclock(REC, "r", task, CURR_DB);    /* relock record type */
+
+/* reset current record and its timestamp */
+d_crset(&amp;dba, task, CURR_DB);
+d_stscr(rts, task, CURR_DB);
+
+/* test update status of current record */
+if (d_crstat(task, CURR_DB) == S_OKAY)
+{
+   d_recread(&amp;rec, task, CURR_DB);
+   ... /* process record */
+}
+else if (db_status == S_UPDATED)
+{
+   ... /* check modifications */
+}
+else 
+{
+   ... /* record was deleted */
+}
+...</PRE>
+</FONT><FONT SIZE="2"><P>Status code S_TIMESTAMP is returned when the record or set involved in the function is not timestamped.  Status S_NOTLOCKED is returned when the record or set type involved in the function is not locked.</P>
+</FONT><H2><A name="Advisory"></A>7.5  Advisory Record Locks</H2>
+<FONT SIZE="2"><P>Three functions that support the locking of individual record occurrences are given in Table 7-10.   These functions are used in conjunction with file locking to support end-user modification of data without having to keep a file locked.</P>
+<B><P ALIGN="center">Table 7-10.  Record Locking Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="39%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<FONT SIZE="2"><P>d_rlbset(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Set current record's lock bit</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<FONT SIZE="2"><P>d_rlbtst(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Test current record's lock bit</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<FONT SIZE="2"><P>d_rlbclr(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Clear current record's lock bit</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>A bit in the record is used as a flag that indicates whether the record occurrence is locked.  This bit is called the record lock bit.  The record locking functions are used to set, test, and clear the record lock bit of the current record.</P>
+<P>Function <B>d_rlbset</B> is called to set the record lock bit of the current record.  The data file containing the record need not be locked.  The <B><I>db.*</B></I> runtime will automatically synchronize access to the record.  The current record is accessed directly, without using the cache, so that upon successful completion of the call the bit is physically set in the record on the disk.  Function <B>d_rlbset</B> will return status S_UNAVAIL if the system cannot gain access to the data file (due to its being write or exclusively locked).  Status S_LOCKED is returned if the current record's lock bit is already set.  Status S_OKAY is returned when the function has successfully set the lock bit.  If <B>d_rlbset</B> is called within a transaction, the operation still goes directly to the file, bypassing use of the cache.  Thus, a <B>d_trabort</B> call does not undo any record lock bit settings that were performed within the transaction.</P>
+<P>Function <B>d_rlbclr</B> is called to clear the record lock bit of the current record.  After a record occurrence is locked, the record will remain locked until function <B>d_rlbclr</B> is called to clear the lock bit.  If <B>d_rlbclr</B> is called from within a transaction, the data file containing the current record must be write-locked.  User error S_NOTLOCKED is returned if the function is called within a transaction and the data file of the current record is not write-locked.  The clearing of the record lock bit cannot be applied until the transaction ends because other modifications to the record are usually involved in the transaction.  If <B>d_trabort</B> is called after <B>d_rlbclr</B>, the clear is aborted, and the record remains locked.  When <B>d_rlbclr</B> is called within a transaction, the lock bit is cleared through the cache rather than directly to the file.  If <B>d_rlbclr</B> is called outside of a transaction, the file does not need to be locked and the operation will directly clear the lock bit on the file.  This is used to clear a lock after it has been determined that the record no longer needs to be updated.</P>
+<P>Function <B>d_rlbtst</B> can be called to test the lock bit status of the current record.  Status code S_LOCKED is returned if the lock bit of the current record is set; code S_UNLOCKED is returned if the lock bit is clear.  The data file containing the current record does not need to be locked in order to call <B>d_rlbtst</B>.</P>
+<P>In addition to the above functions, the system provides a global integer status variable in the single-tasking, static-link libraries called <B>rlb_status</B>, which is set to S_LOCKED or S_UNLOCKED by the following record read functions:</P>
+
+<UL>
+<B><LI>d_recread 
+  
+<LI>d_crread 
+  
+<LI>d_csoread 
+  
+<LI>d_csmread</LI></UL></B><P>No records that have been locked by the program should remain locked after the database is closed.  The database consistency check utility, <B>dbcheck</B>, can be used to report all record occurrences that have the lock bit set, or the utility <B>dbclrlb</B> can be used to clear them.  </P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The setting of a record's lock bit (RLB) will not automatically prevent another process from updating the locked record.  It is the responsibility of the application to check if a record occurrence is locked before allowing updates to it, by either calling <B>d_rlbtst</B> or checking <B>rlb_status</B> after reading the record's contents.  The <B><I>db.*</B></I> functions that 
+  modify the database do not use the status of the RLB.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Use of these functions will be illustrated in the next section.</P>
+</FONT><H2><A name="Program"></A>7.6  Program Design Considerations</H2>
+<H3><A name="Basic"></A>7.6.1  Basic Guidelines</H3>
+<FONT SIZE="2"><P>The primary guideline to follow in designing a multi-user application that uses the <B><I>db.*</B></I> locking functionality is:</P>
+</FONT><BLOCKQUOTE>Minimize the amount of time that a file is locked.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The application program has complete control over the use of file locks.  If the program is designed to adhere to the above principle, then well-performing multi-user applications can result.  A necessary corollary to the above principle is:</P>
+</FONT><BLOCKQUOTE><STRONG><EM>Caution</EM></STRONG>: Never allow the end-user to control the duration of a file lock!</BLOCKQUOTE>
+<FONT SIZE="2"><P>That is, never design the program so that a file is kept locked while the program is waiting for the end-user to perform some function.  With the capabilities provided in <B><I>db.*</B></I> there is never any reason for these guidelines to be violated.</P>
+<P>The design techniques that follow show how these principles are applied in data entry, deletion, modification, and retrieval.</P>
+</FONT><H3><A name="Entry"></A>7.6.2  Data Entry</H3>
+<FONT SIZE="2"><P>The entry of new records and set connections into a database is very straightforward.  The steps involved are outlined below.</P>
+<OL>
+
+<LI>Collect all relevant data from user. 
+  
+<LI>Begin transaction. 
+  
+<LI>Write-lock necessary record and set types. 
+  
+<LI>Create new record occurrences and make necessary set 
+  connections. 
+  
+<LI>End transaction.</LI></OL>
+
+<P>The goal is to minimize the amount of time that a file is locked.  In this procedure, the files are locked for only the amount of time it takes to perform Steps 4 and 5.  If the time required to perform those steps is great (more than a few seconds), it may be beneficial to try to divide the transaction into two or more smaller ones.  In general, however, this will not be required.  A segment of the <B>ent_info</B> code from Chapter 5, "Database Manipulation," is given below with multi-user control functions added.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>int info_cnt = 5;
+LOCK_REQUEST info_pkt[] = {
+   {AUTHOR_LIST,   'w'},
+   {INFO,          'w'},
+   {ABSTRACT,      'w'},
+   {INTERSECT,     'w'},
+   {KEY_WORD,      'w'}
+};
+   ...
+/* Enter technical information records into TIMS database */
+ent_info()
+{
+   char s[32];  /* generic string variable */
+
+   /* enter tech info into TIMS database */
+   while (get_info() != EOF)
+   {
+      d_trbegin("ent_info", task);
+      while (d_lock(info_cnt, &amp;info_pkt, task, CURR_DB) == S_UNAVAIL)
+         ; /* wait until locks are available */
+      if (db_status != S_OKAY)
+      {
+         d_trabort(task);
+         ...   /* notify user of problem */
+         return (0);
+      }
+      /* see if author exists */
+      ...
+      /* create new tech. info record */
+      if (d_fillnew(INFO, &amp;irec, task, CURR_DB) == S_DUPLICATE) 
+      {
+         d_trabort(task);
+         printf("duplicate id_code: %s\n", irec.id_code);
+         return;
+      }
+      else
+      {
+         /* connect to author record */
+         ...
+         enter_key_words();
+         enter_abstract();
+      }
+      d_trend(task);
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>In the <B>info_pkt</B> lock request packet, one set type and four record types are locked, even though five set types are involved in the transaction.  The <B><I>db.*</B></I> runtime system does not care how a file lock is obtained, as long as the appropriate files are locked when the operation requiring the lock is performed.  The data files involved in the set operations are locked when the record types are locked.  The lock packet could have listed every set type and every record type involved in the transaction, but this would make it larger than necessary.  (<B><I>db.*</B></I> does optimize the lock requests so that a lock request for a given file is made only once.)  The <B>d_lock</B> call is repeated until the file locks are granted.  This cannot produce a deadlock in this situation since no other files are locked.  Notice that if the <B>id_code</B> is a duplicate, the transaction is aborted.</P>
+<P>In this case, however, another data entry guideline has been violated, which is that files should not be kept locked while control has been given to the user.  Functions <B>enter_key_words</B> and <B>enter_abstract</B> both prompt the user for information while the files are locked.  To properly implement the function, it would be necessary to redesign the program so that the user first enters all of the needed information (that is, have <B>get_info</B> also prompt for the key words and abstract), after which the transaction is processed.</P>
+</FONT><H3><A name="Deletion"></A>7.6.3  Data Deletion</H3>
+<FONT SIZE="2"><P>Deletion of records and sets follows basically the same guidelines as data entry:</P>
+<OL>
+
+<LI>From user, identify data to be deleted. 
+  
+<LI>Read-lock relevant files (if necessary). 
+  
+<LI>Read data to be deleted. 
+  
+<LI>Free files. 
+  
+<LI>Display data to user and request confirmation. Cancel 
+  operation if not confirmed. 
+  
+<LI>Begin transaction. 
+  
+<LI>Write-lock necessary set and record types. 
+  
+<LI>Perform necessary set disconnections and record 
+  deletions. 
+  
+<LI>End transaction.</LI></OL>
+
+<P>Steps 2 through 5 are optional.  They should not occur between Steps 7 and 8, however, because of the confirmation request.  In this procedure, the files are read-locked for the duration of Step 3 and write-locked for the duration of steps 8 and 9.  In Step 2, read locks are necessary if the data is to be accessed by key or by set.  If it can be accessed directly (for example, <B>d_recread</B>), the file need not be read-locked at all.</P>
+<P>Function <B>del_info</B> from Chapter 5, "Database Manipulation," illustrates the previous procedure.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>int info_cnt = 5;
+LOCK_REQUEST info_pkt[] = {
+   {AUTHOR_LIST,  'w'},
+   {INFO,         'w'},
+   {ABSTRACT,     'w'},
+   {INTERSECT,    'w'},
+   {KEY_WORD,     'w'}
+};
+
+del_info()
+{
+   struct info irec;   
+   long count;
+   char id[SIZEOF_ID_CODE], name[SIZEOF_NAME];
+
+   printf("id_code: " ); /* get info to delete */
+   getstring(id,SIZEOF_ID_CODE);
+
+   d_reclock(INFO, "r", task, CURR_DB);
+   if (d_keyfind(ID_CODE, id, task, CURR_DB) == S_NOTFOUND) 
+   {
+      d_recfree(INFO, task, CURR_DB);
+      printf("id_code %s not on file\n", id);
+      return;
+   }
+   d_recread(&amp;irec, task, CURR_DB);
+   d_reclock(AUTHOR, "r", task, CURR_DB);   /* get name */
+   d_findco(HAS_PUBLISHED, task, CURR_DB);
+   d_crread(NAME, name, task, CURR_DB);
+   d_recfree(INFO, task, CURR_DB);
+   d_recfree(AUTHOR, task, CURR_DB);
+   ...      /* display data and confirm delete request */
+   d_trbegin("del_info", task);
+   while (d_lock(info_cnt, &amp;info_pkt, task, CURR_DB) == S_UNAVAIL)
+      ;   /* wait till locks are available */
+   /* disconnect and delete abstract */
+   ...
+   /* disconnect, delete intersect and key word */
+   ...
+   /* disconnect info rec from author, delete */
+   ...
+   /* delete author, if no other pubs records */
+   ...
+   d_trend(task);
+}</PRE>
+</FONT><H3><A name="Modification"></A>7.6.4  Data Modification</H3>
+<FONT SIZE="2"><P>The general procedure for the modification of data follows:</P>
+<OL>
+
+<LI>From user, identify data to be modified. 
+  
+<LI>Read-lock relevant record and set types (if 
+  necessary). 
+  
+<LI>Read data to be modified. 
+  
+<LI>Free files. 
+  
+<LI>Allow user to edit data. 
+  
+<LI>Begin transaction. 
+  
+<LI>Write-lock necessary set and record types. 
+  
+<LI>Perform necessary modifications. 
+  
+<LI>End transaction.</LI></OL>
+
+<P>Here again, no files are locked while the user is editing the data.  But notice that since the files are not locked, it is possible that some other process may try to modify the same data at the same time.  In many cases, however, even though it may be theoretically possible, it is not practically possible.  The nature of the application may render it impossible for two users to modify the same data at the same time.  For example, in the <B>tims</B> database, it isn't possible for the same book to be returned by more than one borrower at the same time.  In designing your application, you should carefully analyze the real-world use of your data and avoid incorporating unnecessary code to handle impossible circumstances.</P>
+<P>However, there are many situations where it is possible for two users to attempt to modify the same data at the same time.  Record locking is used to synchronize these updates, as in the following procedure:</P>
+<OL>
+
+<LI>From user, identify record to be modified. 
+  
+<LI>Lock record occurrence (using function <B>d_rlbset</B>). 
+  
+<LI>Cancel operation if record is already locked. 
+  
+<LI>Allow user to edit record. 
+  
+<LI>Begin transaction. 
+  
+<LI>Write-lock record type. 
+  
+<LI>Modify record. 
+  
+<LI>Clear record occurrence lock (using function <B>d_rlbclr</B>). 
+  
+<LI>End transaction.</LI></OL>
+
+<P>This illustrates simple modification of a single record occurrence.  If a set occurrence is to be modified, the program could adopt a convention whereby if the owner record occurrence is locked, neither the data in that record nor any sets owned by that record can be modified by a separate process.  The use and interpretation of the record locking functionality is a program design decision, but it must be consistently applied throughout all applications accessing the same databases.  An implementation of this procedure is shown in the following example of an <B>info</B> record occurrence modification:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>struct info irec;
+int stat;
+   ...
+printf("enter id code: ");
+getstring(irec.id_code,SIZEOF_ID_CODE);
+
+d_keylock(ID_CODE, "r", task, CURR_DB);
+stat = d_keyfind(ID_CODE, irec.id_code, task, CURR_DB);
+d_keyfree(ID_CODE, task, CURR_DB);
+if (stat != S_OKAY)
+   printf("record not found\n");
+else if (d_rlbset(task, CURR_DB) != S_OKAY)
+   printf("unable to access record\n");
+else 
+{
+   d_recread(&amp;irec, task, CURR_DB);
+   ...
+   /* display record and allow edits of all but id_code */
+   d_trbegin("mod_info", task);
+   while (d_reclock(INFO, "w", task, CURR_DB) == S_UNAVAIL)
+      ; /* wait until locks are available */
+   d_recwrite(&amp;irec, task, CURR_DB);   /* update record */
+   d_rlbclr(task, CURR_DB);            /* clear record lock bit */
+   d_trend(task);                      /* write changes to database */
+}</PRE>
+</FONT><H3><A name="Retrieval"></A>7.6.5  Data Retrieval</H3>
+<FONT SIZE="2"><P>In a typical database application, data retrieval operations usually fall into one of the following three types:</P>
+<OL>
+
+<LI>Locating a record or related record occurrences. 
+  
+<LI>Browsing through a list of records where there may be 
+  one record per line on the display. 
+  
+<LI>Producing reports where many records in the database may need to be accessed.</LI></OL>
+
+<P>For Type 1 data retrieval in <B><I>db.*</B></I>, the procedure is just to lock the necessary record, set, or key types, then access the data, free the locks, and display the results.  For example, the following code displays an item by id code from the <B>tims</B> database:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>struct info irec;         /* info record variable */
+char name[SIZEOF_NAME];   /* author's name */
+   ...
+printf("enter id code: ");
+getstring(irec.id_code,SIZEOF_ID_CODE);
+d_keylock(ID_CODE, "r", task, CURR_DB);
+d_setlock(HAS_PUBLISHED, "r", task, CURR_DB);
+if (d_keyfind(ID_CODE, irec.id_code, task, CURR_DB) == S_OKAY)
+{
+   d_keyfree(ID_CODE, task, CURR_DB);
+   d_recread(&amp;irec, task, CURR_DB);
+   d_findco(HAS_PUBLISHED, task, CURR_DB);
+   d_recread(AUTHOR, name, task, CURR_DB);
+   d_setfree(HAS_PUBLISHED, task, CURR_DB);
+   ...   /* display author &amp; info record contents */
+}
+else
+{
+   d_freeall(task);
+   printf("info record not found\n");
+}</PRE>
+</FONT><FONT SIZE="2"><P>Since the <B>info</B> record is accessed by <B>id_code</B>, <B>d_keylock</B> is used to lock only the key file containing <B>id_code</B> keys.  Function <B>d_reclock</B> could also be used to lock the data and key files associated with <B>info</B>.  In this case it would make no difference which one you used.  In general, however, <B>d_reclock</B> may lock key files that are not involved in the operation (since it locks all key files and some may not be used).  The <B>d_setlock</B> call locks the data files containing the owner and member record types of set HAS_PUBLISHED, which in this case is simply <B>tims.d02</B> (see <B>tims</B> DDL specification in section 4.5.3, "Database Design").  Notice that the file locks are freed as soon as they are no longer needed.</P>
+<P>Data retrieval of Types 2 and 3 use the following procedure:</P>
+<OL>
+
+<LI>Lock necessary record, set, or key types. 
+  
+<LI>Retrieve some predetermined amount of data. For 
+  example, if browsing, this may be a screen full. 
+  
+<LI>Free locks. 
+  
+<LI>If browsing, display retrieved data. 
+  
+<LI>Go to step 1.</LI></OL>
+
+<P>With interactive browsing, it is imperative that the locks be freed at Step 3.  Otherwise, the duration of the locks would be dependent on the end user, who typically would press some key to view the next page of data.</P>
+<P>In a report, the data is printed in Step 2, and Step 4 is eliminated.  Although the locks could remain in place for the duration of the report, this would prevent any updates to the locked files until the report completes.  This procedure allows updates by iteratively freeing and re-locking the files during the report.  The duration of the locks should remain reasonably small (for example, access 10 to 20 records each time).  The following code will print a report of all <B>info</B> records contained in the <B>tims</B> database in <B>id_code</B> order:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>struct info irec;   /* info record variable */
+int i;
+
+for ( i = 0; ; ) 
+{
+   if (i == 0)
+      d_reclock(INFO, "r", task, CURR_DB);
+
+   if (d_keynext(ID_CODE, task, CURR_DB) != S_OKAY)
+   {
+      d_recfree(INFO, task, CURR_DB);
+      break;
+   }
+   d_recread(&amp;irec, task, CURR_DB);
+   printf("id_code: %-20s  title: %s\n", irec.id_code, irec.info_title);
+   if (++i == 20)
+   {
+      d_recfree(INFO, task, CURR_DB);
+      i = 0;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The lock on the <B>info</B> record type will be freed every 20 records, allowing any queued write-lock requests access to the locked files.</P>
+<P>This procedure is slightly more complicated when a set is scanned instead of a key.  The problem occurs when an update is made to the set occurrence being scanned while the set lock is freed.  If the current member at the time of the <B>d_setfree</B> is disconnected, then when the scan continues it will result in an error detected by <B><I>db.*</B></I>.  If the set is timestamped, its status can be checked after the set type is locked to determine whether the set has been updated.  If so, the operation can be terminated or restarted.  This will often be acceptable when there are many occurrences of the scanned set type.  If it is a system-owned set, however, there is only one occurrence, and if updates are common, timestamping the set will not help.  In this situation, use of a record lock on the current member can be used to keep it from being disconnected.  This is illustrated in the following code, which produces a report of authors:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_csmset(AUTHOR_LIST, NULL, task, CURR_DB);
+for (i = -1; ;)
+{
+   if (i &lt;= 0) 
+   {
+      d_setlock(AUTHOR_LIST, "r", task, CURR_DB)
+      if (i == 0)
+         d_rlbclr(task, CURR_DB);
+   }
+   if (d_findnm(AUTHOR_LIST, task, CURR_DB) != S_OKAY) 
+      break;
+   d_crread(NAME, name, task, CURR_DB);
+   printf("author: %s\n", name);
+   if (++i == 20) 
+   {
+      if (d_rlbset(task, CURR_DB) == S_LOCKED)
+         --i; /* don't stop on a locked record */
+      else 
+      {
+         i = 0;
+         d_setfree(AUTHOR_LIST, task, CURR_DB);
+      }
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The <B>d_csmset</B> call makes the current member of <B>author_list</B> null, so that the first call to <B>d_findnm</B> will return the first member.  Integer <B>i</B> starts at -1 to indicate that there is no current record lock to be cleared.  When 20 records have been scanned, <B>d_rlbset</B> is called to set the record lock of the current record (which is also the current member).  If the lock bit is already set (perhaps someone is updating it), <B>i</B> is decremented so that the file lock is not freed until the current member can be locked.  In order to work correctly, an <B>author</B> record should not be disconnected from the <B>author_list</B> set if its record lock bit is set.</P>
+</FONT><H3><A name="Other"></A>7.6.6  Other Considerations</H3>
+<FONT SIZE="2"><P>Use of static data can greatly improve database access performance.  Static data can only be changed when a database is opened in exclusive access mode.  Thus, to access static data in shared mode, no locks are required, and full virtual memory caching of the static data is performed.  Things that only periodically change, such as keyed data validation tables and general ledger accounts, are good candidates for static definition.</P>
+<P>Operations that involve processing all occurrences of a particular record type, but do not require that the records be ordered, should utilize the sequential record scan functions <B>d_recfrst</B> and <B>d_recnext</B>.  These functions do not require the file to be locked.</P>
+</FONT><H2><A name="Mode"></A>7.7  One-User Mode</H2>
+<FONT SIZE="2"><P>Two different one-user modes are available in <B><I>db.*</B></I>.  A database can be opened in exclusive access mode by passing open type "x" as the second argument on the <B>d_open</B> call.  A "one-user-only mode" is selected by passing open type "o" to <B>d_open</B>.</P>
+<P>Exclusive-access mode requires the presence of the lock manager.  If no other users have opened the selected database, the lock manager will grant exclusive access to the database and will prevent any other access to that database until it has been closed.  Exclusive access is intended for use in a multi-user environment to update static tables or perform other critical update operations (for example, a year-end purge).</P>
+<P>One-user-only access does not require the presence of the lock manager.  Even if the lock manager is present, no interaction will occur.  In one-user mode, it is the application's responsibility to make sure that one and only one user is accessing that database at a time.  This mode is intended for use in a one-user environment where 1) the transaction processing and recovery features in the multi-user version are needed in a one-user application or 2) a one-user version of a multi-user application is to be distributed and a single copy of the source is desired.</P>
+<P>A program running in either one-user or exclusive mode does not need to place any locks on any files.  Any calls to the lock functions will immediately return (with no error).  However, if transaction processing and logging are used, file locking will be fully operational, except that the runtime cache will never need to be cleared.</P></FONT></BODY>
+</HTML>

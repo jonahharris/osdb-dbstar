@@ -1,0 +1,338 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Multi-User Guide Chapter 4</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Reference"></A>Chapter 4<BR>
+Lock Manager Reference </H1>
+<H2><A name="Introduction"></A>4.1 Introduction</H2>
+<FONT SIZE="2"><P>For ease of reference, all lock manager-related <B><I>db.*</B></I> utilities and functions are collected in this chapter.  Section 4.2 details the operation of lock manager-related programs.  Section 4.3 covers several key lock manager-related functions provided by the <B><I>db.*</B></I> runtime library.</P>
+</FONT><H2><A name="Utilities"></A>4.2 Lock Managers and Utilities</H2>
+<H3><A name="console"></A>console</A></H3>
+<FONT SIZE="2"><P>Lock manager remote console </P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>console [-m<I>type</I>] [-a <I>name</I>] [-h] [-s] [-r#] </PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This program allows you to monitor the functioning of the lock manager and control its behavior.  You can run a console wherever a <B><I>db.*</B></I> application can run.</P>
+<P>Console programs poll the lock manager often, requiring computation and using network bandwidth.  Consoles may degrade the lock manager's performance.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-m<I>type</I><BR>
+Selects a lock manager type.  For <I>type</I>, use one of the values listed below. For UNIX or 
+QNX:<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; p<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+UNIX domain socket lock manager (LMC_IP)<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+t<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TCP lock manager (LMC_TCP)  </P>
+<P>-a <I>name</I><BR>
+Specifies the name given to the lock manager you are attempting to monitor.  The default name is <B>lockmgr</B>.</P>
+<P>-h<BR>
+Provides help information.</P>
+<P>-s<BR>
+Sends a shutdown command to the lock manager (for batch files).</P>
+<P>-r#<BR>
+Specifies the number of seconds between refreshes of the data.  The default is 2 and the maximum is 59.</P>
+</FONT><H4>Commands</H4>
+<FONT SIZE="2"><P>Within the remote console program and the dedicated lock manager are several commands you can enter to display different data or to control the lock manager.  The commands are listed below.</P>
+<B><P>FILE </B>&lt;<I>num</I>&gt;<BR>
+Displays detailed information on the specified file.</P>
+<B><P>FILES<BR>
+</B>For each file that is 
+open, displays the file identifier, the type of lock held and how many users 
+have the lock, the first user that has the file locked, and users with pending 
+lock requests.</P>
+<B><P>HELP</B><BR>
+Displays the commands 
+available within the program.</P>
+<B><P>KILL</B>&lt;<I>user</I>&gt;<BR>
+Disconnects the user from the lock manager and frees all locks and files held by that user.  If the user is still active, all further <B><I>db.*</B></I> calls accessing the 
+lock manager will return S_LMCERROR.</P>
+<B><P>EXIT </B>&amp;<B> QUIT<BR>
+</B>Logs out of the lock manager and terminates the console 
+program. The lock manager is left running.</P>
+<B><P>SHUTDOWN<BR>
+</B>Shuts down the attached lock manager and terminates the console program.  If any users are still active, all further <B><I>db.*</B></I> 
+calls accessing the lock manager will return S_LMCERROR.</P>
+<B><P>STATUS</B><BR>
+Displays main status 
+screen showing lock statistics, operational parameters, and logged-in 
+users.</P>
+<B><P>USER </B>&lt;<I>name</I>&gt;<BR>
+Displays detailed information on the specified user.</P>
+<B><P>USERS</B><BR>
+For each logged-in 
+user, displays a protocol-specific connection identifier, the number of queued 
+lock requests, the lock time-out value, the user status, and the log file 
+name.</P>
+<P>The <B>kill</B> command forces the lock manager to remove a user and to clean up.  Cleanup involves removing entries from the lock manager's internal tables, releasing locks, and deleting certain files. </P>
+<P>Normally this cleanup is carried out as the result of a call to <B>d_close</B> by an <B><I>db.*</B></I> application.  If this does not happen, use the <B>kill</B> command.</P>
+<P>Several situations might cause an application to lose contact with the lock manager without calling <B>d_close</B>.  Some possible causes are power failure, protection faults, unhandled exceptions, and physical network failure.  If <B>d_close</B> is not called, the lock manager must rely on the network protocol to inform it of the lost connection.  Network transports vary in their ability to reliably perform this function.</P>
+<P>The OS services used by the UNIX and Linux lock managers attempt to detect abnormal application termination.  However, for each lock manager type there are certain failure modes that cannot be detected.</P>
+<P>You can test your own network's ability to report abnormal disconnections by inducing different sorts of failure and watching the console.  If the user does not disappear from the user list, the lock manager is unaware that the connection has been lost.  Using the <B>kill</B> command will perform the necessary cleanup.</P>
+<HR ></FONT><H3><A name="lm"></A>lm </A></H3>
+<FONT SIZE="2"><P>Lock manager </P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>lm [-m<I>type</I>] [-a <I>name</I>] [-f <I>ddd</I>] [-l [<I>logfile</I>]] [-n] [-q&nbsp;<I>ddd</I>] [-u <I>ddd</I>] [-z <I>dir</I>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The lock manager supports TCP/IP Internet domain sockets for network and local connections (the <I></I>mt option), and UNIX domain sockets for local connections only (the <I></I>mp option).  Use of Internet domain (TCP) sockets enables locking of databases on network file systems (usually NFS) by applications that are not on the same system as the lock manager.  Thus, if the <I></I>mt option is used, it is possible to have the lock manager on the same system as all, some, or none of its client applications.  </P>
+<P>Files are identified in the lock manager by a "pathname" which includes the NFS host name and mount path along with the <B>i-node</B> numbers (where applicable) rather than by the actual names, since on UNIX/Linux NFS file systems, one file can be referenced by different names.</P>
+<P>The runtime will initially attempt to connect to <B>lm</B> using UNIX domain sockets since they provide superior performance over TCP.  However, a TCP connection can be forced by using the host:port lock manager name syntax.</P>
+<P>It is possible to serve a set of heterogeneous clients with a single <B>lm</B> instance.  This is straightforward when the heterogeneous systems have the same byte ordering (for example, Sun SPARC and HP or SCO and QNX).  In cases where the byte ordering is different (as with HP and SCO), the lock manager is capable of resolving the byte ordering issues in locking messages, but it is the application's responsibility to deal with these issues in the database itself.  In most cases, such configurations are not practical since they would require modifications to the runtime source on one of the platforms.</P>
+</FONT><H4>Termination</H4>
+<FONT SIZE="2"><P>With<B> lm</B> you can terminate cleanly from the console, using <B>lmclear</B>, or you c an send the SIGINT signal with the <B>interrupt</B> command (or the keyboard equivalent when the lock manager is not running in the background).  In the event of an abnormal termination, it may be necessary to remove UNIX domain socket files from DBTMP manually or by using <B>lmclear</B>.  Failure to perform this cleanup could cause a subsequent restart of the lock manager to fail.</P>
+</FONT><H4>Performance</H4>
+<FONT SIZE="2"><P>TCP connections will typically perform more poorly than  UNIX domain socket connections, although local TCP connections are naturally slightly faster than network connections.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>Each option is preceded by a dash and most take a parameter.  For those that take a numerical parameter, the default is noted and the maximum is constrained by available resources and thus is hardware, OS, and OS configuration specific.  These parameters should not normally be set below their default values.</P>
+<P>-a <I>name</I><BR>
+Specifies a runtime name for the lock manager.  The default name is <B>lockmgr</B>.  For more details on lock manager naming, see Chapter 2.</P>
+<P>-f <I>ddd</I><BR>
+Sets the maximum number of files.  The lock manager maintains a table of all database files that have been opened by its clients.  The value following this switch is the maximum number of files that can be opened by this lock manager.  The default is 256.</P>
+<P>-l <I>[logfile]</I><BR>
+Turns on error logging.  If no <I>logfile</I> is specified the default is "lockmgr.log".  This option can significantly degrade lock manager performance and is only available on lock managers built with the MONITOR flag.</P>
+<P>-m<I>type</I><BR>
+Selects a lock manager <I>type</I>. 
+Use one of the values listed below. <BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; p<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+UNIX domain socket lock manager<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+t<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TCP lock manager  </P>
+<P>-n<BR>
+Do not daemonize the lock manager (run it as a background process) on startup.  </P>
+<P>-q <I>ddd</I><BR>
+Sets the maximum number of entries in a lock request queue.  If a lock request cannot be immediately granted, it is placed in the lock request queue.  Note that there is one queue entry for each lock requested for each file.  Thus, it is possible for a single lock manager "user" to have multiple entries in the queue at the same time even if they were submitted as one logical request.  The default is 128.</P>
+<P>-u <I>ddd</I><BR>
+Sets the maximum number of users.  The lock manager maintains a table of active users.  The value following this switch is the maximum number of users that can log into this lock manager.  The default is 20.</P>
+<P>-z <I>dir</I><BR>
+Sets the DBTMP directory to <I>dir</I>.</P>
+<HR ></FONT><H3><A name="lmclear"></A>lmclear</A></H3>
+<FONT SIZE="2"><P>Clears lock manager session (all platforms)</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>lmclear [-l] [-s] [-a <I>name</I>] [-u <I>userid</I>] [-m<I>type</I>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The<B> lmclear</B> utility has three main uses.  The first clears a user with whom communication has been lost, and this is unknown to the lock manager.  (Clearing a user means to free locks and get ready for transaction recovery.)  This use is equivalent to the <B>kill</B> command in the lock manger <B>console</B>.  The second use is to obtain a status report on the lock manager, equivalent to the <B>console</B> command USER.  The final use of <B>lmclear</B> is to shut down the lock manager, equivalent to issuing the SHUTDOWN command from the <B>console</B>.</P>
+<P>See the entry for <B>console</B> in this chapter for more command details. </P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-l<BR>
+Equivalent to the console's SHUTDOWN command.</P>
+<P>-s<BR>
+Prints status report for all users.</P>
+<P>-a<I> name</I><BR>
+The <B>-</B>a <I>name</I> option specifies the lock manager name to be accessed.  This option is not necessary if the environment variable LOCKMGR specifies the name.</P>
+<P>-u<I> userid<BR>
+</I>Instructs the lock manager to clear the user specified by <I>userid</I>.  This option is not necessary if the environment variable DBUSERID specifies the user.</P>
+<P>-m<I>type</I><BR>
+Selects a lock manager type.  The -m<I>type</I> option is present to support the need to call <B>d_lockcomm</B> before <B>d_open</B>.  For <I>type</I>, use one of the following 
+values.<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; p<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+UNIX domain socket lock manager<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+t<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TCP lock manager</P>
+</FONT><H2><A name="Functions"></A>4.3 Lock Manager-Related d_ Functions </H2>
+<FONT SIZE="2"><P>The functions documented in the following section are designed to work with the lock manager from within <B><I>db.*</B></I> applications.</P>
+<HR ></FONT><H3><A name="lmclear"></A>d_lmclear</A></H3>
+<FONT SIZE="2"><P>Clears a user from the lock manager's user table</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>d_lmclear(const char *<I>username</I>, const char <I>*lockmgr</I>, LMC_AVAIL_FCN *<I>avail, </I>DB_TASK *<I>task</I>) </PRE>
+</FONT><H4>Parameters</H4><FONT size="2"><P>username<BR>
+The name of the user to 
+be removed from the lock manager's user table.</FONT></P><FONT size="2"><P>lockmgr<BR>
+The lock manager 
+name.</FONT></P><FONT size="2"><P>avail<BR>
+The address of a function 
+to check the availability of a particular transport. This function can be hard 
+coded, or can be "found" with the function psp_lmcFind().</FONT></P><FONT size="2"><P>task<BR>
+A pointer to the 
+application's task variable.</FONT></P><H4>Description</H4>
+<FONT SIZE="2"><P>This function provides the same functionality as the program <B>lmclear.exe</B>.  Function <B>d_lmclear</B> clears the specified user from the lock manager's user table.  It can be called any time, either before or after opening a database.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_USERID<BR>
+No user ID was specified.</P>
+<P>S_INVLOCK<BR>
+The specified lock manager type is invalid.</P>
+<P>S_LMCERROR<BR>
+The attempt to communicate with the lock manager failed.</P>
+<P>S_NOLOCKMGR<BR>
+The specified lock manager was not found.</P>
+<P>S_DUPUSERID<BR>
+The specified user ID is the same as the user ID currently in use.  When calling <B>d_lmclear</B>, you must call it from a task with a different user ID than the one you are clearing.</P>
+<P>S_UNAVAIL<BR>
+Internal or General lock manager error.</P>
+<HR ></FONT><H3><A name="lmstat"></A>d_lmstat</A></H3>
+<FONT SIZE="2"><P>Returns the status of the specified user</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>d_lmstat(char *<I>username</I>, int <I>*userstatus, </I>DB_TASK *<I>task</I>)</PRE>
+</FONT><H4>Parameters</H4><FONT SIZE="2">
+<P>username<BR>
+The name of the user whose status is to be 
+queried.</P>
+<P>userstatus<BR>
+The user's status is returned here.</P>
+<P>task<BR>
+A pointer to the application's task 
+variable.</P></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function queries the lock manager associated with the current DB_TASK for the status of the specified user.  The following status codes are returned in <I>userstatus</I>:</P>
+</FONT><H5>Status Codes</H5>
+<FONT SIZE="2"><P>U_EMPTY<BR>
+The username is invalid or unknown to the lock manager.</P>
+<P>U_LIVE<BR>
+The user is active in the lock manager.</P>
+<P>U_DEAD<BR>
+The username corresponds to a DB_TASK, which has disconnected from the lock manager.</P>
+<P>U_BEING_REC<BR>
+This user is performing a recovery for another, disconnected user.</P>
+<P>U_REC_MYSELF<BR>
+This user was disconnected and is now doing its own recovery.</P>
+<P>U_HOLDING_X<BR>
+This user has closed all databases and is holding an exclusive lock on at least one file.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_LMCERROR<BR>
+The attempt to communicate with the lock manager failed.</P>
+<P>S_DBOPEN<BR>
+This function can only be called once a database has been successfully opened or this error is returned.</P>
+<HR ></FONT><H3><A name="lock"></A>d_lock</A></H3>
+<FONT SIZE="2"><P>Locks group of record or set types</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>d_lock(int <I>count</I>, LOCK_REQUEST <I>*lrpkt</I>, DB_TASK&nbsp;*<I>task</I>, int <I>dbn</I>)</PRE>
+</FONT><H4>Parameters</H4><FONT SIZE="2"><P>count<BR>
+The number of items to be 
+locked.</P>
+<I><P></I>lrpkt<BR>A pointer to a lock 
+request packet array.</P>
+<I><P></I>task<BR>A pointer to the 
+application's task variable.</P>
+<I><P>
+</I>dbn<BR>Database 
+number.</P></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_lock</B> provides a grouped lock request capability whereby more than one record or set type can be locked in a single request.  Two parameters are passed to <B>d_lock</B>.  The first parameter is an integer that contains a count of the number of items to be locked.  The second parameter is a pointer to a lock request packet array.  Each lock request is placed in a LOCK_REQUEST structure entry as defined below and declared in file <B>db.star.h</B>.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+  int item;  /* record or set type to be locked */
+  char type; /* type of lock */
+} LOCK_REQUEST;</PRE>
+</FONT><FONT SIZE="2"><P>Structure field <B>item</B> contains the record or set type of the record or set to be locked.  Field <B>type</B> contains the type of lock to be applied as follows:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="193">
+<TR><TD WIDTH="38%" VALIGN="top">
+<B><FONT SIZE="2"><P>Type</B></FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>r</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Read lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>w</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Write lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>x</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Exclusive lock</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="38%" VALIGN="top">
+<FONT SIZE="2"><P>k</FONT></P></TD>
+<TD WIDTH="62%" VALIGN="top">
+<FONT SIZE="2"><P>Keep lock</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Read locks allow other programs to read but not update the locked files.  Write locks prevent all other programs from accessing the locked files and can only be issued from within a transaction.  Exclusive locks also prevent all other programs from accessing the locked files, but can be issued independent of transactions.  Keep locks can only be issued from within a transaction and will keep read and write locked files read-locked after a transaction ends.  (<B>d_trend</B> normally frees all read- and write-locked files.)  To apply a keep lock, the record or set types specified with a keep lock must be locked.  Otherwise, status S_NOTLOCKED is returned.</P>
+<P>Within a transaction, a file with a read lock can be upgraded to a write or exclusive lock without the possibility of outside intervention by calling <B>d_lock</B>.  If the upgrade lock request is denied, the read lock will remain in effect.  If any of the requested locks cannot be granted, none of the locks will be granted.</P>
+</FONT><BLOCKQUOTE>Note:<I>  </I>If a single <B>d_lock</B> call for each transaction is always used to lock all files needed by the transaction, the program is guaranteed to be free of deadlock, assuming that a timeout value other than -1 is used.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_UNAVAIL<BR>
+One or more of the requested files is not available (that is, you were on the queue waiting for a file longer than your current time out value).</P>
+<P>S_BADTYPE<BR>
+An invalid lock type was specified.  You may have passed a string (for example,<B> </B>"r") instead of a character (for example, 'r').</P>
+<P>S_NOTFREE<BR>
+You attempted to lock a previously locked record or set.</P>
+<P>S_NOTRANS<BR>
+You requested a write lock outside of a transaction.</P>
+<P>S_INVNUM<BR>
+An invalid record or set type was specified in the lock request packet.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int tx_ckin_sz = 3;
+LOCK_REQUEST tx_ckin_pkt[] = {
+	{AUTHOR_LIST, 'r'},
+	{HAS_PUBLISHED, 'w'},
+	{BORROWER, 'w'}
+};
+	...
+d_trbegin("tx_ckin", task);
+if ( <I>d_lock</I>(tx_ckin_sz, tx_ckin_pkt, task, CURR_DB) == OKAY ) {
+	...  /* check in borrowed book */
+	d_trend(task);
+else
+	d_trabort(task);	
+/* try again later */</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_recfree, d_reclock, d_reclstat, d_setfree, d_setlock, d_setlstat, d_trabort, d_trbegin, d_trend</P>
+<HR ></B></FONT><H3><A name="lockcomm"></A>d_lockcomm</A></H3>
+<FONT SIZE="2"><P>Selects a lock manager interface</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>d_lockcomm(LMC_AVAIL_FCN *<I>avail</I>, DB_TASK <I>task</I>)</PRE>
+</FONT><H4>Parameters</H4><FONT SIZE="2"><P>avail<BR>
+The address of a function 
+to check the availability of a transport. The most portable way use this 
+function is to pass the result of a call to psp_lmcFind().</P>
+<I><P></I>task<BR>The application's task 
+variable.</P></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the type of communications to use for the lock manager.</P>
+<P>A multi-user application must call <B>d_lockcomm</B> to initialize the protocol interface.  An attempt to use <B><I>db.*</B></I> without a call to <B>d_lockcomm</B> produces user error S_NOLOCKCOMM, indicating the lock manager communication layer was not initialized.</P>
+<P>The following values are currently allowed:</P><DIR>
+<DIR>
+
+<P>NULL<BR>
+Single-user applications (no lock manager)</P>
+<P>&amp;psp_ip_avail<BR>
+UNIX Domain sockets</P>
+<P>&amp;psp_tcp_avail<BR>
+UNIX Internet Domain sockets</P></DIR>
+</DIR>
+
+<P>Alternatively, the addresses of these functions can be found using the <B>psp_lmcFind</B> function.  Look at the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>LMC_AVAIL_FCN *tcpavail = psp_lmcFind("TCP");
+LMC_AVAIL_FCN *ipavail = psp_lmcFind("IP");</PRE>
+</FONT><FONT SIZE="2"><P>These lines will result in tcpavail pointing to the <B>psp_tcp_avail</B> function and ipavail pointing to the <B>psp_ip_avail</B> function.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><B><FONT FACE="HELVETICA"><P>Locking Requirements</P>
+</B></FONT><FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+The database is open.  Function called after<B> d_open</B>.</P>
+<HR ></FONT><H3><A name="lockmgr"></A>d_lockmgr</A></H3>
+<FONT SIZE="2"><P>Selects the named lock manager to use</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>d_lockmgr(char *<I>id</I>, DB_TASK *<I>task</I>)</PRE>
+</FONT><H4>Parameters</H4><FONT SIZE="2"><P>id<BR>
+A string containing the 
+desired lock manager name.</P><P>task<BR>A pointer to the application's task 
+variable.</P></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function selects the named lock manager to be used during multi-user operation.  The default lock manager name is <B>lockmgr</B>.  The lock manager name cannot be set after the database is opened.</P>
+<P>Some lock managers have specific requirements for lock manager names.  See the section in this document specific to your lock manager for details.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+The database is open.  Function called after <B>d_open</B>.</P>
+<P>S_INVPTR<BR>
+Null pointers and empty strings are not allowed.</P>
+<P>S_BADUSERID<BR>
+The user id contains invalid characters.</P>
+</FONT><H4>See Also</H4>
+<P><FONT size="2">None.</FONT></P>
+<P>&nbsp;</P></BODY>
+</HTML>

@@ -1,0 +1,44 @@
+database invntory;
+foreach "product.asc" 
+{
+   record product 
+   {
+      create on 1;
+      field prod_id = 1;
+      field prod_desc = 2;
+      field price[0] = 3;
+      field price[1] = 4;
+      field price[2] = 5;
+      field cost = 6;
+   }
+}
+foreach "outlet.asc" 
+{
+   record outlet 
+   {
+      create on 1;
+      field loc_id = 1;
+      field city = 2;
+      field state = 3;
+      field region = 4;
+   }
+}
+foreach "on_hand.asc" 
+{
+   record on_hand 
+   {
+      field quantity = 3;
+   }
+   record outlet 
+   {
+      find on 1;
+   }
+   connect inventory;
+   record product 
+   {
+      find on 2;
+   }
+   connect distribution;
+}
+end;
+

@@ -1,0 +1,1145 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 14</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="Formats"></A>Chapter 14<BR>
+File Formats and Dictionary Tables</H1>
+<H2><A NAME="Introduction"></A>14.1  Introduction</H2>
+<FONT SIZE="2"><P>This chapter describes in detail the physical organization of <B><I>db.*</B></I> data and key files, the structure of the runtime dictionary and currency tables, and some source code implementation details.  Although an understanding of this information is not necessary to make effective use of <B><I>db.*</B></I>, it can be helpful in making better use of the system.</P>
+<P>You may want to write utilities or functions that use this information.  For example, the file structure information could allow you to write utilities that can read through a database and update all occurrences of a certain field type.  Please note, however, that while the <B><I>db.*</B></I> runtime is in operation, it is not safe for an application to directly change any database file other than through the use of <B><I>db.*</B></I> functions.  Any updates to <B><I>db.*</B></I> files or global tables during runtime execution are made at your own risk.</P>
+<P>The information in this chapter can also be useful when making decisions about the design of a database, since the trade-offs will be better understood.  Licensed source code users will be able to use this information to better understand the source code.</P>
+</FONT><H2><A NAME="Organization"></A>14.2  Database File Organization</H2>
+<FONT SIZE="2"><P>This section describes the structure of <B><I>db.*</B></I> files.  Certain properties of all <B><I>db.*</B></I> files are the same; these are discussed in section 14.2.1, followed by individual descriptions of <B><I>db.*</B></I> data and key files.</P>
+</FONT><H3><A NAME="Structure"></A>14.2.1  General File Structure</H3>
+<FONT SIZE="2"><P>Figure 14-1 shows the units of storage used by <B><I>db.*</B></I>.  A database is composed of one or more files.  A file contains one or more pages.  Each page is divided into equal numbers of slots, which contain records (in a data file) or keys (in a key file).</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-1.gif - 3207 Bytes" border="0" height="190" src="dbstar_14-1.gif" width="337"> </P>
+<P align="center">Fig. 14-1.  Units of an <I>db.*</I> 
+Database</P>
+</B><P>All <B><I>db.*</B></I> files are viewed as an array of fixed-length pages.  The length of a page may vary from file to file, but within each file, all pages are the same length.  All <B><I>db.*</B></I> database input and output reads and writes full pages of data, even though the user level functions operate on records and keys.</P>
+<B><P ALIGN="center">Table 14-1  Page Zero Contents</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="10%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>Name</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>dchain</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Head of the delete chain</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>next</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Next available space in the file</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>8</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>timestamp</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Next timestamp value</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>12</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>cdate</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Database creation date and time</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>16</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>bdate</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Last database backup date and time</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>20</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>21</FONT></P></TD>
+<TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>version</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Version of <B><I>db.*</B></I> software (in ASCII) that created the file</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Pages are numbered, starting with page zero.  Page zero is the file header, which only stores file status information.  No user data is stored in page zero of any file.  Because of this, the contents of page zero after the <B>bdate</B> field are subject to change without notice.  Table 14-1 identifies the contents of page zero.</P>
+<B>
+<P align="left"><IMG alt="Page Zero" border="0" height="163" src="dbstar_14-2.gif" width="576"></P>
+<P align="center">Fig. 14-2. Page Zero</P>
+</B><P>The first four bytes of all pages numbered one and above contain a long integer that serves as a date/time stamp of the last time the page was updated and written to the database.  The remainder of each page is divided into equal-length slots.  The size of the slots is based on the maximum record or key size that must be stored in the file.  Figure 14-3 shows the general layout of one <B><I>db.*</B></I> file.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-3.gif - 2469 Bytes" border="0" height="131" src="dbstar_14-3.gif" width="379">  </P>
+<P align="center">Fig. 14-3.  <I>db.*</I> File 
+Structure</P>
+</B><P>The fixed-length scheme of structuring pages and slots may create some wasted space in a file (see section 4.4.2, "Physical Design Considerations"), but its benefits in performance and simplicity outweigh this concern.  Calculations to locate the exact page and slot number of a record are quick, and management of the space left by record deletions is simple.  Because the disk space never becomes fragmented, there is rarely a need to reorganize a database for the purpose of compacting records.  New pages are either allocated from the end of each file (<B>next</B>) or from a chain of deleted (<B>dchain</B>) data file record slots or key file pages. </P>
+</FONT><H3><A NAME="DataFile"></A>14.2.2  Data File Organization</H3>
+<FONT SIZE="2"><P>This section discusses the characteristics of a <B><I>db.*</B></I> file that is designated for storage of data records.  All characteristics of the general file structure (see section 14.2.1, "General File Structure") apply in addition to those discussed here.</P>
+<P>In a data file, the first two page zero entries contain record slot addresses.  Individual record slots are allocated from the delete chain or from the end of the file.  The <B>dchain</B> entry points to the first record slot on the delete chain and the <B>next</B> entry contains the number of the next available slot at the end of the file.</P>
+</FONT><H4><A NAME="DatabaseAddresses"></A>14.2.2.1  Database Addresses</H4>
+<FONT SIZE="2"><P>Every record slot within a database is uniquely named and addressed by a four-byte structure called a database address.  A database address is composed of a file number and a slot number.  Figure 14-4 shows the structure of a database address.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-4.gif - 1506 Bytes" border="0" height="66" src="dbstar_14-4.gif" width="309">    </P>
+<P align="center">Fig. 14-4. Database Address</P>
+</B><P>The file number is an unsigned value between zero and 255 and identifies the file where the record is stored.  It is used as an index into the file table, discussed in section 14.3.2, "File Table."  The slot number is an unsigned value between one and 16,777,215 (there is no slot zero).  This establishes the maximum number of records that can be stored in one file (with a three-byte slot number).  Note that the number of slots can be increased by reassigning the bits used for the file number and slot number.  This would decrease the maximum number of files that could be referenced.  </P>
+<P>Slot number zero does not exist and hence is used as a null database address value.  By convention, both the file and record numbers are set to zero (0L) to indicate that a database address variable does not point to any valid record.</P>
+<P>Whenever a record is created, it is assigned to a slot, and given the slot's database address for its lifetime.  The database address of a record occurrence will not change.</P>
+<P>Given a database address, the physical location on the file can be calculated directly.  The file number portion of the database address is used to obtain the number of slots per page <B>(slots_per_page)</B>, the slot size <B>(slsize)</B>, and the page size <B>(pgsize)</B>.  The page is calculated as:</P><DIR>
+<DIR>
+
+<I><P>page = ( (slot number - 1) / slots_per_page ) + 1</P></DIR>
+</DIR></I><P>and the offset within a page is:</P><DIR>
+<DIR>
+
+<I><P>offset = slsize * ( ( slot number - 1 ) % slots_per_page ) + 4</P></DIR>
+</DIR></I><P>where the addition of four is required because of the four-byte update date/time at the beginning of the page.</P>
+<P>The physical address then becomes:</P><DIR>
+<DIR>
+
+<I><P>address = page * pgsize + offset</P></DIR>
+</DIR></I><P>In the remainder of this chapter, we will use the following notation for database addresses: <B>[file number:slot number]</B>.  For example, <B>[3:35]</B> will refer to slot 35 in file number 3.  A null database address, then, is <B>[0:0]</B>.  In figures, the brackets will be left off.</P>
+</FONT><H4><A NAME="SetPointers"></A>14.2.2.2  Set and Member Pointers</H4>
+<FONT SIZE="2"><P>The implementation of variable-length sets using fixed-length records is accomplished by creating linked lists of database addresses.  Record types that are owners of sets will contain within each record a 12-byte area (or 16-byte if timestamped), which uses database addresses to point to the first and last members of the set, and which contains a count of the members.  These 12- or 16- byte segments are referred to as set pointers.  For each set type owned by the record type, one set pointer will exist in the record header.  Table 14-2 shows the structure of set pointers.</P>
+<B><P ALIGN="center">Table 14-2.  Set Pointer Contents</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="16%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="66%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="66%" VALIGN="top">
+<FONT SIZE="2"><P>Count of members in set</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="66%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of first member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>8</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="66%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of last member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>12</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="66%" VALIGN="top">
+<FONT SIZE="2"><P>Optional last update timestamp</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_14-5.gif - 2144 Bytes" border="0" height="51" src="dbstar_14-5.gif" width="397">    </P>
+<B><P align="center">Fig. 14-5. Set Pointer</P>
+</B><P>If the <B>count</B> field in the set pointer is zero, then the set instance owned by the record is empty (it has no members).</P>
+<P>When a record type is the member of one or more sets, it will contain a 12-byte member pointer for each set of which it is a member.  A member pointer contains the database addresses of the owner record, previous member record, and next member record.  Table 14-3 shows the structure of a member pointer.</P>
+<B><P ALIGN="center">Table 14-3.  Member Pointer Contents</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="15%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="16%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="69%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="69%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of owner record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="69%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of previous member</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="15%" VALIGN="top">
+<FONT SIZE="2"><P>8</FONT></P></TD>
+<TD WIDTH="16%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="69%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of next member</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_14-6.gif - 1968 Bytes" border="0" height="63" src="dbstar_14-6.gif" width="378">    </P>
+<B><P align="center">Fig. 14-6. Member Pointer</P>
+</B><P>Figure 14-7 shows the logical structure of a set instance containing three members.</P>
+<P ALIGN="center"><IMG alt="dbstar_14-7.gif - 2203 Bytes" border="0" height="184" src="dbstar_14-7.gif" width="351">      </P>
+<B><P align="center">Fig. 14-7. Three Member Set Instance</P>
+</B><P>Since the members of a particular set can be of different record types, the member record occurrences may reside in different files.  Figure 14-8 shows a possible physical arrangement of the same set instance.  This example shows that the owner record and first member record are on the same file.  They may or may not be the same record types.  The second and third member records are in a different file and therefore must be different record types.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-8.gif - 4393 Bytes" border="0" height="221" src="dbstar_14-8.gif" width="502">       </P>
+<P align="center">Fig. 14-8. Physical Structure of Set Instance</P>
+</B></FONT><H4><A NAME="DataRecord"></A>14.2.2.3  Data Record Organization</H4>
+<FONT SIZE="2"><P>When a record is written to a database slot, it contains much more than just the field values.  Table 14-4 shows the structure of a record.</P>
+<B><P ALIGN="center">Table 14-4.  Record Contents</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="10%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Record type (index into record table)</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of this record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Creation timestamp (if timestamped)</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>10</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Last update timestamp (if timestamped)</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>(table)</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>One-byte set of optional key flags for every eight optional keys declared in record</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>(table)</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>12- or 16-byte sets of set pointers</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>(table)</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>12-byte sets of member pointers</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="10%" VALIGN="top">
+<FONT SIZE="2"><P>(table)</FONT></P></TD>
+<TD WIDTH="11%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Field values</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_14-9.gif - 5376 Bytes" border="0" height="356" src="dbstar_14-9.gif" width="349">     </P>
+<B><P align="center">Fig. 14-9. Physical Record Organization</P>
+</B><P>In Table 14-4, some offsets are defined as table values.  These are offsets that vary according to the record type.  The first six bytes are fixed, always containing the delete flag, record lock bit, record type, and database address.  These are altered when records are deleted (see section 14.2.2, "Data File Organization").</P>
+<P>The two highest-order bits in the record id are used for other purposes.  The remaining 14 bits contain the actual record id.  The highest order bit is turned on when the record is deleted because the whole word is complemented (see the next section).  The next highest bit is turned on when a record lock is applied.</P>
+<P>The record id is a number that is used as an index into the record table, which is detailed in section 14.3, "Database Dictionary Table Structure."</P>
+<P>The database address field contains the physical address of the record.  This is used for consistency checking.  If the record is deleted, this field will contain the slot number of the next record in the delete chain.</P>
+<P>A timestamped record will contain a four-byte creation timestamp and a four-byte last update timestamp.  If a record is not timestamped, this extra space is not allocated.</P>
+<P>If a set is not timestamped, the set pointers will be 12 bytes long.  If it is timestamped, they will be 16 bytes long.</P>
+<P>One byte of optional key stored bit flags is allocated for every eight optional keys declared in the record type.  If no optional keys are declared, no space is allocated.</P>
+<P>All portions of a record except the first six bytes are optional (a record is not required to have any data fields).</P></FONT><H4><A NAME="DeleteChain"></A>14.2.2.4  Delete Chain</H4>
+<FONT SIZE="2"><P>When a record is deleted, <B><I>db.*</B></I> complements the record id (the first two bytes), and places the slot at the beginning of a linked list called the delete chain.  A complemented value will always be negative and have a one in the highest order bit, which is used to detect that the record has been deleted.  </P>
+<P>A pointer to the head of the delete chain is in the header of each data file (the first four bytes of page zero).  Each slot in the list contains, in the third through sixth bytes, the slot number of the next slot in the list.  The last slot contains a null slot number (0).  </P>
+<P>Figure 14-10 shows the logical structure of a delete chain containing three deleted record slots.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-10.gif - 1481 Bytes" border="0" height="120" src="dbstar_14-10.gif" width="319">       </P>
+<P align="center">Fig. 14-10. Example Data File Delete Chain</P>
+</B><P>The physical locations of the slots in the delete chain are not ordered by their position in the chain.  The order of deletion determines their physical order.  You could think of the delete chain as an abstract stack object or a last-in-first-out list.  During record creation, record slots are consumed from the delete chain before new slots are allocated.  The records are removed from the head of the chain.  The <B>DCHAINUSE</B> runtime option will enable and disable use of deleted record slots during record creation (see "Option Settings" in section 5.2.4).</P>
+</FONT><H3><A NAME="KeyFile"></A>14.2.3  Key File Organization</H3>
+<FONT SIZE="2"><P>In a key file, the first two entries in page zero contain page numbers.  As discussed below, a B-tree allocates or discards full pages at a time, so the delete chain header points to a page, and the next pointer contains the page number of the next page to be allocated from the end of the key file.</P>
+</FONT><H4><A NAME="Node"></A>14.2.3.1  Node Structure</H4>
+<FONT SIZE="2"><P>A node, as used here, is a term that is synonymous with a page of a <B><I>db.*</B></I> key file.  The term is descriptive of its usage in a tree structure composed of nodes.</P>
+<P>As in all <B><I>db.*</B></I> pages, a node starts with a four-byte integer that stores the time of last update.  Following that is a two-byte integer containing the number of currently used slots in the node.  The remainder of a node consists of a sorted array of fixed-length key slots, followed by a single node pointer referred to as the orphan pointer. </P>
+<P>The orphan pointer is the number of the node containing keys greater than the highest key in this node.  The maximum number of key slots that may be in one node is determined by the slot size and node (page) size.  </P>
+<P>Table 14-5 shows the general layout of one node in a B-tree.</P>
+<B><P ALIGN="center">Table 14-5.  Key File Node Structure</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="20%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="20%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Time of last update</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Number of used slots in node</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+<TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Slot space</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="20%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Orphan pointer</FONT></P></TD>
+</TR>
+</TABLE>
+
+<B><FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_14-11.gif - 2773 Bytes" border="0" height="191" src="dbstar_14-11.gif" width="348">    </P>
+<P align="center">Fig. 14-11. B-Tree Node</P>
+</B></FONT><H4><A NAME="KeySlot"></A>14.2.3.2  Key Slot Structure</H4>
+<FONT SIZE="2"><P>Besides the key value itself, used slots contain additional control information used in the maintenance of the B-tree, as shown in Table 14-6.</P>
+<B><P ALIGN="center">Table 14-6.  Key Slot Structure</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>Offset</B></FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>Length</B></FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<B><FONT SIZE="2"><P>Contents</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Pointer to child node</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Key prefix</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Key contents</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>variable</FONT></P></TD>
+<TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>4</FONT></P></TD>
+<TD WIDTH="64%" VALIGN="top">
+<FONT SIZE="2"><P>Database address of source record</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P ALIGN="center"><IMG alt="dbstar_14-12.gif - 2280 Bytes" border="0" height="70" src="dbstar_14-12.gif" width="402">    </P>
+<B><P align="center">Fig. 14-12. Key Slot</P>
+</B><P>The child pointer is a node number of a node whose key values are less than the key stored in this slot.  If there is no child node, this field contains a null node pointer (<B>-1L</B>).  A node that has no child nodes is called a leaf node.  </P>
+<P>The prefix field is an integer value that is assigned by <B>ddlp</B>, and is unique for each key type.  It is used in sorting the keys so that different key types will be kept completely distinct when stored in the same key file.</P>
+<P>The key contents are a copy of the fields from the data record.  If the key is a struct or compound key, full copies of all subfields are stored here in the order in which they occur in the key definition.</P>
+<P>The last field in a key slot is the database address of the key's associated data record.  The field values stored in the key should always match the field values stored in this data record.  This can be confirmed by using <B>dbcheck</B>.</P></FONT><H4><A NAME="BTree"></A>14.2.3.3  B-Tree Organization</H4>
+<FONT SIZE="2"><P>As stated above, the used key slots in a node are sorted.  Also, if a child pointer in a key slot is not null, the node pointed to by the child pointer contains another set of sorted keys, all of which precede the key value in the slot.</P>
+<P>A B-tree starts with a root node.  The root node is the entry point into a B-tree and is always page one in a key file.  Figure 14-13 shows a B-tree containing 11 nodes, with the root node at the upper right.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-13.gif - 7327 Bytes" border="0" height="278" src="dbstar_14-13.gif" width="434">    </P>
+<P align="center">Fig. 14-13. Example B-Tree</P>
+</B><P>Note that the used slots field, shown at the top of the node, identifies the number of keys in the node, even though there may be room for many more keys in the node.</P>
+<P>Note also that there is one more child pointer in a node then there are keys.  This last child pointer is called an orphan pointer and points to a node containing keys that succeed the key value in the last filled key slot in this node.  It is called an orphan because it has no key value associated with it.</P>
+<P>The maximum number of key slots that may be filled in a node is computed as:</P><DIR>
+<DIR>
+
+<I><P>maximum slots = (page size - 10) / slot size</P></DIR>
+</DIR></I><P>where 10 is the sum of the node header, containing the update time (four bytes), used slots count (two bytes), and the orphan pointer (four bytes).</P>
+<P>When the root node in the B-tree is filled to its maximum size, it will split into three nodes: the original root node, which will contain only one key, and the two nodes at the next level in the tree, which will contain the remainder of the keys from the original root node.</P>
+<P>As a B-tree grows, the non-root nodes will also be filled.  As each node fills, it will split into two nodes.  Rather than leaving one key in the node and creating two child nodes (as is done with the root node), the one remaining (middle) key is inserted into the node in the next level up in the tree.  Hence, the two new nodes created by splitting one node are at the same level in the tree, and the tree remains balanced.</P>
+<P>If enough nodes at a lower level split, the root node will again become filled with keys, and need to split.  It will split again in the same way, leaving two nodes just beneath it.  This action increases by one the number of levels in the tree.  This is important because, at most, one database read is required per level in the B-tree.  The more levels in a B-tree, the more input and output are required in using it.  Fewer levels are needed as more key slots per node are available.</P>
+<P>Just as the addition of keys to the B-tree causes additional nodes to be used, the deletion of keys will eventually cause nodes to be emptied and discarded.  During key deletion, two nodes may combine into one node.  This operation is effectively the inverse of a node split.  The unused node is placed into the key file's delete chain.</P>
+</FONT><H4><A NAME="DeleteChain2"></A>14.2.3.4  Delete Chain</H4>
+<FONT SIZE="2"><P>When a node is discarded during a key deletion, it is placed at the head of the delete chain.  As new nodes are required, they are first taken from the delete chain and then, if the delete chain is empty, assigned from the end of the file.</P>
+<P>The delete chain pointer is stored in the first four bytes of page zero in a key file.  If the delete chain header does not contain a null node pointer (-1L), it contains the node number of the first node in the chain.  Each node in the chain will contain the node number of the next node in bytes four through seven.  The last node in the chain will contain a null as the pointer to the next node.</P>
+<P>Figure 14-14 shows how a delete chain in a key file may appear.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-14.gif - 1957 Bytes" border="0" height="214" src="dbstar_14-14.gif" width="317">       </P>
+<P align="center">Fig. 14-14. Example Key File Delete Chain</P>
+</B></FONT><H2><A NAME="Dictionary"></A>14.3  Database Dictionary Table Structure</H2>
+<FONT SIZE="2"><P>This section describes the structure of the tables that <B><I>db.*</B></I> uses to access and modify the contents of the files discussed in the previous section.</P>
+<P>The source code for the definitions given below is in the <B><I>db.*</B></I> header file <B>dbtype.h</B>.  The table structure definitions are given using C <B>typedef</B> statements.</P>
+<P>A common type definition that is used in the table definitions is <B>DB_SHORT</B>.  This is used instead of the standard <B>int</B> when a 16-bit integer is required.  The type definition of <B>DB_SHORT</B> will always be set (in <B>db.star.h</B>) to the native 16-bit type for a machine (normally <B>short</B>).</P>
+</FONT><H3><A NAME="Contents"></A>14.3.1  Contents of the Dictionary File</H3>
+<FONT SIZE="2"><P>The dictionary file is created by <B>ddlp</B> and contains the tables that are created from a DDL file.  The name of the dictionary file is the database name followed by <B>.dbd</B>.</P>
+<P>The dictionary file contains the following information in the order described:  </P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>version</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>0</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Version number of <B><I>db.*</B></I></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>page_size</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>6</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Maximum size of database page</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_ft</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>8</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of file table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_rt</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>10</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of record table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_fd</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>12</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of field table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_st</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>14</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of set table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_mt</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>16</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of member table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_srt</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>18</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of sort table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_kt</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>20</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>2</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Number of key table entries</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>file_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>22</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>ftlen = size_ft * sizeof(FILE_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>File definitions table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>record_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>ftlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>rtlen = size_rt * sizeof(RECORD_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Record definitions table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>field_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>ftlen + rtlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>fdlen = size_fd * sizeof(FIELD_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Field definitions table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>set_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>ftlen + rtlen + fdlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>stlen = size_st * sizeof(SET_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Set definitions table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>member_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>ftlen + rtlen + fdlen + stlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>mtlen = size_mt * sizeof(MEMBER_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Set member table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>sort_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>mtlen + ftlen + rtlen + fdlen + stlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>srtlen = size_srt * sizeof(SORT_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Set sort fields table</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>name</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>key_table</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>offset</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>srtlen + mtlen + ftlen + rtlen + fdlen + stlen + 22</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>length</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<B><FONT SIZE="2"><P>size_kt * sizeof(KEY_ENTRY)</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<B><FONT SIZE="2"><P>contents</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Compound key field table</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The end of the table space in the dictionary file contains the record, field, and set names in ASCII format.  The names are variable in length and separated with newline characters.  The <B>size_rt</B> record names are listed first, followed by the <B>size_fd</B> field names and the <B>size_st</B> set names.</P>
+<P>The runtime function, <B>d_open,</B> will allocate memory for the seven tables and read them into memory from the dictionary file.  The size of the tables as reported by <B>ddlp</B> is the amount of required memory.</P>
+<P>The dictionary tables for a database contain several references to each other.  For example, the record table points to a range of definitions of fields within the field table.  Each field definition will also contain a reference back to the record table.  Each table is an array of structures, and each inter-table reference is an index into an array, which can be used to directly access the definition.  The following sections define the table elements, and section 14.3.9, "Dictionary Tables Example," summarizes them with an example.</P>
+</FONT><H3><A NAME="FileTable"></A>14.3.2  File Table</H3>
+<FONT SIZE="2"><P>The file table contains information about all data and key files in a database.  One entry is used for each file.  If transaction logging is active, then an additional entry, the transaction log file, is added to the file table during the database open.  The file table contains no references to other tables, but is referenced by the record and field tables.  The <B>file_table </B>declaration is given below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   char       ft_name[FILENMLEN];
+   DB_SHORT   ft_desc;
+   char       ft_status;
+   char       ft_type;
+   DB_SHORT   ft_slots;
+   DB_SHORT   ft_slsize;
+   DB_SHORT   ft_pgsize;
+   DB_SHORT   ft_flags;
+} FILE_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>ft_name</B> element contains the file name in an ASCII string.  The name may have path or drive information embedded in it.  The maximum length of the field, <B>FILENMLEN</B>, is 256 characters.</P>
+<P>The <B>ft_desc</B> element contains the file descriptor returned by the <B>open</B> call.  If the file is not open, the value will be zero.  This element is modified every time the <B>ft_status</B> element is modified.</P>
+<P>The <B>ft_status</B> element contains the current status of the file; either open or closed.  It is used during runtime file opening and closing.  The possible values are:</P>
+
+<UL>
+<LI>'o' = opened 
+  
+<LI>'c' = closed</LI></UL>
+
+<P>The <B>ft_type</B> element is the file type, with possible values:</P>
+
+<UL>
+<LI>'d' = data file 
+  
+<LI>'k' = key file 
+  
+<LI>'o' = overflow (transaction log) file</LI></UL>
+
+<P>The <B>ft_slots</B> element contains the number of record or key slots on one page in this file.</P>
+<P>The <B>ft_slsize</B> element contains the slot size, in bytes, of the slots in this file.</P>
+<P>The <B>ft_pgsize</B> element contains the page size, in bytes, used for this file.</P>
+<P>The <B>ft_flags</B> element is a bit map for the file options.  See <B>dbtype.h</B> for a list.</P>
+</FONT><H3><A NAME="RecordTable"></A>14.3.3  Record Table</H3>
+<FONT SIZE="2"><P>The record table contains one entry for each record type defined in the schema for this database.  All size information about the record is stored, along with references to field table entries that define the fields included in the record.  The record table references the file and field tables, and is referenced by the field, set, and member tables.  The declaration of <B>record_table </B>is shown below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   rt_file;
+   DB_SHORT   rt_len;
+   DB_SHORT   rt_data;
+   DB_SHORT   rt_fields;
+   DB_SHORT   rt_fdtot;
+   DB_SHORT   rt_flags;
+} RECORD_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>rt_file</B> element is a reference to the file table entry that defines the file containing this record type.</P>
+<P>The <B>rt_len</B> element is the total length of the record.  If this record is the largest in its file, the value of <B>file_table[rt_file].ft_slsize</B> is equal to <B>rt_len</B>.  This value is required, however, because files can also contain smaller records within the full slot size.</P>
+<P>The <B>rt_data</B> element is the offset from the start of the record to the first data field.</P>
+<P>The <B>rt_fields</B> element is the index of the first field definition in the field table.</P>
+<P>The <B>rt_fdtot</B> element is a count of the number of fields in this record type.</P>
+<P>The <B>rt_flags</B> element is a bit map for the record options.  See <B>dbtype.h</B> for a list.</P>
+</FONT><H3><A NAME="FieldTable"></A>14.3.4  Field Table</H3>
+<FONT SIZE="2"><P>The field table contains one entry for each field defined in the schema.  It also contains one entry for each compound key defined.  It fully defines each field's data type and length, as well as array dimension limits.</P>
+<P>The field table references the record, file, and key tables, and is referenced by the record, key, and sort tables.  The <B>field_table</B> declaration is given below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+  char      fd_key;
+  char      fd_type;
+  DB_SHORT  fd_len;
+  DB_SHORT  fd_dim[MAXDIMS];
+  DB_SHORT  fd_keyfile;
+  DB_SHORT  fd_keyno;
+  DB_SHORT  fd_ptr;
+  DB_SHORT  fd_rec;
+  DB_SHORT  fd_flags;
+} FIELD_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>fd_key</B> element defines the type of key that this field is:</P>
+
+<UL>
+<LI>'n' = not a key 
+  
+<LI>'d' = non-unique key (duplicates allowed) 
+  
+<LI>'u' = unique key</LI></UL>
+
+<P>The <B>fd_type</B> element defines the data type of this field:</P>
+
+<UL>
+<LI>'c' = char 
+  
+<LI>'s' = short 
+  
+<LI>'i' = int 
+  
+<LI>'l' = long 
+  
+<LI>'d' = <B>DB_ADDR</B><LI>'f' = float 
+  
+<LI>'F' = double 
+  
+<LI>'g' = grouped (struct) 
+  
+<LI>'k' = compound key</LI></UL>
+
+<P>The 'g' (grouped), and 'k' (compound key) fields have no data of their own, as the rest of the field types do.  </P>
+<P>A group of fields is ordered in a specific way.  First, the group definition occurs, then the elements of the group occur, each having a flag set (see <B>fd_flags</B>) indicating that they are group elements.  The group ends when there is a field without this flag set, or at the end of the table.</P>
+<P>If the field is flagged as a compound key field ('k'), it will always follow the normal field definitions in a record.  This compound key field redefines the purpose of <B>fd_ptr</B> so that it points to an entry in the key table rather than marking the byte offset from the start of the record to the contents of this field.</P>
+<P>The <B>fd_len</B> element is the length of the field in bytes.  If the field is an array, this length is the basic data type length times the dimensions of the array.</P>
+<P>The <B>fd_dim[MAXDIMS]</B> element is a three-element (<B>MAXDIMS</B> is three) array containing the values of any declared dimensions.  By default, all are zeros.  If one dimension is declared with the field type, then <B>fd_dim[0]</B> will contain that value, and the others will remain zero.</P>
+<P>If this field is a key field (that is, <B>fd_key</B> is 'd' or 'u'), then <B>fd_keyfile</B> is an index into the file table that references the key file that contains this field.</P>
+<P>The <B>fd_keyno</B> element is the key prefix number, which is stored in the first two bytes of each key of this type (see section 14.2.3, "Key File Organization").</P>
+<P>The <B>fd_ptr</B> element is the byte offset from the start of the record to the contents of this field in a record.  If this field type is 'k' (compound key), this is an index into the key table of the first field definition of the compound key.</P>
+<P>The <B>fd_rec</B> element is an index into the record table of the record that contains this field.</P>
+<P>The <B>fd_flags</B> element is a bit map for field options.  The high-order six bits store non-zero optional key numbers.  The low-order 10 bits store the options for the field.</P>
+</FONT><H3><A NAME="SetTable"></A>14.3.5  Set Table</H3>
+<FONT SIZE="2"><P>The set table contains one entry for every set defined in the schema.  It defines the set ordering and the position of the set pointers in the record.  Since there may be many members, the member record types for this set type are defined in the member table, which is referenced by this table.  The set table references the member and record tables, and is referenced only by the sort table.  The <B>set_table</B> declaration is given below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   st_order:
+   DB_SHORT   st_own_rt;
+   DB_SHORT   st_own_ptr;
+   DB_SHORT   st_members;
+   DB_SHORT   st_memtot;
+   DB_SHORT   st_flags;
+} SET_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>st_order</B> element defines the set ordering:</P>
+
+<UL>
+<LI>'f' = order first 
+  
+<LI>'l' = order last 
+  
+<LI>'a' = order ascending 
+  
+<LI>'d' = order descending 
+  
+<LI>'n' = order next</LI></UL>
+
+<P>The <B>st_own_rt</B> element is an index to the record table of the record type owning the set type.</P>
+<P>The <B>st_own_ptr</B> element is the offset in the record of the set pointers used for this set.</P>
+<P>The <B>st_members</B> element is an index into the member table of the first set member definition.</P>
+<P>The <B>st_memtot</B> element is the total number of member record types in this set.</P>
+<P>The <B>st_flags</B> element is a bit map for set options.  See <B>dbtype.h</B> for a list.</P>
+</FONT><H3><A NAME="MemberTable"></A>14.3.6  Member Table</H3>
+<FONT SIZE="2"><P>The member table contains one entry for each set member in a database.  Since one set may contain multiple members, the set table will point to a range of consecutive entries in the member table.  Since a set member may be sorted by multiple fields, each member entry may point to a range of consecutive entries in the sort table.</P>
+<P>The member table references the record and sort tables, and is referenced by the set table.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   mt_record;
+   DB_SHORT   mt_mem_ptr;
+   DB_SHORT   mt_sort_fld;
+   DB_SHORT   mt_totsf;
+} MEMBER_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>mt_record</B> element is an index into the record table of the member record type.</P>
+<P>The <B>mt_mem_ptr</B> element is the offset, in the record, of the member pointers.</P>
+<P>The <B>mt_sort_fld</B> element is an index into the first entry of the sort table of a sort field definition, if the set is sorted.</P>
+<P>The <B>mt_totsf</B> element is the number of sort table entries used by this set member.  This contains zero if the set is not sorted.</P>
+</FONT><H3><A NAME="SortTable"></A>14.3.7  Sort Table</H3>
+<FONT SIZE="2"><P>The sort table contains one entry for each field that is referenced in an <B>order by</B> clause in a set definition.  The list of sorting fields occurs in the set definition, following the naming of a member record type.  The member table refers to a range of entries in the sort table in order to locate the field table entries involved in sorting.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   se_fld;
+   DB_SHORT   se_set;
+} SORT_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>se_fld</B> element is an index into the field table of one field definition involved in the field sort.</P>
+<P>The <B>se_set</B> element is an index into the set table of the set type that owns this sorted list of members.</P>
+</FONT><H3><A NAME="KeyTable"></A>14.3.8  Compound Key Table</H3>
+<FONT SIZE="2"><P>The compound key table contains one entry for each field listed in each compound key statement.  One compound key statement may list several fields.  For each compound key statement, there is one entry in the field table, which points to a range of entries in the compound key table.  This range of entries is used to form a single key from the fields referenced by the key table entries.</P>
+<P>Each entry in this table refers to the compound key and an associated field, the position of the field in the key, and whether the field is ascending or descending.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   kt_key;
+   DB_SHORT   kt_field;
+   DB_SHORT   kt_ptr;
+   DB_SHORT   kt_sort;
+} KEY_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>kt_key</B> element is an index into the field table of the compound key definition in which this entry is included.</P>
+<P>The <B>kt_field</B> element is an index into the field table of a field used in the compound key.</P>
+<P>The <B>kt_ptr</B> element is an offset from the start of the actual key to where the contents of this field begins.</P>
+<P>The <B>kt_sort</B> element is the sorting order of this field.  The possible values are:</P>
+
+<UL>
+<LI>'a' = ascending 
+  
+<LI>'d' = descending</LI></UL>
+
+</FONT><H3><A NAME="Example"></A>14.3.9  Dictionary Tables Example</H3>
+<FONT SIZE="2"><P>This section provides a simple example of a schema and shows the tables that are generated as a result.  This short example contains most of the elements of a <B><I>db.*</B></I> schema, and uses all seven table types.  The text of the schema is:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database mgrs {
+   data file "data" contains manager, dept;
+   key file "keys" contains name, emp_no;
+
+   record manager {
+      key long emp_no;
+      char last_name[20];
+      char first_name[20];
+      compound optional key name {
+         last_name ascending;
+         first_name ascending;
+      }
+   }
+   record dept {
+      char title[10];
+      int loc_code;
+      float budget;
+   }
+   set manages {
+      order ascending;
+      owner manager;
+      member dept by title, loc_code;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The <B>prdbd</B> utility can be used to print the contents of the dictionary tables.  The report from a run of <B>prdbd -c</B> on the above DDL specification is shown below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>db.* Version 1.0.0 Ansi [29-Feb-2000]
+Database Dictionary Tables for Database: mgrs
+DBD Version: 3.00
+
+REQUIRED MEMORY: 792 BYTES
+
+
+------------------------------------------------------------------
+FILE TABLE:
+
+file sta type slots sl sz pg sz  initial     next pct flgs name
+---- --- ---- ----- ----- ----- -------- -------- --- ---- ----
+  0    c    d    15    64  1024        0        0   0 0000 data
+  1    c    k    20    50  1024        0        0   0 0000 keys
+
+
+------------------------------------------------------------------
+RECORD TABLE:
+
+                                       [#]first          tot
+   [#]record      file    len  data      field      flds flags
+-------------- ---------- ---- ---- --------------- ---- -----
+[ 0]MANAGER    data.d00     63   19 [  0]EMP_NO        3 0010
+[ 1]DEPT       data.k01     38   18 [  4]TITLE         3 0000
+
+
+------------------------------------------------------------------
+FIELD TABLE:
+
+                              key   key record
+   [#]field     key type len  file  num offset  [#]record    flags dims
+--------------- --- ---- --- ------ --- ------ -------------- ----- ----
+[  0]EMP_NO       d    l   4 keys.k   0     19 [ 0]MANAGER   0000
+[  1]LAST_NAME    n    c  20          0     23 [ 0]MANAGER   0010  [20]
+[  2]FIRST_NAME   n    c  20          0     43 [ 0]MANAGER   0010  [20]
+[  3]NAME         d    k  40 keys.k   1      0 [ 0]MANAGER   0400
+[  4]TITLE        n    c  10          0     18 [ 1]DEPT      0001  [10]
+[  5]LOC_CODE     n    i   4          0     30 [ 1]DEPT      0001
+[  6]BUDGET       n    f   4          0     34 [ 1]DEPT      0000
+
+
+
+------------------------------------------------------------------
+SET TABLE:
+
+                         [#]owner    own ptr first  total
+    [#]set      order     record     offset  member members flags
+--------------- ----- -------------- ------- ------ ------- -----
+[  0]MANAGES        a [ 0]MANAGER          7      0       1 0000
+
+
+------------------------------------------------------------------
+MEMBER TABLE:
+
+                     mem ptr  # of 1st  total
+mem #   [#]record    offset   sort fld  sort flds
+----- -------------- -------  --------  ---------
+   0  [ 1]DEPT             6         0          2
+
+
+------------------------------------------------------------------
+SORT TABLE:
+
+sort #     [#]field          [#]set
+------  ---------------  ---------------
+     0  [  4]TITLE       [  0]MANAGES   
+     1  [  5]LOC_CODE    [  0]MANAGES   
+
+
+------------------------------------------------------------------
+COMPOUND KEY TABLE:
+
+         [#]compound    [#]component
+key #     key field         field        ptr  order
+-----  ---------------  ---------------  ---  -----
+    0  [  3]NAME        [  1]LAST_NAME     0      a
+    1  [  3]NAME        [  2]FIRST_NAME   20      a</PRE>
+</FONT><FONT SIZE="2"><P>Figure 14-15 shows the values that would be contained in the dictionary tables for this database.  The values correspond to the element definitions contained in the above sections.  The table interrelationships are also shown.</P>
+<B><P ALIGN="center"><IMG alt="dbstar_14-15.gif - 11765 Bytes" border="0" height="458" src="dbstar_14-15.gif" width="462">     </P>
+<P align="center">Fig. 14-15. Dictionary Table Interrelationships</P>
+</B></FONT><H3><A NAME="Database"></A>14.3.10  Database Table</H3>
+<FONT SIZE="2"><P>The database table is not contained in the database dictionary file because it contains information that pertains to multiple database usage.</P>
+<P>When multiple databases are opened, the various dictionary tables are, in effect, concatenated into larger tables so that they appear to represent one large database.  The inter-table references are all offset to point directly to their new positions in the tables.</P>
+<P>When a <B><I>db.*</B></I> runtime function is called, first the current database number is determined (if not supplied in the call).  Using the current database number as an index into the database table, the offsets to the starting positions in the tables for that database are obtained.  If any adjustments are necessary to the function parameters, the offset values stored in this table will be used.  For example, a record type might be passed to <B>d_fillnew</B> that would require translation to a higher number if the current database is not the first one.</P>
+<P>The structure of the database table is as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef struct {
+   DB_SHORT   size_ft;
+   DB_SHORT   ft_offset;
+   DB_SHORT   size_rt;
+   DB_SHORT   rt_offset;
+   DB_SHORT   size_fd;
+   DB_SHORT   fd_offset;
+   DB_SHORT   size_st;
+   DB_SHORT   st_offset;
+   DB_SHORT   size_mt;
+   DB_SHORT   mt_offset;
+   DB_SHORT   size_srt;
+   DB_SHORT   srt_offset;
+   DB_SHORT   size_kt;
+   DB_SHORT   kt_offset;
+   DB_SHORT   key_offset;
+   DB_ADDR    sysdba;
+   DB_ADDR    curr_dbt_rec;
+   DB_ULONG   curr_dbt_ts;
+   DB_SHORT   page_size;
+   char       db_path[PATHLEN];
+   char       db_name[DBNMLEN];
+} DB_ENTRY;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>size_ft</B> element is the number of elements in this database's file table.</P>
+<P>The <B>ft_offset</B> element is the index in the global file table to the first element of this database's file table.</P>
+<P>The <B>size_rt</B> element is the number of elements in this database's record table.</P>
+<P>The <B>rt_offset</B> element is the index in the global record table to the first element of this database's record table.</P>
+<P>The <B>size_fd</B> element is the number of elements in this database's field table.</P>
+<P>The <B>fd_offset</B> element is the index in the global field table to the first element of this database's field table.</P>
+<P>The <B>size_st</B> element is the number of elements in this database's set table.</P>
+<P>The <B>st_offset</B> element is the index in the global set table to the first element of this database's set table.</P>
+<P>The <B>size_mt</B> element is the number of elements in this database's member table.</P>
+<P>The <B>mt_offset</B> element is the index in the global member table to the first element of this database's member table.</P>
+<P>The <B>size_srt</B> element is the number of elements in this database's sort table.</P>
+<P>The <B>srt_offset</B> element is the index in the global sort table to the first element of this database's sort table.</P>
+<P>The <B>size_kt</B> element is the number of elements in this database's key table.</P>
+<P>The <B>kt_offset</B> element is the index in the global key table to the first element of this database's key table.</P>
+<P>The <B>key_offset</B> element is the relative offset of this database's key sequence numbers.  This is used during key manipulation.</P>
+<P>The <B>sysdba</B> element is the database address of the system record for this database.</P>
+<P>The <B>curr_dbt_rec</B> element is the current record for this database.</P>
+<P>The <B>curr_dbt_ts</B> element is the timestamp of the current record for this database.</P>
+<P>The <B>page_size</B> element is the largest page size used in this database.</P>
+<P>The <B>db_path[PATHLEN]</B> element is the path to a database, and is included only if the database is not in the current directory.  The total length of <B>DBNMLEN</B> plus <B>PATHLENN</B> must be 256 characters or less.</P>
+<P>The <B>db_name[DBNMLEN]</B> element is the name of this database.  No path is included here.</P>
+</FONT><H3><A NAME="Header"></A>14.3.11  Contents of the Header File</H3>
+<FONT SIZE="2"><P>When <B>ddlp</B> compiles a schema file, it produces the dictionary file and a header file.  The header file contains record struct declarations, compound key struct declarations, and constant definitions for each file id, record, field, and set name in the database.</P>
+<P>An application program may use a constant without understanding its numeric value, but the <B><I>db.*</B></I> runtime functions must interpret it to make sure it is the right kind of constant for the function being used.  (For example, you cannot send a record type constant to function <B>d_findnm.</B>)</P>
+<P>The record type constants are used to index into the record table.  As defined, they have a value of <B>RECMARK (10000)</B> added to them, which must be subtracted if the record table is to be referenced from it.</P>
+<P>The field type constants index into the record table and an offset within the record type.  The record type is encoded into the field type constant as follows:</P><DIR>
+<DIR>
+
+<I><P>field type constant = record type * 1000L + field offset</P></DIR>
+</DIR></I><P>The <I>1000L</I> is defined by a constant named <B>FLDMARK</B>.  Because the field type constant includes the record index and field offset, new field types can be added to existing record types without changing the field type constants for other record types.  The field type constant can be decoded as follows:</P><DIR>
+<DIR>
+
+<I><P>record id = field type constant / FLDMARK</P>
+<P>offset = field type constant % FLDMARK</P>
+<P>field type = offset + record_table[record id].rt_fields</P></DIR>
+</DIR></I><P>The set type constants index into the set table.  As defined, they have a value of <B>SETMARK (20000)</B> added to them, which must be subtracted if the set table is to be referenced.</P>
+</FONT><H2><A NAME="CurrencyTables"></A>14.4  Currency Tables</H2>
+<FONT SIZE="2"><P>The currency tables are implemented in <B><I>db.*</B></I> as arrays of database addresses.  The most commonly accessed currency is the current record, which is implemented with a "global" variable containing one database address.</P>
+<P>The current owner and current member of each set are stored in arrays of database addresses.</P>
+<P>The number of elements required in the set currency arrays is <B>size_st</B> (see section 14.3.1, "Contents of Dictionary File").  The tables are allocated dynamically during the database open.</P>
+</FONT><H2><A NAME="Source"></A>14.5  Source Code Details</H2>
+<H3><A NAME="Prototyping"></A>14.5.1  Function Prototyping</H3>
+<FONT SIZE="2"><P>Function prototyping is contained in two function prototype header files, which reside in the <B>include</B> directory:</P>
+<P>proto.h<BR>
+Prototypes all system-level <B><I>db.*</B></I> functions (such as <B>dio_read</B>, which is included with the source version)</P>
+<P>dproto.h<BR>
+Prototypes all user-level functions (for example, <B>d_open</B>)</P>
+<P>The <B>dproto.h</B> header file is automatically included by <B>db.star.h</B>.  To use <B>proto.h</B> (which you should only include if you are making calls to system-level <B><I>db.*</B></I> functions) you must include <B>dbtype.h</B>, which in turn requires you to first include <B>db.star.h</B>.  The function prototype files define the function type.</P>
+</FONT><H3><A NAME="Task"></A>14.5.2  Task Structure</H3>
+<FONT SIZE="2"><P>The DB_TASK structure is used to store task-specific information.  When an application uses the <B><I>db.*</B></I> API, it doesn't need to know the contents of a DB_TASK, so <B>db.star.h</B> uses a typedef of void for applications.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>typedef void DB_TASK;</PRE>
+</FONT><FONT SIZE="2"><P>When compiling the <B><I>db.*</B></I> source code, the full definition of DB_TASK is required.  A compile-time constant called TASK_DEFN will cause <B>db.star.h</B> to include <B>dbtype.h</B>, which includes the full structure definition of DB_TASK.</P>
+</FONT></BODY>
+</HTML>

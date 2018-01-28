@@ -1,0 +1,118 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Multi-User Guide Chapter 2</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Operation"></A>Chapter 2<BR>
+Lock Manager Operation</A></H1>
+<H2><A name="Introduction"></A>2.1 
+Introduction</A></H2>
+<FONT SIZE="2"><P>This chapter describes lock manager operation and explains how to choose a protocol, how to use the lock manager command line, and how to configure your application to use the lock manager.</P>
+</FONT><H2><A name="LMOperation"></A>2.2 Lock Manager Operation</A></H2>
+<FONT SIZE="2"><P>The lock manager must communicate with each application accessing your database files.  On some platforms <B><I>db.*</B></I> can use any of several network protocols to perform this communication.  You must decide which network protocol to use, and configure each of your applications to communicate with the lock manager.</P>
+<P>Your lock manager and application must be started separately.  To start your lock manager, you must give it a name and tell it what network protocol to use.  When you start your application, you must provide a user ID, specify a lock manager name, and tell the application which network protocol to use.</P>
+<P>Not every <B><I>db.*</B></I> multi-user environment requires the use of a separate lock manager process.  The term "lock manager" is used to describe the component of <B><I>db.*</B></I> that manages file locks, even though this may not be a separate process.  Thus the General and Internal lock managers do not use a separate process to coordinate data access – they use a shared file, or shared memory, to store lock status information.  These lock managers (if present) are built into the <B><I>db.*</B></I> runtime library, so there is no separate lock manager program to be started.  For details, see the specific sections below on the General lock manager and Internal lock manager.  </P>
+<P>Two <B><I>db.*</B></I> utilities are used with the lock manager: <B>console</B> and <B>lmclear</B>.  The <B>console</B> program allows you to monitor and control the lock manager from a remote machine.  The <B>lmclear</B> utility is used to clean up after unexpected communication loss between a lock manager and an application.  Both utilities are documented in the reference chapter, Chapter 4, of this manual.</P>
+<P>In addition, two functions provided by the <B><I>db.*</B></I> runtime library allow you to monitor the operation of the lock manager: <B>d_lmstat</B> and <B>d_lmclear</B>.  These functions are documented in Chapter 3 of this manual.</P>
+</FONT><H3><A name="Protocol"></A>2.2.1 Choosing a Network Protocol</A></H3>
+<FONT SIZE="2"><P>The platform you are running on determines your choices for network protocols.  You must use the same network protocol at both ends of any communication; this means choosing a network protocol including its lock manager and switches, and then telling the runtime to use the same network protocol.  The tables below list the available lock managers, switches, runtime identifiers, and platforms.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="355">
+<TR><TD WIDTH="44%" VALIGN="top">
+<B><FONT SIZE="2"><P>UNIX/Linux IPC</B></FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<B><FONT SIZE="2"><P>Lock Manager</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="44%" VALIGN="top">
+<FONT SIZE="2"><P>UNIX Domain Sockets</FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>lm -mp</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="44%" VALIGN="top">
+<FONT SIZE="2"><P>TCP and UNIX <BR>
+Domain Sockets</FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P><BR>
+lm -mt</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="355">
+<TR><TD WIDTH="44%" VALIGN="top">
+<B><FONT SIZE="2"><P>Other Protocols</B></FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<B><FONT SIZE="2"><P>Lock Manager</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="44%" VALIGN="top">
+<FONT SIZE="2"><P>General Lock Manager</FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>no lock manager process</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="44%" VALIGN="top">
+<FONT SIZE="2"><P>Internal Lock Manager</FONT></P></TD>
+<TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>no lock manager process</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>Once you select an appropriate network protocol, you are ready to start the lock manager.</P>
+</FONT><H3><A name="starting"></A>2.2.2 
+Starting the Lock Manager</A></H3>
+<FONT SIZE="2"><P>Initiate the lock manager through one of the following commands: </P>
+</FONT><FONT COLOR="#0000ff"><PRE>lm [-mc] [-a&nbsp;<I>name</I>] [-u&nbsp;<I>ddd</I>] [-f&nbsp;<I>ddd</I>] [-q&nbsp;<I>ddd</I>] [-n] [-z&nbsp;<I>dir</I>] [-l&nbsp;[<I>fname</I>]]</PRE>
+</FONT><FONT SIZE="2"><P><STRONG>-a<BR></STRONG>
+Specifies the lock manager name, which is case-sensitive.  The default name is "lockmgr".  Names other than network addresses are alpha-numeric strings up to 16 characters long.  For TCP, a name of the form :<B><I>ddd</B></I> sets the listening socket number. </P>
+<P><STRONG>-f<BR></STRONG>
+Specifies the maximum number of database files to be under lock manager control (for example, <B>-f 175</B> specifies a maximum of 175 files), which should be at least as large as the total number of files in all databases managed concurrently by the lock manager.  The default is 256 files.  If set too low, your application may receive the error status S_UNAVAIL.</P>
+<P><STRONG>-l<BR></STRONG>
+Turns on error logging.  You can specify a logfile name.  If no filename is specified the default is "lockmgr.log".  This option can significantly degrade lock manager performance.</P>
+<P><STRONG>-mc</STRONG><BR>
+Specifies the network protocol.  Replace c with <B>t</B> for TCP, or <STRONG>p</STRONG> for UNIX domain sockets.</P>
+<P><STRONG>-n</STRONG><BR>
+Instructs the process not to daemonize itself. </P>
+<P><STRONG>-q</STRONG><BR>
+Specifies the maximum size of the file lock request queue (for example, <B>-q 200</B> specifies that a maximum of 200 requests can be queued).  The default is 128 entries.  If this is set too small, your application may receive an error status of S_LMCERROR.</P>
+<P><STRONG>-u<BR></STRONG>
+Specifies the maximum number of users (<B><I>ddd</B></I>).  For example, <B>-u 15</B> indicates that the maximum number of users is 15.  The default is 20.  Note that every DB_TASK created with d_opentask() with the db.* runtime counts as a separate user.  If this is set too small, your application may receive an error status of S_UNAVAIL on <B>d_open</B>.</P>
+<P><STRONG>-z<BR></STRONG>
+Sets the DBTMP directory.</P>
+<P>For example, to start a Linux TCP lock manager, with extra users, files and queues, type the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>lm -mt -u 60 -f 300 -q 190</PRE>
+</FONT><H3><A name="Finding"></A>2.2.3 
+Finding the Lock Manager from Your <I>db.*</I> 
+Application</A></H3>
+<FONT SIZE="2"><P>When connecting your application to the lock manager, you must specify two things before opening the database: the network protocol, and the lock manager name.  Specification of the protocol is discussed elsewhere in this chapter, but note that it can affect the choice and use of a lock manager name.</P>
+<P>The lock manager name will uniquely identify a single lock manager in an environment that may host several.  Normally the name used with the <B>-a</B> parameter for the lock manager is exactly the same as the one you will use in your application. See  the TCP/IP network protocol section in this reference manual for exceptions.</P>
+<P>There are three ways the application can specify the lock manager name:  The application can call the <B>d_lockmgr </B>function prior to calling <B>d_open</B>; set the operating system environment variable LOCKMGR; or specify the lock manager name in the <B>db.star.ini</B> file.  A lock manager name set by calling <B>d_lockmgr</B> will always be used.  The <B>db.star.ini</B> file is checked only if <B>d_lockmgr</B> is not called and there is no LOCKMGR environment variable.</P>
+<P>In the following examples, assume the lock manager was started with the name "lmtest".</P>
+<P>To set the lock manager name, the application can call the <B>d_lockmgr</B> function:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_lockmgr( "lmtest", task );</PRE>
+</FONT><FONT SIZE="2"><P>Or the environment variable can be set as follows:</P>
+<P>In UNIX (csh):</P>
+</FONT><FONT COLOR="#0000ff"><PRE>setenv <I>LOCKMGR</I> lmtest</PRE>
+</FONT><FONT SIZE="2"><P>In UNIX (sh):</P>
+</FONT><FONT COLOR="#0000ff"><PRE>LOCKMGR=lmtest
+export LOCKMGR</PRE>
+</FONT><FONT SIZE="2"><P>Finally, you can set the lock manager name in the <B>db.star.ini</B> file, assigning a value to "name" in the LOCKMGR section:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>[LOCKMGR]
+name=lmtest</PRE>
+</FONT><FONT SIZE="2"><P>Having set the name, you will also need to designate a network protocol to match the lock manager you are using.  The network protocol can be specified to the runtime in two ways: through an entry in <B>db.star.ini</B>, or through a call to <B>d_lockcomm</B>.</P>
+<P>The constants used in both cases are listed in section 2.2.1, "Choosing a Network Protocol."  A call to <B>d_lockcomm</B> takes precedence over an entry in <B>db.star.ini</B>, just as with the lock manager name.</P>
+<P>The following line of code chooses the TCP lock manager and must precede the call to <B>d_open</B>:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_lockcomm( psp_lmcFind("TCP"), task );</PRE>
+</FONT><FONT SIZE="2">
+<P>See the example entry below, which chooses TCP as the network protocol in <B>rdm.ini</B>:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>[LOCKMGR]
+type=TCP</PRE>
+</FONT><FONT SIZE="2"><P>An attempt to use <B><I>db.*</B></I> in shared or exclusive mode without a call to <B>d_lockcomm</B> or an entry in <B>db.star.ini</B> produces the user error S_NOLOCKCOMM, indicating that the lock manager communication layer was not selected.</P>
+</FONT><H3><A name="Losing"></A>2.2.4 Losing the Lock Manager from Your <I>db.*</I> 
+Application</A></H3>
+<FONT SIZE="2"><P>In the event of a lock manager communication failure, your application will receive an S_LMCERROR return code from the <B><I>db.*</B></I> runtime.  There is no point in attempting to continue to use the database once this error has occurred.  You should immediately call <B>d_close</B>.  If the error was transient, you may be able to successfully call <B>d_open </B>immediately.</P>
+
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

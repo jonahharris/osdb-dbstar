@@ -1,0 +1,640 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 2</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Utility"></A>Chapter  2<BR>
+Utility Descriptions</H1>
+<H2><A name="Introduction"></A>2.1  Introduction</H2>
+<FONT SIZE="2"><P>This chapter contains descriptions of the standard <B><I>db.*</B></I> utilities in alphabetical order.  Each page header contains the name of the utility for easy reference.  The Prototype section contains the command-line syntax showing all possible parameters and options.  The Description section explains the purpose of the utility and any command-line parameters.  The Options section explains each command-line option.  The descriptions of the <B>ddlp</B>, <B>dbedit</B> and <B>dbimp</B> utilities also contain a Language Summary section.</P>
+<P>The interactive database access utility (<B>ida</B>), file transfer utilities (<B>dbimp</B> and <B>dbexp</B>), and the database editor (<B>dbedit</B>) are all explained in detail in chapters of their own in the <B><I>db.*</B></I> <I>User's Guide</I>.  The remaining maintenance and administration utilities are also found in the <B><I>db.*</B></I> <I>User's Guide</I>, summarized in the chapter called, "Maintenance Utilities."  The lock manager utilities are described in detail in a separate <B><I>db.*</B></I> publication, entitled <B><I>db.*</B></I> <I>Multi-User Guide.</I> </P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dal"></A>dal</H3>
+<FONT SIZE="2"><P>Database access language utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dal [-m<I>x</I>] [<EM>procfile</EM>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility is used for interactive or batch manipulation of a <B><I>db.*</B></I> database.  The commands that you can use with this utility are a subset of the <B><I>db.*</B></I> API, using C syntax.  If a processing file is specified, utility commands are read from that file.  Otherwise, you need to supply commands interactively.</P>
+<P>Use this utility only as an educational or prototyping tool.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-m<I>x</I><BR>
+Selects a lock manager type.  See the <B><I>db.*</B></I> <I>Multi-User Guide</I> for details.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="datdump"></A>datdump</H3>
+<FONT SIZE="2"><P>Dump data file utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>datdump [-h] [-x] [-f] [-r<I>slotno</I>] <I>dbname datfile</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>datdump</B> utility produces a formatted dump of the contents of a <B><I>db.*</B></I> data file.  In addition to the data field contents, <B>datdump</B> also displays all of the information in the record header, including the record ID, database address, record lock bit setting, stored optional keys, timestamp values, set pointers and member pointers.</P>
+<P>This utility is particularly useful in gaining an understanding of the structure of a <B><I>db.*</B></I> data file as described in section 14.3, "Database Dictionary Table Structure," of the <B><I>db.*</B></I> <I>User's Guide</I>.</P>
+<P>File <I>datfile</I> in database <I>dbname</I> is the data file whose contents are to be displayed.  If no options are specified, the result is a full dump, including header, data fields, and hex record dump.  The report is written to file <I>stdout</I> and can be redirected as needed.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-h<BR>
+Prints only the record header information.</P>
+<P>-x<BR>
+Prints only a hex dump of each record (no formatted report).</P>
+<P>-f<BR>
+Prints only the formatted report (no hex dump).</P>
+<P>-r<I>slotno</I><BR>
+Dumps only the contents of the record at the specified slot number, <I>slotno</I>, in <I>datfile</I>.  </P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dbcheck"></A>dbcheck</H3>
+<FONT SIZE="2"><P>Database consistency check utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dbcheck [-s] [-k] [-dk] [-kd] [-ts] [-a] [-r#] [-p#] [-f#] [-t] [-c] <I>dbname</I> [<I>dbfile</I>[ <I>dbfile</I>]...]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility checks the consistency of all database files in database <I>dbname</I>.  If any database files (<I>dbfile</I>) are specified, only those files are checked.  Otherwise, all files in the database are checked.</P>
+<P>The <B>dbcheck</B> utility checks database consistency by validating the position of each record occurrence and checking the integrity of the delete chains.  Options perform more complete consistency checks.  Use of these options slows down <B>dbcheck</B> execution.</P>
+<P>With the -s option, the <B>dbcheck</B> utility can perform set consistency checking.  Set membership consistency verifies the following:</P>
+<OL>
+
+<LI>Member and owner record types are valid 
+  
+<LI>Membership count is correct 
+  
+<LI>Doubly linked lists are properly formed</LI></OL>
+
+<P>The -k option causes <B>dbcheck</B> to verify the B-tree structure of the key files.  This ensures that each node (except the root node) is at least half full, that the number of filled slots is correct, that the key slots on each node are properly sorted, and that each leaf node is at the correct level in the B-tree.  Note that if the -dk option does not result in any errors, it is very unlikely that the -k option will result in any inconsistencies.</P>
+<P>The -dk option validates the existence of the key values associated with each record and key field in the data files.  Optional keys are only checked if the key has been stored.  The -kd option will, for each key in a key file, read the associated record and check to ensure that the key's data field contents matches that stored in the key file.  If the key is optional, the "key stored" bit in the record header is also checked.</P>
+<P>Inconsistencies are reported with a message indicating the nature of the inconsistency and the file and location of the offending record or key.  If the -t option is specified, a trace back of the B-tree is printed when a key file inconsistency is detected.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-s<BR>
+Performs a complete consistency check of sets.</P>
+<P>-k<BR>
+Performs B-tree structure consistency check.  This checks to ensure that the key file adheres to all of the rules for a B-tree.  If -dk is also specified, this check is unnecessary.</P>
+<P>-dk<BR>
+Checks the existence of each key from each record occurrence.  While scanning a data file, a <B>d_keyfind</B> is performed on each key to ensure that it exists.</P>
+<P>-kd<BR>
+Checks the existence of each record from each key.  While scanning a key file, a <B>d_recread</B> function call is performed and the associated key field value is checked against the key to ensure that it matches.</P>
+<P>-ts<BR>
+Performs timestamp consistency checks.</P>
+<P>-a<BR>
+Performs all of the above consistency checks (that is, -s, -dk, -kd, and -ts).</P>
+<P>-r<I>#</I><BR>
+Reports every #  percentage completed to <B>stderr</B>.</P>
+<P>-p<I>#</I><BR>
+Sets to <I>#  </I>the number of pages in the <B><I>db.*</B></I> cache for use by <B>dbcheck</B>.  For example, -p128 specifies that dbcheck is to allocate 128 pages for the cache.  The default is 64 pages.  If an insufficient memory error (S_MEMORY) occurs when starting <B>dbcheck</B>, use the -p option to specify a value less than 64.</P>
+<P>-f<I>#<BR>
+</I>Sets to <I>#</I>  the number of open files for <B>dbcheck</B>.  The specified value is passed by <B>dbcheck</B> to function <B>d_setfiles</B> prior to opening the database.  The default is 8 files.</P>
+<P>-t<BR>
+Prints a trace back of the B-tree when a key file inconsistency is detected.</P>
+<P>-c<BR>
+Prints a count of objects scanned in the check.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dbclrlb"></A>dbclrlb</H3>
+<FONT SIZE="2"><P>Lock bit clearing utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dbclrlb <I>dbname</I> [<I>datfile1</I>[ <I>datfile2</I>]...]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>dbclrlb</B> utility clears any set lock bits in the specified data files.  If no data files are specified, all database lock bits, from both deleted and non-deleted records, are cleared.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dbedit"></A>dbedit</H3>
+<FONT SIZE="2"><P>Database editor</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dbedit <I>dbname</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Anyone with experience using <B><I>db.*</B></I> can use the low-level database editor, <B>dbedit</B>, to change and/or repair any <B><I>db.*</B></I> database.  This utility works without using the runtime library and is single-user only.  Anyone who uses <B>dbedit</B> must be familiar with the binary format of the <B><I>db.*</B></I> data files as described in Chapter 14, "File Formats and Dictionary Tables," of the <B><I>db.*</B></I> <I>User's Guide</I>.</P>
+</FONT><B><I><BLOCKQUOTE>Caution:</B> </I>Improper use of <B>dbedit</B> can cause severe damage to a 
+database.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The <B>dbedit</B> utility, together with <B>dbcheck</B>, is most useful for finding and correcting errors in set pointers.  Also, if there is any kind of corruption in the first page of a data file where data about the file is stored, <B>dbedit</B> can be used to correct it.  All other areas of database update or repair should be handled through the runtime library, or through <B>ida</B>, <B>dchain</B>, or <B>keybuild</B>.  For example, <B>dbedit</B> can alter the value of a data field, but it is best to use <B>ida</B> for this kind of task, because <B>ida</B> will maintain database consistency (for example, by changing a key value to match the changed field).</P>
+<P>The <B>dbedit</B> utility can perform updates to a data file regardless of the internal consistency of the file.  While the runtime library and <B>ida</B> need to be able to successfully open a full database, <B>dbedit</B> can operate on a file-by-file basis, and will not assume that any fields in the data file are valid.</P>
+<P>The <B>dbedit</B> utility is line-oriented, instead of full-screen-oriented like <B>ida</B>.  It is driven by a set of commands that are read from standard input, and will print all information to standard output.</P>
+<P>To edit a database, the database must reside in the current directory.  If <B>dbedit</B> finds a file named &lt;<B>dbname</B>&gt;<B>.dbd</B>, it will read the dictionary into memory.  If a system record exists, it will become the initial current record.  If no system record exists, the initial current record will be database address [0:1].  If no records exist in file 0, there will be no initial current record.</P>
+<P>Because of the low level nature of <B>dbedit</B>, it will not use <B><I>db.*</B></I> environment variables, such as DBDPATH</FONT><FONT FACE="palitino" SIZE="2">, and it will not use the </FONT><B><FONT SIZE="2">db.star.ini</B></FONT><FONT FACE="palitino" SIZE="2"> file.</P>
+</FONT><FONT SIZE="2"><P>The <B>dbedit</B> utility operates in one of two modes:  interpreted or non-interpreted (hexadecimal).  In the interpreted mode, <B>dbedit</B> displays a record's contents according to its type.  It displays set and member pointers in our standard database address representation.  It indicates whether optional keys are set, and displays field values in the format used by <B>ida</B>.  Navigation with <B>dbedit</B> means moving from one record to another.  There will usually be a "current record."  Edits made to a record will be written to the file when the editor moves to a new current record.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Language Summary</H4>
+<FONT SIZE="2">
+<B><U><P>b</U>ase</B> {10 | 16}</P>
+<B><U><P>di</U>splay</B> [<B><U>ty</U>pe</B> | <B><U>db</U>a</B> | <B><U>ts</B></U> | <B><U>op</U>t</B>]<BR>
+<B><U>di</U>splay</B> {<B><U>se</U>t</B><I> </I>[<I>setname</I>] | <B><U>m</U>em</B><I> </I>[<I>setname</I>] | <B><U>fl</U>d</B><I> </I>[<I>fldname</I>]}</P>
+<B><U><P>ed</U>it</B> <B><U>ty</U>pe</B><BR>
+<B><U>ed</U>it</B> {<B><U>fir</U>st</B> | <B><U>l</U>ast</B> | <B><U>c</U>ount</B>} <I>setname</I><BR>
+<B><U>ed</U>it</B> {<B><U>ow</U>n</B> | <B><U>prev</B></U> | <B><U>next</B></U>} <I>setname</I><BR>
+<B><U>ed</U>it</B> {<B><U>db</U>a</B> | <B><U>op</U>t</B> | <B><U>dc</U>hain</B> | <B><U>nexts</U>lot</B>}<BR>
+<B><U>ed</U>it <U>hex</P>
+<P>ex</U>it</P>
+<U><P>fie</U>lds</P>
+<U><P>g</U>oto</B><I> </I>{<I>dba</I> | <B><U>nextr</U>ec</B> | <B><U>prevr</U>ec</B>}<BR>
+<B><U>g</U>oto</B><I> </I>{<B><U>fir</U>st</B> | <B><U>l</U>ast</B> |<I> </I><B><U>ow</U>n</B> | <B><U>pre</U>v</B> | <B><U>next</B></U>}<I> setname</I><BR>
+<B><U>g</U>oto</B> {<B><U>fil</U>e</B><I> </I>{<I>filenum</I> | <I>filename</I>}}</P>
+<B><U><P>hel</U>p</B> | ?</P>
+<B><U><P>nof</U>ields</P>
+<U><P>not</U>itles</P>
+<U><P>rer</U>ead</P>
+<U><P>sh</U>ow</B><I> </I>{<B><U>fl</U>d</B><I> </I>[<I>fieldname</I>] | <B><U>fil</U>e</B><I> </I>[<I>filename</I>] | <B><U>k</U>ey</B> [<I>keyname</I>]}<BR>
+<B><U>sh</U>ow</B><I> </I>{<B><U>rec</U>ord</B> [<I>recordname</I>] | <B><U>se</U>t</B> [<I>setname</I>]}</P>
+<B><U><P>so</U>urce</B> <I>filename</P>
+</I><B><U><P>ti</U>tle</P>
+<U><P>v</U>erify</B> <I>setname</P>
+</I><B><P ALIGN="center">Table 2-1.  Hex Mode Commands</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>Command</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>print </B>[<I>N</I>]</FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Print <I>N</I> lines (both hexadecimal and ASCII representation).  If <I>N</I> is absent, print one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>+[<I>N</I>]</FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Move forward <I>N</I> characters.  If <I>N</I> is absent, move one character.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>-[<I>N</I>]</FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Move backward <I>N</I> characters.  If <I>N</I> is absent, move one character.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>=<I>N</I></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Move to address <I>N</I>, where <I>N</I> is a hexadecimal number between 0 and FFFFFFFF.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>&gt;[<I>N</I>]</FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Move forward <I>N</I> lines.  If <I>N</I> is absent, move one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>&lt;[<I>N</I>]</FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Move backward <I>N</I> lines.  If <I>N</I> is absent, move one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>&gt;&gt;<I>STRING</I></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Search forward for <I>STRING</I>, which can be either an ASCII string within quotes ("string"), or hexadecimal bytes (73 74 72 69 6E 67).</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<FONT SIZE="2"><P>&lt;&lt;<I>STRING</I></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Search backward for <I>STRING</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>write</B> <I>STRING</I></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Write<I> STRING</I> into current position.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>cancel</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Erase all edits since entering hex edit mode.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>end</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>End hex edit mode.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<B><FONT SIZE="2"><P>help</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<FONT SIZE="2"><P>Print a short list of these commands.  You can also enter a question mark ('?') to invoke this command.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dbexp"></A>dbexp</H3>
+<FONT SIZE="2"><P>Database export utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dbexp [-r] [-m] [-n] [-s <I>ch</I>] [-e <I>ch</I>] [-d] [-x] <I>dbname</I> [<I>recname</I>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility exports data from database <I>dbname</I> to an ASCII text file that can then be moved to another computer, or used as input into other tools that read ASCII formatted files (for example, <B>dbimp</B>).  The <B>dbexp</B> utility writes all data from each record type to a separate file; it is the record name with file extension <B>.txt</B>.  If a record name, <I>recname</I>, is specified on the command line, then only that record type's occurrences are exported.  The created files will consist of one text line per record occurrence with commas separating the data fields.</P>
+<P>The <B>dbexp</B> utility has two ways of printing extended ASCII characters to the output files when a country table is not being used.  The default is to write out the octal value.  Since <B>dbimp</B> cannot handle this method, the -x option can be used to print the extended ASCII character as the character.  For example, ASCII 2 would be printed as "\002" without the -x and as a smiley face with the -x option.  (When a country table is used and the input character has been mapped to something, the "display as" character will be printed to the text file instead of the "input" character.)</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-r<BR>
+Prints a record's database address as the first field of each record occurrence.</P>
+<P>-m<BR>
+Prints the database addresses of the owners of all sets for which the record is a member.</P>
+<P>-n<BR>
+Silent option. No output to <B>stdout</B>.</P>
+<P>-s<I> ch</I><BR>
+Changes the field separator character from a comma to character <I>ch</I>.  White space between the 's' and the character is optional.</P>
+<P>-e<I> ch</I><BR>
+Changes the escape from a backslash ('\') to character <I>ch</I>.  White space between the 'e' and the character is optional.</P>
+<P>-d<BR>
+Causes a database address to be printed as long integers, rather than in the standard format.</P>
+<P>-x<BR>
+Prints the extended ASCII character as the character.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dbimp"></A>dbimp</H3>
+<FONT SIZE="2"><P>Database import utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dbimp [-n] [-p<I>n</I>] [-s <I>ch</I>] [-e <I>ch</I>] [-k<I>n</I>] <I>impspec</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility imports data into a <B><I>db.*</B></I> database from ASCII text files according to commands contained in an import specification file, <B>impspec</B>.  Refer to Chapter 8, "Interactive Database Access Utility (<B>ida</B>)," of the <B><I>db.*</B></I> <I>User's Guide</I> for complete information.  See the <B>tims</B> example (supplied on the installation disk) for example usage.</P>
+<P>The <B>dbimp</B> error message format is:</P><DIR>
+<DIR>
+
+</FONT><FONT COLOR="#0000ff"><PRE>filename line col : message</PRE></DIR></DIR>
+
+</FONT><FONT SIZE="2"><P>which is interpreted by some text editors.</P>
+<P>Limitations on the ASCII input file are as follows:</P>
+
+<UL>
+<LI>Maximum line length = 4300 bytes 
+  
+<LI>Maximum field length = 1024 bytes 
+  
+<LI>Maximum fields per line = 128</LI></UL>
+
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-n<BR>
+Prevents <B>dbimp</B> from echoing its input data to standard output.</P>
+<P>-p<I>n</I><BR>
+Changes the number of pages used in the <B><I>db.*</B></I> cache from 64 to <I>n</I>.  Use a smaller value to save memory.  Use a larger value to increase performance.</P>
+<I><P>-</I>s<I> ch</I><BR>
+Changes the field separator character from a comma to character <I>ch</I>.</P>
+<P>-e<I> ch</I><BR>
+Changes the escape from a backslash ('\') to character<I> ch</I>.</P>
+<P>-k<I>n</I><BR>
+Changes the record index field length from the default of 25 bytes to<I> n</I>, where <I>n</I> is any number from 2 to 228.  It is necessary to use longer lengths when input data is not unique up through 25 characters, and the <B>find on, update on</B>, or <B>create on</B> options are exercised.  Shorter lengths may be specified to increase performance and decrease the size of a temporary file.</P>
+</FONT><H4>Language Summary</H4>
+<B><FONT SIZE="2"><P>Import Specification</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>database <I>dbname</I> {
+   for_loop
+   ...
+}
+
+for_loop:
+   <B>foreach</B> <I>input_file</I> {
+      import_statement
+      ...
+   }
+
+import_statement:
+   for_loop | record_statement | connect_statement
+
+record_statement:
+   <B>record</B> <I>recname</I> {
+      [ handling; ]
+      [ field_statement; ]
+      ...
+   }
+
+handling:
+   <B>create on</B> <I>fldnum</I> |
+   <B>update on</B> <I>fldnum</I> |
+   <B>find on</B> <I>fldnum
+</I>
+field_statement:
+   <B>field</B> <I>fldname</I> = [<I>input_file</I>.]<I>fldnum</I> 
+
+connect_statement:
+   <B>connect</B> <I>setname</PRE></I></FONT><FONT SIZE="2"><P>where the language elements are defined as follows:</P>
+<I><P>dbname</I><BR>
+The full name of the database that is the target of the import.  A path cannot be specified in the statement, but the path that is specified in the DBDPATH environment variable or in the <B>db.star.ini</B> file will be utilized.</P>
+<I><P>input_file</I><BR>
+The full name, optionally including a full path, of an ASCII text file to be used as input.  The name of the file must be enclosed in double-quotes (<B>"</B> <B>"</B>). Note that one input 
+file may be opened more than once during an import.</P>
+<I><P>recname</I><BR>
+A <B><I>db.*</B></I> record type that is defined in database <I>dbname</I>.</P>
+<I><P>fldnum</I><BR>
+An integer that identifies a field within <I>input_file</I>. The first 
+input field is number 1, the second is 2, etc.</P>
+<I><P>fldname</I><BR>
+A <B><I>db.*</B></I> field type that is defined in database <I>dbname</I>, within the record type 
+created by the record_statement enclosing this statement.</P>
+<I><P>setname</I><BR>
+A <B><I>db.*</B></I> set type that is defined in database <I>dbname</I>.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="dchain"></A>dchain</H3>
+<FONT SIZE="2"><P>Delete chain sort utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>dchain <I>dbname </I>[<I>dbfile</I>]...</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>dchain</B> utility sorts the deleted record slots on the delete chains of the listed data files ([<I>dbfile</I>]...) from database <I>dbname</I> in database address order.  If no files are listed, all data files in database <I>dbname</I> will be processed.  This utility does not sort key file delete chains.</P>
+<P>The purpose of this utility is to increase the probability that newly created records in the same file will be placed close together.  The extent of any performance improvement, however, will depend upon the application.  The most likely time to use this utility is after a periodic purge of a particular set of record types, many of which were entered together; thus there would be many contiguous record slots on the delete chain.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="ddlp"></A>ddlp</H3>
+<FONT SIZE="2"><P>Database definition language processor</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>ddlp [-r] [-x] [-d] [-n] [-s[-]] [-z] <I>ddlfile</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The database definition language processor, <B>ddlp</B>, compiles the DDL specification contained in the text file <I>ddlfile</I>, and generates the database dictionary (&lt;<B>dbname</B>&gt;<B>.dbd</B>) and the database header file (&lt;<B>dbname</B>&gt;<B>.h</B>).  DDL errors will be reported on <B>stdout</B> with the line number where the error was first detected.  See the <B>tims</B> example (supplied with the product) for more information.</P>
+<P>Be sure to refer to the list of <B>ddlp</B> keywords listed at the end of this section.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>Sometimes the reported error 
+  line number is the line following the place where the actual error occurs. Be 
+  sure to check the lines preceding the reported line if you cannot find the 
+  error in the reported line.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The <B>ddlp</B> error message format is</P><DIR>
+<DIR>
+
+</FONT><FONT COLOR="#0000ff"><PRE>filename line col : message</PRE></DIR></DIR>
+
+</FONT><FONT SIZE="2"><P>which some text editors interpret.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-r<BR>
+Generates the file structure report.</P>
+<P>-x<BR>
+Generates a cross-reference listing of record, set, and field names.</P>
+<P>-d<BR>
+Allows two records to have the same field name, for example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>record a {
+   char idcode[w];
+}
+record b {
+   key int idcode;
+}</PRE>
+</FONT><FONT SIZE="2"><P>-n<BR>
+Instructs <B>ddlp</B> to omit writing the ASCII record, set, and field names to the dictionary file.  This option creates a smaller dictionary file, but it makes names unavailable to utilities such as <B>ida</B> and <B>dbimp</B>.</P>
+<P>-s[-]<BR>
+Instructs <B>ddlp</B> to preserve the case of record, set, and field names.  If -s- is specified, everything is converted to uppercase.  Case sensitivity is the default, so this option has been added for backward compatibility.</P>
+<P>-z<BR>
+Instructs <B>ddlp</B> to omit the creation of the SIZEOF_* definitions.</P>
+</FONT><H4>Language Summary</H4>
+<FONT COLOR="#0000ff"><PRE>database <I>dbname</I> [<I> </I>[<I>pgsize</I>]<I> </I>] {
+   [ timestamp ]
+   ...
+   file_stmt
+   ...
+   record_stmt
+   ...
+   [ set_stmt ]
+   ...
+}
+
+timestamp:
+   <B>timestamp</B> <B>records</B> <I>recname </I>[, <I>recname</I>]...;
+or
+   <B>timestamp</B> <B>sets</B> <I>setname </I>[, <I>setname</I>]...;
+
+file_stmt:
+   <B>data file</B> [<B>[</B><I>pgsize</I><B>]</B>]<I> </I>[<I>fileid</I> =]<I> filename</I> <B>contains
+</B>      <I>recname </I>[, <I>recname</I>]...;
+or
+   <B>key file</B> [<B>[</B><I>pgsize</I><B>]</B>]<I> </I>[<I>fileid</I> =]<I> filename</I> <B>contains
+</B>      <I>keyname</I> [, <I>keyname</I>]...;
+
+record_stmt:
+   <B>record</B> <I>recname</I> {
+      [field_stmt]
+      ...
+      [comkey_stmt]
+      ...
+   }
+
+field_stmt:
+   [[<B>optional</B>] [<B>unique</B>] <B>key</B>] type <I>fldname </I>[ <B>[</B><I>dim</I><B>]</B>...];
+or
+   [[<B>optional</B>] [<B>unique</B>] <B>key</B>] <B>struct</B> {
+      field_stmt
+      ...
+   } <I>fldname </I>[ <B>[</B>dim<B>]</B>...] ;
+
+type:
+   [<B>unsigned</B>] { <B>int</B> |<I> </I><B>short</B> | <B>long</B> } |
+   <B>char</B> | <B>float</B> | <B>double</B> | <B>db_addr
+</B>
+comkey_stmt:
+   <B>compound</B> [<B>optional</B>] [<B>unique</B>] <B>key field</B> <I>keyname</I> {
+      <I>fldname</I> [ <B>ascending</B> | <B>descending</B> ] ;
+      ...
+   }
+
+set_stmt:
+   [ <B>blob</B> | <B>bitmap</B> | <B>varilen</B> ] <B>set</B> <I>setname</I> {
+      <B>order</B> ordering ;
+      <B>owner</B> <I>recname</I> ;
+      <B>member</B> <I>recname</I> [<B>by</B> <I>fldname</I> [, <I>fldname</I>]...] ;
+      ...
+   }
+
+ordering:
+   <B>ascending</B> | <B>descending</B> | <B>first</B> | <B>last</B> | <B>next</PRE></B></FONT><FONT SIZE="2"><P>where the language elements are defined as follows:</P>
+<I><P>dbname</I><BR>
+An identifier that 
+names the database.</P>
+<I><P>pgsize</I><BR>
+The default size of a database page.  (If <I>pgsize</I> is not supplied, the 
+default is 1,024 bytes or the smallest multiple of 512 that will still hold the 
+largest record.)</P>
+<I><P>fileid</I><BR>
+An identifier used as 
+a reference for the specified file.</P>
+<I><P>filename</I><BR>
+A string enclosed 
+in double quotes (" ") that names the file.</P>
+<I><P>recname</I><BR>
+An identifier that 
+names a record type.</P>
+<I><P>keyname</I><BR>
+The name of a key field.  When listed in a key file statement, <I>keyname</I> can have a prefix identifying the record type (necessary when using the -d option).  The format is <I>recname.keyname</I>.</P>
+<I><P>fldname</I><BR>
+An identifier that 
+names a data field.</P>
+<I><P>dim</I><BR>
+A number that specifies 
+the size of an array field dimension.</P>
+<I><P>setname</I><BR>
+An identifier that 
+names a set.</P>
+<B><U><P ALIGN="center">ddlp Keywords</B></U> (<I>not</I> case sensitive)</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>#define</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>last</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>database</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>set</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>asc</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>long</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>db_addr</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>sets</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>ascending</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>member</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>desc</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>static</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>bitmap</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>next</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>descending</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>struct</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>blob</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>opt</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>directref</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>timestamp</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>by</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>optional</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>double</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>thru</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>char</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>order</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>file</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>typedef</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>compound</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>owner</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>first</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>unique</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>const</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>record</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>key</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>unsigned</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>contains</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>records</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>float</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">
+<FONT SIZE="2"><P>varilen</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<FONT SIZE="2"><P>data</FONT></P></TD>
+<TD WIDTH="22%" VALIGN="top">
+<FONT SIZE="2"><P>relatedto</FONT></P></TD>
+<TD WIDTH="27%" VALIGN="top">
+<FONT SIZE="2"><P>int</FONT></P></TD>
+<TD WIDTH="25%" VALIGN="top">&nbsp;</TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="ida"></A>ida</H3>
+<FONT SIZE="2"><P>Interactive Database Access utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>ida [-m<I>x</I>] [[-s | -x | -o] [-t] <I>dbname</I>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The Interactive Database Access utility, <B>ida</B>, is a menu-driven, screen-oriented utility that can be used to retrieve, enter, modify, or delete any information or set relationships stored in a <B><I>db.*</B></I> database.  The utility is fully described in Chapter 8, "Interactive Database Access Utility (<B>ida</B>)," of the <B><I>db.*</B></I> <I>User's Guide</I>.  If database <I>dbname</I> is supplied, it will be opened in exclusive access mode unless another open mode option is specified.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-m<I>x</I><BR>
+Selects a lock manager type.  See the <B><I>db.*</B></I> <I>Multi-User Guide</I> for details.</P>
+<P>-s<BR>
+Opens database <I>dbname</I> in shared access mode.</P>
+<P>-x<BR>
+Opens database <I>dbname</I> in exclusive access mode (default).</P>
+<P>-o<BR>
+Opens database <I>dbname</I> in one-user only mode.</P>
+<P>-t<BR>
+Enables an S_DEBUG<B> dberr</B> interrupt call (which prompts the user for a return) just after a log file has been written and prior to a transaction commit.  The purpose is to provide the ability to easily test automatic recovery using <B>ida</B>, by allowing the user to abort the program at the prompt.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="initdb"></A>initdb</H3>
+<FONT SIZE="2"><P>Database initialization utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>initdb [-y] <I>dbname</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>initdb</B> utility initializes the data and key files in database <I>dbname</I>.  A database must be initialized before any data can be stored in it.  If the data and key files exist, the utility displays the names of the database files and prompts you for confirmation.  If you reply with a "y", the files are reinitialized; otherwise, the utility terminates.  If the -y option is specified, initialization proceeds without the display of the file names and confirmation prompt.</P>
+</FONT><B><I><BLOCKQUOTE>Warning:</B> </I>This utility will delete all 
+  existing data in the database.</BLOCKQUOTE>
+<H4>Options</H4>
+<FONT SIZE="2"><P>-y<BR>
+Re-initializes database files without displaying the confirmation prompt.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="keybuild"></A>keybuild</H3>
+<FONT SIZE="2"><P>Key file build utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>keybuild [-p#] <I>dbname</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>keybuild</B> utility rebuilds all key files for the database <I>dbname</I>.  Rebuilding key files is a two-step process.  First, the file is reinitialized.  Then, each record is sequentially read from each data file record, and each key file is re-created from the record contents.</P>
+<P>This utility can be used to re-create the key files when <B>dbcheck</B> reports a database inconsistency.  The utility can also construct new key files after you have added or removed key attributes from fields in your DDL specification.  For example, if you make an existing key field a non-key, and change a non-key to a key field in your DDL, you can run <B>keybuild</B> to rebuild the key files for the new schema.  You can also use <B>keybuild</B> to reassign key fields to different key files.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-p#<BR>
+Causes # pages to be used for the <B><I>db.*</B></I> cache.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="keydump"></A>keydump</H3>
+<FONT SIZE="2"><P>Key file dump utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>keydump [-h] <I>dbname</I> <I>keyfile</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>keydump</B> utility displays a formatted dump of key file <I>keyfile</I> in database <I>dbname</I>.  If the -h option is specified, the key values are printed in hexadecimal; otherwise, the contents are displayed as formatted for data type of the key field.  The report is written to file <B>stdout</B> and can be redirected as needed.</P>
+<P>The B-tree organization of a <B><I>db.*</B></I> key file is described in section 14.2.3, "Key File Organization," of the <B><I>db.*</B></I> <I>User's Guide</I>.  This utility can assist you in learning how these files are structured.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-h<BR>
+Display key values in hexadecimal.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="keypack"></A>keypack</H3>
+<FONT SIZE="2"><P>Key file packing utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>keypack [-u<I>num</I>] [-o|-x] [-t <I>path</I>] [-b <I>path</I>] [-k <I>path</I>] [-p<I>num</I>] [-m<I>x</I>] <I>dbname</I> [<I>keyfile</I>]</PRE>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility fills the B-tree nodes in a key file (or all key files if <I>keyfile</I> is not specified), reducing the number of nodes required in the B-tree.  A B-tree node, created by the <B><I>db.*</B></I> runtime library, will be at least half full, and will have at least one empty key slot.  (See section 14.2.3, "Key File Organization," of the <B><I>db.*</B></I> <I>Users Guide</I>.)  The normal fill level in a B-tree is between 50% and 95%.</P>
+<P>The utility can create B-tree nodes that are nearly 100% full.  However, if a B-tree is packed, the nodes will be split almost immediately as more keys are added.  For this reason, the <B>keypack</B> utility is beneficial when used on key files that are not going to be changed.  Any database that is loaded for use by read-only applications should have its key files packed.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>-u<I>num</I><BR>
+Specifies the number of key slots to leave empty.  Default is 1.  If <I>num</I> is 0, the resulting key files will only contain key fields of static record types and cannot be modified.</P>
+<P>-o<BR>
+Opens the database in one-user mode (default).</P>
+<P>-x<BR>
+Opens the database in exclusive access mode.</P>
+<P>-t<I> path</I><BR>
+Specifies the location of the temporary packed key file.  When finished, the original key file is deleted and the temporary packed key file is renamed to the original key file name.  If <I>path</I> specifies a different drive, then <B>keypack</B> moves the temporary packed key file to the device containing the original key file.  By default, the current directory is used.</P>
+<P>-b<I> path</I><BR>
+Specifies the path to where a backup of the original key files will be copied.</P>
+<P>-k<I> path</I><BR>
+Specifies the path to where the packed key files will be placed.  The original key files do not change or move.  This option overrides both -t and -b.</P>
+<P>-p<I>num</I><BR>
+Sets pages in the <B><I>db.*</B></I> cache to <I>num</I>.</P>
+<P>-m<I>x</I><BR>
+Selects a lock manager type.  See the <B><I>db.*</B></I> <I>Multi-User Guide </I> for details.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR><A NAME="prdbd"></A>prdbd</H3>
+<FONT SIZE="2"><P>Dictionary print utility</P>
+</FONT><H4>Prototype</H4>
+<FONT COLOR="#0000ff"><PRE>prdbd [-c] <I>dbname</PRE></I></FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This utility displays the contents of the database dictionary file<I>, </I>&lt;<B>dbname</B>&gt;<B>.dbd</B>, for database <I>dbname</I>.  The utility will report the default database page size and each entry in the file table, record table, field table, set table, member table, sort field table, and key table that constitutes the internal form of the <B><I>db.*</B></I> database dictionary.  The report is written to <B>stdout</B> and can be redirected as desired.</P>
+<P>The utility prints symbolic names wherever possible.  If you want the record, set, and field numbers only, use the -c option.</P>
+<P>Section 14.3, "Database Dictionary Table Structure," of the <B><I>db.*</B></I> <I>User's Guide</I> describes in detail the organization of a <B><I>db.*</B></I> database dictionary.  If required by the application, this utility will help you understand and make use of the dictionary in your own applications, probably through the <B>d_internals</B> function.</P>
+</FONT><H4>Options</H4>
+<FONT SIZE="2"><P>None.</P></FONT></BODY>
+</HTML>

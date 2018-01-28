@@ -1,0 +1,103 @@
+<HTML hdpos="0">
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 1</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Introduction"></A>Chapter  1<BR>
+Introduction</H1>
+<FONT SIZE="2"><P>This book is the reference manual for the Centura <B><I>db.*</B></I> product.  It provides complete descriptions of all <B><I>db.*</B></I> utilities, functions, and return codes.  The information provided explains system capabilities in detail, but does not explain how to use them.  Information on use of the functions and utilities can be found in the other books of the set.</P>
+</FONT><H2><A name="Documentation"></A>1.1  <I>db.*</I> Documentation</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> documentation is a three-manual set and includes this <I>Reference Manual</I>, the <B><I>db.*</B></I> <I>User's Guide</I>, and the<I> <B>db.*</B></I> <I>Multi-User Guide</I>.</P>
+</FONT><H3><A name="AboutManual"></A>1.1.1  About this Manual</H3>
+<FONT SIZE="2"><P>This reference manual is organized as follows:</P>
+
+<UL>
+<LI>Chapter 2, "Utility Descriptions," contains descriptions of all <B><I>db.*</B></I> utility programs. 
+  
+<LI>Chapter 3, "Function Descriptions," contains descriptions of the <B><I>db.*</B></I> runtime library functions. 
+  
+<LI>Chapter 4, "Return Codes," contains descriptions of all <B><I>db.*</B></I> status and error codes.</LI></UL>
+
+</FONT><H3><A name="FunctionRefs"></A>1.1.2  About the Function References in this Manual</H3>
+<FONT SIZE="2"><P>For each function described in this reference manual, the reference page header tells you the function name.  The first entry on the page is a quick description of the function.  This is followed by a Prototypes section that gives a synopsis of the actual function declaration (C-style).</P>
+<P>Following the Prototypes section, you will find the Parameters heading, which lists and defines the function parameters introduced in the function declaration.</P>
+<P>A Description section follows the parameter definitions.  In this section, we explain operational details of the function.</P>
+<P>After the function is described, the Currency Changes section provides information on those functions that can cause currency changes. </P>
+<P>Following Currency Changes, the function reference presents the Locking Requirements section, which lists locking requirements for any function that accesses the database.  If your application has opened the database in a non-shared mode, locking is not required.</P>
+<P>The next section is Return Codes and contains the error/status codes for the function, listed in alphabetical order.  Detailed definitions of the codes are provided in Chapter&nbsp;4.</P>
+<P>The final sections of the function reference provide an Example of how the function is called and a See Also reference.</P>
+</FONT><H3><A name="RelatedDocs"></A>1.1.3  Related <I>db.*</I> Documents</H3>
+<FONT SIZE="2"><P>This book is the companion volume to the <B><I>db.*</B></I> <I>User's Guide</I> and the <B><I>db.*</B></I> <I>Multi-User Guide.</I>  </P>
+<P>The <B><I>db.*</B></I> <I>User's Guide</I> describes <B><I>db.*</B></I> in detail and provides in-depth instructions for the <B><I>db.*</B></I> application developer.  The <B><I>db.*</B></I> <I>Multi-User Guide</I> contains the information you need to build your application in the multi-user mode.</P>
+<P>The <B><I>db.*</B></I> system includes a <B>readme.1st</B> file that contains the release notes for your particular operating environment.  Be sure to read this file carefully.  It provides detailed information about:</P>
+
+<UL>
+<LI>Recent changes to the system that are not documented 
+  in the current manuals 
+  
+<LI>Issues specific to your particular operating system or compiler</LI></UL>
+
+</FONT><H3><A name="Conventions"></A>1.1.4  Document Conventions</H3>
+<FONT SIZE="2"><P>Table 1-1 describes the notational conventions used in this manual.</P>
+<B><P ALIGN="center">Table 1-1.  Document Notational Conventions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="590">
+<TR><TD WIDTH="33%" VALIGN="top">
+<B><FONT SIZE="2"><P>Convention</B></FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<B><FONT SIZE="2"><P>Bold Text</B></FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates the names of functions, commands, data structures, statements, databases, utilities, files, etc.  Note that the case distinctions used in the names are not significant for all operating systems.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<I><FONT SIZE="2"><P>Italic Text</I></FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Represents the names of variables, such as parameters and command options.  Additionally, the <B><I>db.*</B></I> documents use italics for the names of books.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2" COLOR="#0000ff"><P>Courier, Colored Text</FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates a programming example or a command-line entry.  Examples are usually enclosed in boxes.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>Brackets ([ ])</FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Indicate optional fields or parameters in command lines and syntax statements.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>Bar Symbol (|)</FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Separates alternative selections.  You should enter one of the items separated by the bar.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>Ellipsis (...)</FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates that code has been omitted.  Both horizontal and vertical ellipses are used.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="top">
+<FONT SIZE="2"><P>Arrow Symbols (&lt; &gt;)</FONT></P></TD>
+<TD WIDTH="67%" VALIGN="top">
+<FONT SIZE="2"><P>Indicate information that you must supply.  For example, <B>&lt;filename&gt;.h</B> represents a header file that you name.  Arrow symbols are also used in text to set off keyboard key names, as in &lt;Ctrl&gt;.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H2><A name="Resources"></A>1.2 Other Helpful Resources</H2>
+<FONT SIZE="2"><P>Centura offers various options for additional information on <B><I>db.*</B></I>.</P>
+
+<UL>
+<B><LI>Centura Books Online</B><BR>
+The Centura <B><I>db.*</B></I> document set is available online.  After downloading, the HTML book set can be accessed your browser by first opening the <B>dbstar.htm</B> file 
+  and navigating from there to the book of your choice. 
+<B><LI>Worldwide Web</B><BR>
+The Centura 
+  Worldwide Web home page is located at http://www.centurasoft.com. The Centura 
+  web server provides access to a wealth of information about Centura products 
+  and services.</LI></UL>
+
+</FONT></BODY>
+</HTML>

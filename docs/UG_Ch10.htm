@@ -1,0 +1,541 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 10</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="Transfer"></A>Chapter 10<BR>
+File Transfer Utilities (dbimp, dbexp)</H1>
+<H2><A NAME="Introduction"></A>10.1 Introduction</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> product stores all its data in a special-purpose format.  This format is specific to the<B><I> </B></I>product and all data in a <B><I>db.*</B></I> database must have been created by the <B><I>db.*</B></I> runtime functions.  In the development of a system, data often already exists in a format other than that used by <B><I>db.*</B></I>, the most common being ASCII format.  <B><I>db.*</B></I> cannot operate directly on ASCII text files.  To transfer data from an ASCII text file into <B><I>db.*</B></I>, a utility must be used that understands both formats.  </P>
+<P>It is possible to write <B><I>db.*</B></I> applications to read data from a text file and enter it into <B><I>db.*</B></I> records, or vice versa.  Entering bulk data from an external source into a database is called importing.  Reading data from <B><I>db.*</B></I> and writing it in a different format is called exporting.  To accomplish these tasks, two general-purpose utilities are provided as a part of the <B><I>db.*</B></I> tool set.  The utility that imports data to a <B><I>db.*</B></I> database is called <B>dbimp</B>.  The utility that exports data is called <B>dbexp</B>.  </P>
+<P>These utilities use ASCII text files as the standard external representation of data.  These files can be created or modified by text editors or string manipulation programs.  Most database management systems have the ability to export data into ASCII (see Figure 10-1).</P>
+<P>Both <B>dbexp</B> and <B>dbimp</B> view an ASCII record as one line of text, terminated by a newline character (and Enter character on some computers), with fields separated by a standard separator character.  Our utilities use the comma as a separator character. .  Numeric fields are represented by ASCII digits, in base 10.  Character fields are represented by ASCII alphanumeric characters, optionally enclosed by double quotation marks.  The fields (or records) are not fixed-length.</P>
+<B><P ALIGN="center"><IMG alt="Fig. 10-1. Importing and Exporting Data" src="dbstar_10-1.gif" ><BR ><BR>Fig. 10-1.  Importing and Exporting Data</P>
+</B><P>All ASCII records in one file must be of the same type.  This means that there are the same number of fields on each line, and the same sequence of field types is maintained from line to line.  For example, if one record has a numeric field followed by two character fields, all records must have this format.  One character field followed by two numeric fields is not permitted.  All output from <B>dbexp</B> will be created in the same format.  All input read by <B>dbimp</B> is expected in this format.  The following text shows six records of the same record type, each containing seven fields.  The first two fields and the last field are numeric, while all the other fields are character strings.  (The NULL field represents no owner pointer for the set <B>article_list</B> as declared in the <B>tims.ddl</B>.)</P>
+</FONT><FONT COLOR="#0000ff"><PRE>2,0,"db001","Database Design","McGraw Hill","1983",0
+6,0,"db002","An Intro...","Addison Wesley","1981",0
+11,0,"db003","Microcomputer ...","McGraw Hill","1985",0
+16,0,"db004","Computer ...","Prentice Hall","1977",0
+19,0,"db005","Fundamental ...","Yourdan","1981",0</PRE>
+</FONT><FONT SIZE="2"><P>The file format above was created using the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp  -m  tims  info</PRE>
+</FONT><FONT SIZE="2"><P>A second record type shown below would be stored in a different text file:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>0:2,"4GL"
+0:3,"languages"
+0:4,"reliability"
+0:5,"debugging"
+0:6,"testing"
+0:7,"database design"</PRE>
+</FONT><FONT SIZE="2"><P>The above file format was created using:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp  -r  tims  info</PRE>
+</FONT><H2><A NAME="Exporting"></A>10.2 Exporting Data</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> exporting utility, <B>dbexp</B>, will convert all instances of selected record types into ASCII text files.  You can select all the record types in the database for export.  The resulting text files can in turn be used by the import utility, <B>dbimp</B>, by a text editor, or by any other text manipulation software.  Since ASCII text is well suited for transmission to other platforms, this feature allows databases to be moved to computers of different types.</P>
+<P>An example execution of <B>dbexp</B> might look like the example below:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp tims info</PRE>
+</FONT><FONT SIZE="2"><P>This would export data from the <B>info</B> record type of the <B>tims</B> database.  The <B>info</B> record type looks like the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>record info {
+   unique key char id_code[16];
+   char info_title[80];
+   char publisher[32];
+   char pub_date[12];
+   int info_type;
+}</PRE>
+</FONT><FONT SIZE="2"><P>The file created by <B>dbexp</B> would be named <B>info.txt</B> and would contain records created from the contents of the corresponding <B><I>db.*</B></I> data file, as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>"db001","Database Design","McGraw Hill","1983",0
+"db002","An Intro...","Addison Wesley","1981",0
+"db005","Fundamental ...","Yourdan","1981",0</PRE>
+</FONT><FONT SIZE="2"><P>The <B>dbexp</B> utility is invoked as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp [-r] [-m] [-n] [-d] [-s "&lt;<I>char</I>&gt;"] [-e "&lt;<I>char</I>&gt;"] <I>dbname</I> [<I>rtype</I>...]</PRE>
+</FONT><FONT SIZE="2"><P>When no record types (<I>rtype</I>) are listed following the database name (<I>dbname</I>), <B>dbexp</B> will export all record types in the database.  If one or more record types are listed, only those record types will be exported.</P>
+<P>The <B>-s</B> option indicates that the following argument is a character, enclosed in quotes, to be used as a separator character.  The default is a comma.  For example, if a vertical bar character were desired, the following command could be used:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp -s "|" tims info</PRE>
+</FONT><FONT SIZE="2"><P>The resulting file would contain the data below:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>"db001"|"Database Design"|"McGraw Hill"|"1983"|0
+"db002"|"An Intro..."|"Addison Wesley"|"1981"|0
+"db005"|"Fundamental ..."|"Yourdan"|"1981"|0</PRE>
+</FONT><FONT SIZE="2"><P>The <B>-e</B> option changes the escape character (default is backslash), which is to be used in front of each quotation mark character contained within a character string, or each backslash character contained in a string.  For example, if a field contains the following string:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>Your "filing cabinet" is called C:/DRAWERS.</PRE>
+</FONT><FONT SIZE="2"><P>With<B> dbexp</B>, the string converts to the following format as it is written into the ASCII file:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>"Your /"filing cabinet/" is called C://DRAWERS."</PRE>
+</FONT><FONT SIZE="2"><P>You may wish to change the escape character if text in your database contains many backslashes.  This would prevent each backslash from becoming a double backslash.  Note, however, that if the exported data will be used as input to <B>dbimp</B>, the same escape character must be specified in the <B>dbimp</B> command.</P>
+<P>The <B>-r</B> option causes <B>dbexp</B> to include the record's database address (see section 14.2.2, "Data File Organization") as the first field in each ASCII record.  For example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp -r tims info</PRE>
+</FONT><FONT SIZE="2"><P>will cause the records to appear as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>1:3,"db001","Database Design","McGraw Hill","1983",0
+1:7,"db002","An Intro...","Addison Wesley","1981",0
+1:20,"db005","Fundamental ...","Yourdan","1981",0</PRE>
+</FONT><FONT SIZE="2"><P>Since the database address of each record is unique, this field can be used as a unique identifier of each record.  The import utility can take advantage of this field.  </P>
+</FONT><FONT FACE="Courier" SIZE="2"><P> </FONT><FONT SIZE="2">The <B>-m</B> option causes set membership information to be included with each record.  This information consists of a list of database addresses, which are placed after the record's own database address (if <B>-r</B> is specified) and before the ASCII data fields. One 
+database address field is created for each set for which this record type is a 
+member. The value of each field is the database address of the owner record for 
+that set. If the record is not connected to the set, the field value is 
+zero.</P>
+<P>The <B>-n</B> option is a silent option; there is no output to <B>stdout</B>.  The <B>-d</B> option causes a database address to be printed as long integers, rather than in the standard format.  Note that a database address may appear as a very large number (the maximum is 4,294,967,295) because of the internal format of a database address.</P>
+<P>The order of the database address fields is the same as the order of the sets in the DDL.  If a record is a member of three sets, three database addresses would be included in each ASCII record.  The first database address would represent the owner of the first set in the schema that lists this record type as a member.  This ordering information is important when using the import utility to recreate the set connections, because it can be used to create a logical connection between fields with identical values.</P>
+<P>The command below:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbexp -r -m tims info</PRE>
+</FONT><FONT SIZE="2"><P>would create the following:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>1:18,1:1,NULL,"db001","Fourth-Gen...","Prentice-Hall","1985",0
+1:19,1:1,NULL,"db002","Fourth-Gen...","Prentice-Hall","1986",0
+1:20,1:2,NULL,"sw001","Software Rel...","Wiley-Interscience","1976",0</PRE>
+</FONT><FONT SIZE="2"><P>The <B>info</B> record type is a member of two sets.  This data has been connected in the first set (<B>has_published</B>), but not in the second (<B>articles</B>), as indicated by the <B>NULL</B> in the third field.</P>
+</FONT><H2><A NAME="Importing"></A>10.3 Importing Data</H2>
+<FONT SIZE="2"><P>This section describes the usage of the <B><I>db.*</B></I> import utility, <B>dbimp</B>.  The purpose of <B>dbimp</B> is to import data from an ASCII-formatted file into a <B><I>db.*</B></I> database.  The import utility is simple enough to allow great quantities of raw ASCII data to be entered into a <B><I>db.*</B></I> database with very little specification.  With more complex requirements, <B>dbimp</B> can be instructed to perform mappings between the input data and <B><I>db.*</B></I> records and to make set connections based upon matching field values.</P>
+<P>All instructions to <B>dbimp</B> are placed into a text file in the form of an import specification language (ISL).  An ISL specification identifies the database and the files containing ASCII data to be imported.  It also contains mappings between the ASCII data fields and the <B><I>db.*</B></I> record fields.  Figure 10-2 shows the general operation of <B>dbimp</B>.</P>
+<B><P ALIGN="center" ><IMG alt="Fig. 10-2. Import Utility Usage" src="dbstar_10-2.gif"><BR><BR>Fig. 10-2.  Import Utility Usage</P>
+</B><P>ASCII text files can be created by a wide variety of software programs, including <B>dbexp</B>, text editors, and most other DBMS products.  </P>
+<P>Databases that are built with certain restrictions (see section 10.4, "Using Export and Import Together") can be exported, then imported again without losing any information.  This allows simple restructuring of a database.  Also, a database in ASCII format can be transferred to another computer and then imported into a <B><I>db.*</B></I> database, even though the source and target computers have different processors and internal representations of data.</P>
+</FONT><H3><A NAME="Usage"></A>10.3.1 Import Program Usage</H3>
+<FONT SIZE="2"><P>The full definition of the usage of <B>dbimp</B> is shown below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbimp [-n] [-s "&lt;<I>char</I>&gt;"] [-e "&lt;<I>char</I>&gt;"] [-k<I>n</I>] [-p<I>n</I>] <I>impspec</PRE></I></FONT><FONT SIZE="2"><P>The <B>-s</B> and <B>-e</B> specify alternate separator characters  and escape characters for the ASCII file.  For examples, refer to the discussion of these characters in section 10.2.  If <B>dbexp</B> has been used to create the text files that are to be imported, any alternate separator or escape characters specified on the <B>dbexp</B> command line should also be used on the <B>dbimp</B> command line.</P>
+<P>The <B>-n</B> option is a "no print" request.  By default, <B>dbimp</B> will display each record of ASCII text and any warning messages to standard output.  If no such output is desired, this option will turn it off.</P>
+<P>The <B>-k<I>n</B></I> option makes <B><I>n</B></I> the key size in the created record index (see section 10.3.2, example 2).  By default, <B><I>n</B></I> is 25.  If your data requires more characters to be unique, you can specify up to 228 characters.  Note that the larger the number, the larger the temporary key file needs to be.  To decrease the size of the CRI keys, use a value of <B><I>n</B></I> less than 25.</P>
+<P>The <B>-p<I>n</B></I> option makes <B>dbimp</B> call <B>d_setpages</B> with <B><I>n</B></I> as the number for the database pages.  By default, <B><I>n</B></I> is 17.  To increase performance, increase <B><I>n</B></I>.  To save on memory, <B><I>n</B></I> may be set as low as five.</P>
+<P>The import specification language is contained in the file <B>impspec</B>.  This is a text file containing the specification that has been written by the <B>dbimp</B> user.  It may have any legal file name, but we recommend the following naming convention:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbname.imp</PRE>
+</FONT><FONT SIZE="2"><P>The suffix of <B>.imp</B> will distinguish this file as an import specification for the database <I>dbname</I>.</P>
+</FONT><H3><A NAME="Language"></A>10.3.2 Import Specification Language</H3>
+<FONT SIZE="2"><P>This section fully defines the usage and syntax of the import specification language.  The examples in the following paragraphs introduce the language's features in a stepwise manner, with growing complexity.  The complete grammar is given at the end of this section.</P>
+</FONT><H4>Example One: Simple family information database</H4>
+<FONT SIZE="2"><P>The first example contains the following elements: a set of person names in the ASCII text file <B>person.asc</B>:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>"Warner","Micah Wayne",9761101
+"Warner","Jesse David",9800706
+"Warner","Wayne Lawrence",9540530
+"Wood","Jennifer Ann",9531214
+"Warner","Paul Russell",9860904</PRE>
+</FONT><FONT SIZE="2"><P>and a <B><I>db.*</B></I> record definition in a database named <B>tree</B>:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>record person {
+   char p_last[20];
+   char p_first[30];
+   long p_birth;
+   compound key p_name {
+      p_first;
+      p_last;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The goal is to import the ASCII records into the <B><I>db.*</B></I> records.  The first ASCII field is a last name, the second is a first and middle name, and the third is an encoded birthdate (format YYY MM DD, where 1000 must be added to the year).  The fields in the <B><I>db.*</B></I> record happen to be in the same order.  Our import specification will be stored in file <B>tree.imp</B>, and will contain the following statements:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database tree;
+foreach "person.asc" {
+   record person {
+      field p_last = 1;
+      field p_first = 2;
+      field p_birth = 3;
+   }
+}
+end;</PRE>
+</FONT><FONT SIZE="2"><P>The import utility is invoked as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbimp tree.imp</PRE>
+</FONT><FONT SIZE="2"><P>The output would look something like the box below:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>Database Import Utility For db.* 
+Copyright (C) 1984-2000 Centura Corporation, All Rights Reserved.
+Compilation complete
+Starting data import
+"Warner","Micah Wayne",9761101
+"Warner","Jesse David",9800706
+"Warner","Wayne Lawrence",9540530
+"Wood","Jennifer Ann",9531214
+"Warner","Thomas James",9850404
+"Warner","Paul Russell",9860904
+Successful import</PRE>
+</FONT><FONT SIZE="2"><P>Note that there are two phases in the execution of the import utility.  The first phase is the compilation phase, where the import specification is read and compiled.  If there are any errors or warnings in the specification, messages will be printed before the "Compilation complete" message, and the import will be terminated.  The specification must compile correctly before the utility will open and update the database.  This second phase is the import phase.  Its activity is logged between the "Starting data import" and "Successful import" messages.  Normal output is a copy of the input records.  If there are any problems during the import, error and warning messages will appear between the input records.  Often, the warnings can be ignored, but all should be examined for potential problems in the input data.</P>
+<P>This first example has illustrated the use of five import specification statements: <B>database</B>, <B>foreach</B>, <B>record</B>, <B>field</B>, and <B>end</B>.</P>
+<P>The <B>database</B> statement identifies the database to be opened and updated.  Records may exist in a database if they will not collide with unique keys that are being imported.  Existing records will not be altered by the import, nor can they be accessed; the new data will be completely disjoint from existing data.</P>
+<P>The <B>foreach</B> statement specifies an ASCII text file (within quotation marks), followed by a block of statements enclosed in braces.  It may be interpreted as saying, "for each line in this file, perform the following operations."  During the import phase of the utility, it will repeatedly read one line from the named file and process its contents according to the enclosed statements.  When the last line of text has been read, the statement following the closing brace will be executed.  In this simple example, the next statement is an <B>end</B> statement.</P>
+<P>The <B>record</B> statement names a <B><I>db.*</B></I> record type, followed by a block of statements enclosed in braces.  Each time the record statement is executed, a record of the named type is conditionally created.  There is a way to skip the creation of a record if a record with the same contents has already been created.  This capability will be discussed below.  In this example, a record will be created for each input line of text.</P>
+<P>A <B>field</B> statement defines a mapping between a <B><I>db.*</B></I> record field (named left of the equals sign), and an ASCII field (identified by its numeric position in the record).  The input field is converted into the type of the <B><I>db.*</B></I> field.  In this example, the first and second fields in the input record are converted into strings (by adding a null terminator following the last character), and placed into the <B>p_last</B> and <B>p_first</B> fields.  Then the third input field is converted into a long integer, and placed into the <B>p_birth</B> field.  The record is actually created with the <B>d_fillnew</B> function, so that all keys are automatically created along with the record.</P>
+<P>The <B>field</B> statement implements the mapping between the ASCII and <B><I>db.*</B></I> records.  For each record statement, zero or more field statements may be used, not to exceed the number of fields defined in the record.  Not all fields in the <B><I>db.*</B></I> record require a <B>field</B> statement.  Unspecified fields are zero-filled.  Likewise, it is not necessary to use all ASCII fields in a <B>field</B> statement.  The ordering of the fields is irrelevant.</P>
+<P>If <B>dbimp</B> is unable to fully convert the input data into the <B><I>db.*</B></I> field type, it will print a warning message, do the best it can, and go on.  All other fields are filled.  For example, the length of the text in an input field may be longer than the space allowed for it in the record.  The utility will fill the <B><I>db.*</B></I> field to its maximum length, and ignore any remaining characters.</P>
+</FONT><H4>Example Two: Simple library database</H4>
+<FONT SIZE="2"><P>Example two will illustrate the conditional creation of records.  Suppose that the input text contains redundant data, as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>"Knuth, D.",1968,"Fundamental Algorithms"
+"Ullman, J.",1982,"Principles of Database Systems"
+"Knuth, D.",1969,"Seminumerical Algorithms"
+"Knuth, D.",1973,"Searching and Sorting"</PRE>
+</FONT><FONT SIZE="2"><P>Your schema will not contain redundant data but will instead utilize a set construct:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>record author {
+   key char name[32];
+}
+record book {
+   char title[52];
+   long pub_date;
+}
+set published {
+   order ascending;
+   owner author;
+   member book by pub_date;
+}</PRE>
+</FONT><FONT SIZE="2"><P>In this example, each line of text contains parts of two record types.  This implies that two record statements should be included within the one <B>foreach</B> statement.  The resulting database should contain four <B>book</B> records, but only two <B>author</B> records.  The first <B>author</B> record should be connected, via the published set, to three <B>book</B> records, while the second <B>author</B> record should be connected to only one.  The following import specification will do just that:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database books;
+foreach "books.asc" {
+   record author {
+      create on 1;
+      field name = 1;
+   }
+   record book {
+      field title = 3;
+      field pub_date = 2;
+   }
+   connect published;
+}
+end;</PRE>
+</FONT><FONT SIZE="2"><P>In this example, two records are conditionally created for each ASCII text line.  The <B>create on</B> statement is used to make sure that a new <B>author</B> record is created only if an identical record has not already been created.  Another statement, <B>connect</B>, is used to perform a <B>d_connect</B> function between the two records created in the loop.</P>
+<P>The <B>create on</B> statement causes <B>dbimp</B> to search its internal created record index (CRI) for the existence of a record with the same record type and field value.  The field value stored in the CRI may or may not be stored in the record itself.  In this example, the field used in the <B>create on</B> statement is also used in the record.  Other import specifications may use the field values only to establish connections, and not for storage in the <B><I>db.*</B></I> record.</P>
+<P>If the <B>create on</B> statement searches the CRI for a matching record type and field value and does not find it, it will create the record and an entry in the CRI, storing the database address of the created record in the CRI entry.  If it finds a match, it does not create a new record, but uses the database address stored in the entry to represent the record that would have been created.</P>
+<P>The import utility maintains another internal list, called current of record type (CRT).  This is a currency table similar to the current set, owner, and member tables maintained by the <B><I>db.*</B></I> runtime functions.  Whenever a record is created, the database address of that record is stored as the current record of its type.  The <B>connect</B> statement will search the schema tables for the correct owner and member types, then extract the database addresses of those types from the CRT table.  If there are no current records of both types, <B>dbimp</B> will not attempt a connection, and will skip to the next iteration of the <B>foreach</B> loop.  Because only one record of each type is being tracked, <B>dbimp</B> cannot connect recursive sets; that would require two records of that one type to be tracked.</P>
+<P>We will perform the above example, showing the CRI and CRT list at key points.  The statement to be executed is shown, followed by a description of the actions performed by <B>dbimp</B> in processing the statement.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   foreach "books.asc" {</PRE>
+</FONT><FONT SIZE="2"><P>Read the first line of <STRONG>books.asc</STRONG> into memory:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   "Knuth, D.",1968,"Fundamental Algorithms"</PRE>
+</FONT><B><FONT SIZE="2"><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record author {
+      create on 1;</PRE>
+</FONT><FONT SIZE="2"><P>Search CRI (which is empty) for match.  <BR>
+Create the record (database address = [0:1]).  <BR>
+Create entry in CRI:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   key={author,"Knuth, D."}, data=[0:1]</PRE>
+</FONT><FONT SIZE="2"><P>Save CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:   [0:1]
+   book:   
+   NULL_DBA</PRE>
+</FONT><B><FONT SIZE="2"><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   field name = 1;</PRE>
+</FONT><FONT SIZE="2"><P>The <B>name</B> field in <B>author</B> record is set to "Knuth, D".</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record book {
+      field title = 3;
+      field pub_date = 2;
+   }</PRE>
+</FONT><FONT SIZE="2"><P>Unconditionally create <B>book</B> record ([1:1]).  No entry created in CRI.  Save CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:   [0:1]
+   book:   
+   [1:1]</PRE>
+</FONT><FONT SIZE="2"><P>Field <B>title</B> set to "Fundamental Algorithms".  Field <B>pub_date</B> set to <B>1968</B>.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   connect published;</PRE>
+</FONT><FONT SIZE="2"><P>Determine that <B>author</B> is owner, <B>book</B> is member.  Make current book, [1:1], the current record.  Make current author, [0:1], the current owner of set <B>published</B>.  Call <B>d_connect(PUBLISHED).</P>
+<P>Statement:</P></B></FONT><FONT COLOR="#0000ff"><PRE>   foreach "books.asc" {</PRE>
+</FONT><FONT SIZE="2"><P>Read the second line of <B>books.asc</B> into memory:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   "Ullman, J.",1982,"Principles of Database Systems"</PRE>
+</FONT><B><FONT SIZE="2"><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record author {
+      create on 1;
+      field name = 1;
+   }</PRE>
+</FONT><FONT SIZE="2"><P>Search CRI for match (no match).  Create <B>author</B> record (database address [0:2]), and add it to the CRI:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   key={author,"Knuth, D."}, data=[0:1]
+   key={author,"Ullman, J."}, data=[0:2]</PRE>
+</FONT><FONT SIZE="2"><P>Update CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:   [0:2]
+   book:   
+   [1:1]</PRE>
+</FONT><FONT SIZE="2"><P>Store "Ullman, J." in name field.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record book {
+      field title = 3;
+      field pub_date = 2;
+   }</PRE>
+</FONT><FONT SIZE="2"><P>Unconditionally create <B>book</B> record ([1:2]).  No entry is created in the CRI.  Save CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:  [0:2]<BR><BR><BR>     
+   book:  [1:2]</PRE>
+</FONT><FONT SIZE="2"><P>Set field title to "Principles of Database Systems".  Set field <B>pub_date</B> to <B>1982</B>.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   connect published;</PRE>
+</FONT><FONT SIZE="2"><P>Determine that <B>author</B> is owner, <B>book</B> is member.  Make current <B>book</B>, [1:2], the current record.  Make current <B>author</B>, [0:2], the current owner of set <B>published</B>.  Call <B>d_connect</B>(PUBLISHED).</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   foreach "books.asc" {</PRE>
+</FONT><FONT SIZE="2"><P>Read the third line of <B>books.asc</B> into memory:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   "Knuth, D.",1969,"Seminumerical Algorithms"</PRE>
+</FONT><B><FONT SIZE="2"><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record author {
+      create on 1;</PRE>
+</FONT><FONT SIZE="2"><P>Search CRI for match on: {author,"Knuth, D."}.  Match is found; set CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:   [0:1]
+   book:   [1:1]</PRE>
+</FONT><B><FONT SIZE="2"><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   field name = 1;</PRE>
+</FONT><FONT SIZE="2"><P>Statement skipped.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   record book {
+      field title = 3;
+      field pub_date = 2;
+   }</PRE>
+</FONT><FONT SIZE="2"><P>Unconditionally create <B>book</B> record ([1:3]).  No entry is created in the CRI.  Save CRT:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   author:   [0:1]
+   book:   [1:3]</PRE>
+</FONT><FONT SIZE="2"><P>Field <B>title</B> is set to "Seminumerical Algorithms".  Field <B>pub_date</B> is set to 1969.</P>
+<B><P>Statement:</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   connect published;</PRE>
+</FONT><FONT SIZE="2"><P>Determine that <B>author</B> is owner, <B>book</B> is member.  Make current <B>book</B>, [1:3], the current record.  Make current <B>author</B>, [0:1], the current owner of set <B>published</B>.  Call <B>d_connect</B>(PUBLISHED).</P>
+<P>The last iteration of the <B>foreach</B> loop will have the same effect as the third, where a third book record is connected to the first author record.</P>
+</FONT><H4>Example Three: Full family tree database</H4>
+<FONT SIZE="2"><P>Our final example demonstrates the use of the remaining two import specification language statement types.  The first is called <B>update on</B>, and is used to find an existing CRI entry and update the existing record with new field values.  This statement will create the record for which there is not already a CRI entry.  The last statement is called <B>find on</B>, and is used to locate a record that has already been created with a <B>create on</B> or <B>update on</B> statement, and make it the current record of type.  It is used to locate records that will be involved in <B>connect</B> statements.  Note that <B>update on</B> and <B>find on</B> cannot detect the presence of a record that existed in the database prior to this import!</P>
+<P>This example is an expansion of Example One above, which represents a family tree.  Figure 10-3 shows the schema for building a family tree database.</P>
+<B><P ALIGN="center"><IMG alt="Fig. 10-3. Family Tree Schema" src="dbstar_10-3.gif"><BR><BR>Fig. 10-3.  Family Tree Schema</P>
+</B><P>The data definition language for this schema follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database tree {
+   data file "tree.dat" contains person, marriage;
+   key file  "tree.key" contains p_num, p_name;
+<BR>
+   record person {
+      unique key int p_num;
+      char p_last[20];
+      char p_first[30];
+      long p_birth;
+      long p_death;
+      compound key p_name {
+         p_last;
+         p_first;
+      }
+   }
+   record marriage {
+      long m_date;
+      long m_term;
+   }
+   set husband {
+      order ascending;
+      owner person;
+      member marriage by m_date;
+   }
+   set wife {
+      order ascending;
+      owner person;
+      member marriage by m_date;
+   }
+   set offspring {
+      order ascending;
+      owner marriage;
+      member person by p_birth;
+   }
+}</PRE>
+</FONT><FONT SIZE="2"><P>The input data contains field-value relationships that will be converted into set relationships during the import.  There are two data files: one for definitions of people in the tree and a second for the definitions of marriages in the tree.  One person may be either a husband or wife in a marriage, and a person may be the offspring of a marriage.  The definitions of the person fields in file <B>person.asc</B> are as follows:</P>
+<P>1. Numerical reference to the marriage from which this person is the offspring.<BR>
+2. 
+Unique numerical identifier of this person.<BR>3. 
+Person's last name.<BR>
+4. 
+Person's first and middle name.<BR>
+5. 
+Person's birth date, if known.<BR>
+6. 
+Person's death date, if applicable and known.</P>
+<P>The <B>marriage.asc</B> file contains fields defined as follows:</P>
+<P>1. Unique numerical identifier of this marriage.<BR>
+2. 
+Reference to the person record of husband.<BR>
+3. 
+Reference to the person record of wife.<BR>
+4. 
+Marriage date.<BR>
+5. 
+Marriage termination date, if applicable and known.</P>
+<P>See the sample data below:</P>
+<B><P>File: person.asc</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>2,1,"Warner","Micah Wayne",9761101,0
+2,3,"Warner","Jesse David",9800706,0
+5,4,"Warner","Wayne Lawrence",9540530,0
+5,6,"Warner","Walter Bartlett",9560226,0
+5,7,"Warner","Laurel Ann",9590520,0
+5,8,"Warner","Roger James",9601025,0
+10,9,"Warner","Lawrence James",9270603,0
+12,11,"Warner","Clarence R.",9010313,9270516
+14,13,"James","Pauline May",9040723,0
+16,15,"Morgan","Leslie Bartlet",8971128,0
+18,17,"Carte","Dorothy Lois",8890802,0
+20,19,"Morgan","Elizabeth Jane",9330412,0
+22,21,"Wood","Jennifer Ann",9531214,0
+22,23,"Kepler","Michael",0,0
+22,24,"Martin","Dinah",0,0
+22,25,"Pools","Janice",0,0
+22,26,"Adams","Judy",0,0
+2,27,"Warner","Thomas James",9850404,0
+2,28,"Warner","Paul Russell",9860904,0
+30,29,"Kepler","Patrick Michael",9870509,0</PRE>
+</FONT><B><FONT SIZE="2"><P>File: marriage.asc</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>2,4,21,9731215,0
+5,9,19,9511013,0
+10,11,13,9260313,9270561
+20,15,17,9290324,0
+30,23,7,9841013,0
+31,8,24,9840512,0
+32,9,25,9740000,0
+33,9,26,9820000,0</PRE>
+</FONT><FONT SIZE="2"><P>As these data are imported, we want to be able to connect each <B>person</B> record to the <B>marriage</B> record(s) it is related to in two ways.  A person may be a spouse in one marriage, and may be the offspring of another marriage.  In each line of ASCII <B>person</B> data is a unique identifier of the person, plus the identifier of the marriage of which this person is the offspring.  Hence it is possible to create up to two records for each line of <B>person</B> data.  As the<B> person</B> and <B>marriage</B> records are created or found, the <B>offspring</B> set can be connected.</P>
+<P>The loop through <B>person.asc</B> will cause all <B>person</B> and <B>marriage</B> records to be created, and all <B>offspring</B> connections to be made.  A loop through <B>marriage.asc</B> will allow each <B>marriage</B> record to be found and updated with full information about the marriage.  It will also allow the husband and wife set connections to be made.</P>
+<P>The following import specification demonstrates the <B>update on</B> and <B>find on</B> statements, as it updates marriage information and creates husband and wife connections, both in the second <B>foreach</B> loop.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>database tree;
+foreach "person.asc" {
+   record person {
+      create on 2;
+      field p_num = 2;
+      field p_last = 3;
+      field p_first = 4;
+      field p_birth = 5;
+      field p_death = 6;
+   }
+   record marriage {
+      create on 1;
+   }
+   connect offspring;
+}
+foreach "marriage.asc" {
+   record marriage {
+      update on 1;
+      field m_date = 4;
+      field m_term = 5;
+   }
+   record person {
+      find on 2;
+   }
+   connect husband;
+   record person {
+      find on 3;
+   }
+   connect wife;
+}
+end;</PRE>
+</FONT><H4>Import Specification Language Definition</H4>
+<B><FONT SIZE="2"><P>Import Specification</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>database <I>dbname</I> ;
+   foreach_loop
+   ...
+end ;</PRE>
+</FONT><FONT SIZE="2"><P>The database named <I>dbname</I> is opened, and all record, field, and set type names are read into memory for verification against the names included in this specification.  The database is located with the DBDPATH and DBFPATH environment variables, if defined.  If there is an <B>db.star.ini</B> file in the current directory, it is used.  Otherwise the database dictionary and files are expected to be in the current directory.  Then each <B>foreach_loop</B> is executed in order.</P>
+<B><P>Foreach Loop</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>foreach <I>input_file</I> {
+   import_statement
+   ...
+}</PRE>
+</FONT><FONT SIZE="2"><P>Read each line of ASCII text from <I>input_file</I> and make the text available to the import statements enclosed in the loop.  When an end-of-file is detected in <I>input_file</I>, exit the loop and execute the next statement.</P>
+<B><P>Import Statement</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>foreach_loop | record_statement | connect_statement</PRE>
+</FONT><FONT SIZE="2"><P>Note that a <B>foreach_loop</B> can contain a <B>foreach_loop</B>.  This will cause an inner <I>input_file</I> to be read and processed repetitively.  Any number of <B>import_statements</B> may be included within one <B>foreach_loop</B>.</P>
+<B><P>Record Statement</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>record <I>recname</I>
+{<I>
+<I></I>
+<I></I><BR>[</I> handling <I>]</I>
+<I>[</I> field_statement <I>]</I>
+   ...
+}</PRE>
+</FONT><FONT SIZE="2"><P>Depending on the handling, create record type <I>recname</I>, read it to be updated, or find a previously created record instance.  If <B>field_statements</B> are present, convert the ASCII data into the proper types, and copy the values into the record.</P>
+<B><P>Handling</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>create on <I>field_number</I> ;</PRE>
+</FONT><FONT SIZE="2"><P>or</P>
+</FONT><FONT COLOR="#0000ff"><PRE>update on <I>field_number</I> ;</PRE>
+</FONT><FONT SIZE="2"><P>or</P>
+</FONT><FONT COLOR="#0000ff"><PRE>find on field_number ;</PRE>
+</FONT><FONT SIZE="2"><P>If the handling is <B>create on</B>, search the created record index (CRI) for a record of the same type and field value.  If found, make the existing record the current of record type (CRT) and do not create a new record and ignore any <B>field_statements</B>.  If not found, create a new record, enter its type and field value into the CRI, make it the new CRT, and perform the following <B>field_statements</B>, if present.</P>
+<P>If <B>update on</B>, search the CRI for a record of the same type and field value.  If such a record is found, read in the existing contents of the record and update them from the following <B>field_statements</B>.  Otherwise, create a new record and enter it into the CRI.  Make the record the CRT.</P>
+<P>If <B>find on</B>, search the CRI for a record of the same type and field value.  If found, make it the CRT.  Otherwise, nullify the CRT for this record type.  Ignore any <B>field_statements</B> that follow.</P>
+<B><P>Field Statement</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>field field_name = [input_file]field_number;</PRE>
+</FONT><FONT SIZE="2"><P>Convert the ASCII data in field <I>field_number</I> into the type defined in the schema for field <I>field_name</I>, and copy the value into the record being created.</P>
+<P>If more than one <B>foreach_loop</B> level exists, data can be used from any active line of ASCII text.  The default text comes from the inner-most loop.  To refer to other active lines of text, precede the field number with the <I>input_file</I>.  For example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>foreach "invoice.asc" {
+   ...
+   foreach "item.asc" {
+      record item {
+         ...
+         field inv_no = "invoice.asc".1;
+         field item_no = 1;
+         
+...</PRE>
+</FONT><FONT SIZE="2"><P>The <I>field_name</I> may be composed of a structure name and an element name, if the field is in a structured field.  The structure name and element name may be subscripted, if they are defined as arrays.</P>
+<P>If a partial specification is given (for example the structure name only, with no element), the whole structure is implied.  The <I>field_number</I> points to the first field that will be used, with the others immediately following.  For example, a record type may be defined with the following field:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>struct {
+   char street[20];
+   char city[20];
+   long zip
+} address;</PRE>
+</FONT><FONT SIZE="2"><P>Then, the following groups of statements are equivalent:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>field street = 2;
+field city = 3;
+field zip = 4;
+</FONT><FONT SIZE="2"></PRE>
+</FONT><FONT COLOR="#0000ff"><PRE>field address.street = 2;
+field address.city = 3;
+field address.zip = 4;
+</FONT><FONT SIZE="2"></PRE>
+</FONT><FONT COLOR="#0000ff"><PRE>field address = 2;</PRE>
+</FONT><FONT SIZE="2"><P>Arrays are handled similarly.  If a complete reference is given, only one field value is used.  If a partial reference is given, the field numbers following the <I>field_number</I> in the statement are utilized to satisfy the assignment.  Consider the following field definition:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>struct {
+   int code;
+   long message[10];
+   int marker;
+} packet[3];</PRE>
+</FONT><FONT SIZE="2"><P>The following examples demonstrate the number of input fields automatically referenced:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="463">
+<TR><TD WIDTH="56%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>Field statement</B></I></FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>Nnumber of input fields</B></I></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field message = 2;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    10</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field message[3] = 5;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+      1</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field packet[0].message = 2;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    10</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field packet[2].marker = 36;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+      1</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field packet[1] = 13;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    12</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>field packet = 1;</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    36</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Character strings are treated differently than other types of arrays.  The last dimension in a character field definition represents the length of a string, which is read from just one ASCII field.  If a character field definition contains more than one dimension, it is assumed to be an array (or matrix) of character strings.  The only exception to this rule is when the last dimension is one.  This defines the field as binary data, which is to be interpreted as hexadecimal data in the input text (see section 10.3.3, "Data Conversion").  An example multi-dimensional character string field follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   char memo[20][80];</PRE>
+</FONT><FONT SIZE="2"><P>A <B>field</B> statement using only the name <B>memo</B>, with no subscripts, would imply that 20 fields would be read from an ASCII record, each containing strings up to 80 characters long.  If the statement used one subscript, then one text field would be read into the <B><I>db.*</B></I> field.  Using two subscripts with the name would be invalid.</P>
+<B><P>Connect Statement</P>
+</B></FONT><FONT COLOR="#0000ff"><PRE>   connect <I>setname</I> ;</PRE>
+</FONT><FONT SIZE="2"><P>Look up the owner and member types in the database dictionary.  If the CRT table contains database addresses of these types, make the owner type the current owner of set <I>setname</I>, and make the member type the current record.  Then perform a <B>d_connect</B> function with set <I>setname</I>.  If owner and member do not exist as the CRT, then do not perform the connect.  If the current record is already connected to the set, ignore the connect.</P>
+</FONT><H3><A NAME="Conversion"></A>10.3.3 Data Conversion</H3>
+<FONT SIZE="2"><P>When an ASCII field is selected by a <B>field</B> statement to be assigned to a <B><I>db.*</B></I> field, <B>dbimp</B> does two things.  First, it scans the ASCII text until it finds the specified field and makes a copy of the field.  Second, it attempts to convert those ASCII characters into the target data type.</P>
+<P>To find the selected field number <B><I>N</B></I>, <B>dbimp</B> scans the input line, looking for <B><I>N-1</B></I> separator characters (usually commas).  A comma that appears within a set of quotation marks or is preceded with an escape character (default "\") is not counted.  The length of a field spans from the character following a comma through the character preceding the next comma.  Blanks are significant.  Quotation mark characters, if used, will define the actual beginning and ending of a string, even if there are leading or trailing blanks.  If a field contains a number preceded by blanks, the blanks will be ignored.  Null fields may be represented by a pair of quotation mark characters or by adjacent commas.</P>
+<P>After the field contents have been located and copied from the ASCII text, <B>dbimp</B> converts it into the target type.  If the target type is a character string, <B>dbimp</B> copies it into the target field directly, truncating it if it is too long.  If the target type is numeric, the input field is given to the standard C library function called <B>sscanf</B>.  The format specification provided to <B>sscanf</B> depends on the target type.  If the target type is a single byte <B>character</B>, or an <B>integer</B>, <B>short</B>, or <B>long</B>, then the format will be <B>%ld</B>, which will convert the ASCII field into a <B>long</B> variable.  Then the <B>long</B> variable is shortened, if necessary, and assigned to the actual target data type.  If the target type is <B>float</B> or <B>double</B>, the format will be <B>%lf</B>, which will convert the string into a <B>double</B> type variable.  It is then assigned to the actual target data type.</P>
+</FONT><BLOCKQUOTE>Note:  Single-byte character fields can be imported as their ASCII value in decimal or octal or as the character.  The standard C escaped characters are also supported.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Binary data is defined when the last dimension of a character field is 1.  See the exmple below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   char picture[256][1];</PRE>
+</FONT><FONT SIZE="2"><P>Since a standard C character string cannot be represented by one character, <B><I>db.*</B></I> will interpret this type of definition as binary data without null terminators.  The input string expected by <B>dbimp</B> will consist of a string of hexadecimal values, two characters per hexadecimal byte value, with no blanks between them.  For example, to read the string "Hello world" (including the null terminator) into a binary field 12 characters long, the input field should be:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>   48656c6c6f20776f726c6400</PRE>
+</FONT><FONT SIZE="2"><P>The export utility, <B>dbexp</B>, will create this representation from any binary fields.</P>
+</FONT><H2><A NAME="Together"></A>10.4 Using Export and Import Together</H2>
+<FONT SIZE="2"><P>The export and import utilities have been designed to operate on the same intermediate form of data: the ASCII text file.  Because of this, it is possible to use the output of <B>dbexp</B> as the input to <B>dbimp</B>.  This process, called a database transfer, facilitates moving a database to another computer.  It also allows you to change a schema.</P>
+<P>To perform either function, the combination of the ASCII data and the schema must contain enough information to be able to fully reconstruct the database.  Not all information stored in a database can be retained through a transfer.  Certain types of information must be avoided if it is important to be able to transfer the database by using <B>dbimp</B> and <B>dbexp</B>.</P>
+<P>Note the following two restrictions concerning transferable databases:</P>
+<P>1.  <B>dbimp</B> cannot maintain the original set ordering for orders first, next, or last.  <BR>
+2.  For all sets, the owner and member must be different record types. </P>
+<P>In<B><I> db.*</B></I>, sets often contain vital information in their ordering.  A set that is defined as "order last" will often maintain a chronological ordering on the set members.  A set defined as "order next" will often have an ordering that is determined by an application program.  But, as noted above, <B>dbimp </B>will not maintain first, next, or last original set ordering.  Thus the first condition for a fully transferable database is that it does not depend on the ordering of any of these types of sets.  Both <B>ascending</B> and <B>descending</B> set types will be transferred, because they are sorted during the <B>d_connect</B> call performed by <B>dbimp</B>.  </P>
+<P>The second restriction exists because <B>dbimp</B> has no mechanism to perform connections where both owner and member are the same type of record (recursive sets).  Note that these types of sets may exist in the database; they just cannot be re-connected during an import.</P>
+
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

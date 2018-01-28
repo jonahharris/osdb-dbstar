@@ -1,0 +1,1057 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 3</TITLE>
+</HEAD>
+<BODY>
+<H3><A name="d_checkid"></A>d_checkid</H3>
+<FONT SIZE="2"><P>Check a DBUSERID for validity</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_checkid</B>(char *<I>id</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>id<BR>
+The proposed DBUSERID string.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function, <B>d_checkid</B>, can be used to validate a DBUSERID before calling <B>d_dbuserid</B> and <B>d_open</B>.  If either of the preceding functions would produce DBUSERID-induced errors, <B>d_checkid</B> will produce a status return without calling <B>dberr</B>.</P>
+<P>After verifying that the string contains only numbers, letters, or an underscore, the lock manager is asked whether the proposed name is currently being used.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADUSERID<BR>
+Invalid DBUSERID (not an error return).</P>
+<P>S_DUPLICATE<BR>
+DBUSERID already in use.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Get the proposed DBUSERID */
+GetUserId( UserName );
+
+stat = d_checkid( UserName, task );
+if ( stat != S_OKAY )
+{
+   switch ( stat )
+   {
+      case S_BADUSERID:
+         WarnUser( "Invalid DBUSERID string" );
+         break;
+      case S_DUPLICATE:
+         WarnUser( "DBUSERID is in use" );
+         break;
+      default:
+         WarnUser( "Network error, exiting" );
+         return;
+   }
+   GetUserId( UserName );
+}</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_close"></A>d_close</H3>
+<FONT SIZE="2"><P>Close database(s)</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_close</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The function <B>d_close</B> will close all open databases.  All files used by the <B><I>db.*</B></I> runtime library are closed, and all of its dynamically allocated memory is freed.  All buffered changes made in single-user or exclusive access mode are written to the database files.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The consistency and integrity 
+  of a database can be impaired if either a one-user or exclusive access mode 
+  application that is not using transaction processing terminates without first 
+  closing the database(s). For shared access mode, user entries in the lock 
+  manager cannot be cleared.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>The allocated memory used for the currency tables is freed.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>main()
+{
+   /* A db.* application program */
+   ...
+   d_open("tims", "s", task);
+
+   ...   /* access "tims" database */
+
+   d_close(task);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_iclose, d_iopen, d_open</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_closeall"></A>d_closeall</H3>
+<FONT SIZE="2"><P>Close all open file handles</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_closeall</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>d_closeall</B> function can be used to close all files that the <B><I>db.*</B></I> runtime library is currently holding open.  The library operates within the parameters of the <B>d_setfiles</B> function, or uses the 8 default file handles.  If at some point in an application more file handles are needed, this function may be called.  </P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>Care should be taken in designing the application so that extra handles are released, allowing <B><I>db.*</B></I> to reopen the files 
+  on an as-needed basis.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Open a report file */
+rpt[i] = fopen( rpt_name, "w" );
+if ( rpt[i] == NULL )
+{
+   /* Try to obtain more handles */
+   d_closeall(task);
+   rpt[i] = fopen( rpt_name, "w" );
+   if ( rpt[i] == NULL )
+   {
+      /* None available */
+      fprintf( stderr, "Out of file handles\n" );
+      d_close(task);
+      exit(1);
+   }
+}
+/* Produce the report */
+...
+fclose(rpt[i]);</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_closetask"></A>d_closetask</H3>
+<FONT SIZE="2"><P>Close a database task</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_closetask</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function will free the memory associated with a database task.  The <B>dt_opentask</B> function must previously have created the task, and any databases opened within the task must first be closed.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBCLOSE<BR>
+Task not opened.</P>
+<P>S_INVPTR<BR>
+Invalid task pointer.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_TASK task;
+
+d_opentask(&amp;task);
+d_open("db", "o", &amp;task);
+d_makenew(REC, &amp;task, 0);
+d_close(&amp;task);
+d_closetask(&amp;task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_opentask</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_cmstat"></A>d_cmstat</H3>
+<FONT SIZE="2"><P>Test timestamp status of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_cmstat</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set whose current member's status is checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The <B>d_cmstat</B> function tests the status of the timestamp in the currency table of the current member of <I>SET</I> against the timestamp on the disk.  The current member record type must have been specified as timestamped in the DDL schema file for the database.  The timestamp status is returned as defined below.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The current member has been deleted since it was last accessed.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record type instead of a set type.</P>
+<P>S_OKAY<BR>
+The current member has not been changed by another user since last accessed.</P>
+<P>S_TIMESTAMP<BR>
+The current member record type is not timestamped.</P>
+<P>S_UPDATED<BR>
+The current member was modified since last accessed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_cmstat(HAS_PUBLISHED, task, CURR_DB) == S_OKAY )
+{
+   d_csmread(HAS_PUBLISHED, INFO_TITLE, title, task, CURR_DB);
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_costat, d_crstat, d_csstat, d_gtscm, d_recstat, d_stscm</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_cmtype"></A>d_cmtype</H3>
+<FONT SIZE="2"><P>Get record type of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_cmtype</B>(int <I>SET</I>, int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type to which the current member record type is returned.</P>
+<P>rectype<BR>
+A pointer to an integer variable that contains the returned record type.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the record type of the current <I>SET</I> member into the integer variable to which<I> rectype</I> points.  This function is particularly useful in determining the type of the current member of multiple member sets.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but old or deleted data may be read.  Use a read lock to ensure that only current data is read.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  A record or field type, instead of a set type, was probably passed.</P>
+<P>S_NOCM<BR>
+The current member for the specified set is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int rtype;      /* record type */
+long fld;       /* field type */
+char txt[80];   /* comment text */
+...
+d_cmtype(COMMENTS, &amp;rtype, task, CURR_DB); 
+switch ( rtype )
+{
+   case TEXT30:
+      fld = T30_LINE;
+      break;
+   case TEXT55:
+      fld = T55_LINE;
+      break;
+   case TEXT80:
+      fld = T80_LINE;
+      break;
+}
+d_csmread(COMMENTS, fld, &amp;txt, task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cotype, d_crtype</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_connect"></A>d_connect</H3>
+<FONT SIZE="2"><P>Connect current record to set</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_connect</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type to which the current record is connected.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The function<B> d_connect</B> connects the current record to the current owner of <I>SET</I>.  The record is placed into <I>SET</I> in the order specified in the DDL for the database.  Upon successful completion, the current record becomes the current member of <I>SET</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_mem[<I>SET</I>] =      curr_rec;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on <I>SET</I>, or write locks on owner and member record types.  Key files need not be locked.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_ISOWNED<BR>
+The current record is already owned as a member of <I>SET</I>.  If you want to change a set connection, you first need to disconnect the record from the current owner, set the current owner of <I>SET</I> to the new owner record, and then connect the current record to the new owner record.</P>
+<P>S_NOCO<BR>
+The current owner for the specified set is null.  Find the correct owner record occurrence, and set the current owner of <I>SET</I> to the located record (for example, using function <B>d_setor</B>).</P>
+<P>S_NOCR<BR>
+The current record is null.</P>
+<P>S_NOTLOCKED<BR>
+A data file named in the definition of <I>SET</I> has not been locked.</P>
+<P>S_NOTRANS<BR>
+In shared mode, changes can only be made from within a transaction except when the affected files are exclusively locked.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>struct info irec;   /* tech. info record */
+...
+/* make author record current owner of has_published */
+d_setor(HAS_PUBLISHED, task, CURR_DB);
+...
+/* create new info record */
+if ( d_fillnew(INFO, &amp;irec, task, CURR_DB) == S_OKAY )
+   /* connect new record to has_published set */
+   d_connect(HAS_PUBLISHED, task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_discon, d_disdel</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_costat"></A>d_costat</H3>
+<FONT SIZE="2"><P>Test timestamp status of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_costat</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set whose current owner's status is checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function tests the status of the timestamp in the currency table of the current owner of <I>SET</I> against the timestamp on the disk.  The current owner record type must have been specified as timestamped in the DDL schema file for the database.  The timestamp status is returned as defined below.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The current owner has been deleted since it was last accessed.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record type instead of a set type.</P>
+<P>S_OKAY<BR>
+The current owner has not been changed by another user since it was last accessed.</P>
+<P>S_TIMESTAMP<BR>
+The current owner record type is not timestamped.</P>
+<P>S_UPDATED<BR>
+The current owner was modified since last accessed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_costat(HAS_PUBLISHED, task, CURR_DB) == S_OKAY )
+{
+   d_csoread(HAS_PUBLISHED, INFO_TITLE, title, task, CURR_DB);
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmstat, d_crstat, d_csstat, d_gtsco, d_recstat, d_stsco</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_cotype"></A>d_cotype</H3>
+<FONT SIZE="2"><P>Get record type of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_cotype</B>(int <I>SET</I>, int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current owner record type is to be returned.</P>
+<P>rectype<BR>
+A pointer to an integer variable that contains the returned record type.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the record type of the current owner of <I>SET</I> into the integer variable to which <I>rectype</I> points.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner for the specified set is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int rtype;
+   ...
+/* check consistency of database */
+d_cotype(HAS_PUBLISHED, &amp;rtype, task, CURR_DB);
+if ( rtype != AUTHOR )
+   pr_dberror();
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmtype, d_crtype</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crget"></A>d_crget</H3>
+<FONT SIZE="2"><P>Get database address of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crget</B>(DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dba<BR>
+A pointer to a DB_ADDR variable that receives the database address of the current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the database address of the current record into the database address variable to which <I>dba</I> points.  If the current record is null (NULL_DBA), the error code S_NOCR is returned as a status (that is, <B>dberr</B> is not called), and <I>*dba</I> will be set to NULL_DBA.  This function is used in conjunction with the <B>d_crset</B> function for saving and restoring the current record.  </P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If the record type of the current record is timestamped, you should also call function <B>d_gtscr</B> to get its last access timestamp.  When <B>d_crset</B> later restores the current record, function <B>d_stscr</B> should also be called to restore the last 
+  access timestamp associated with that current record.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOCR<BR>
+The current record is null.  Returned as a status code rather than an error (that is, <B>dberr</B> is not called).</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR save_dba;
+   ...
+/* save current record for later retrieval */
+d_crget(&amp;save_dba, task, CURR_DB);
+   ...
+/* later, retrieve saved record */
+d_crset(&amp;save_dba, task, CURR_DB);
+d_recread(&amp;irec, task, CURR_DB);
+   ...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crset, d_csmget, d_csmset, d_csoget, d_csoset, d_gtscm, d_gtsco, d_gtscr, d_stscm, d_stsco, d_stscr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crread"></A>d_crread</H3>
+<FONT SIZE="2"><P>Read data from field of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crread</B>(long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type read from the current record.</P>
+<P>value<BR>
+A pointer to the data area that receives the field contents.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>The function <B>d_crread</B> copies the contents of <I>FIELD</I> from the current record to the area to which <I>value</I> points.  If <I>FIELD</I> is an array field, the entire array is read.  Elements of an array cannot be read individually.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>This function updates the timestamp for the current record in the currency table from the database.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but old or deleted data may be read.  Use a read lock to ensure that only current data is read.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The record has been deleted.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOCR<BR>
+The current record is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name */
+   ...
+/* find author of info record */
+d_findco(HAS_PUBLISHED, task, 2);
+d_crread(NAME, name, task, 2);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_csmread, d_csoread</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crset"></A>d_crset</H3>
+<FONT SIZE="2"><P>Set database address of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crset</B>(DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dba<BR>
+A pointer to a DB_ADDR variable that will become the current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current record from the database address variable to which <I>dba</I> points.  It is used in conjunction with the <B>d_crget</B> function for saving and restoring the current record. </P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  If the record type of the current record is timestamped, you should also call function<B> d_stscr</B> to set the last access timestamp for the 
+  record.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = *<I>dba</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use read lock on <I>SET </I>to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The record has been deleted since the saving of this database address.  </P>
+<P>S_INVADDR<BR>
+Invalid database address.  You may have passed the database address itself rather than a pointer to it.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR save_dba;
+   ...
+/* save current record for later retrieval */
+d_crget(&amp;save_dba, task, MY_DBN);
+   ...
+/* later, retrieve saved record */
+d_crset(&amp;save_dba, task, MY_DBN);
+d_recread(&amp;irec, task, MY_DBN);
+</FONT></PRE>
+<H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crget, d_csmget, d_csmset, d_csoget, d_csoset, d_gtscm, d_gtsco, d_gtscr, d_stscm, d_stsco, d_stscr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crstat" ></A>d_crstat</H3>
+<FONT SIZE="2"><P>Test timestamp status of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crstat</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function tests the status of the timestamp in the currency table of the current record against the timestamp on the disk.  The record type of the current record must have been specified as timestamped in the DDL schema file for the database.  The timestamp status is returned as defined below.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>REC</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The current record has been deleted since it was last accessed.</P>
+<P>S_OKAY<BR>
+The current record has not been changed by another user since it was last accessed.</P>
+<P>S_TIMESTAMP<BR>
+The current record type is not timestamped.</P>
+<P>S_UPDATED<BR>
+The current record was modified since last accessed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if (d_crstat(task, CURR_DB) == S_OKAY )
+{
+   d_recwrite(&amp;info, task);
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmstat, d_costat, d_csstat, d_gtscr, d_recstat, d_stscr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crtype"></A>d_crtype</H3>
+<FONT SIZE="2"><P>Get record type of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crtype</B>(int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>rectype<BR>
+A pointer to an integer variable that contains the returned record type.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the record type of the current record into the integer variable to which <I>rectype</I> points.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOCR<BR>
+The current record is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>int rtype;
+   ...
+d_crtype(&amp;rtype, task, TIMS_DBN);
+if ( rtype == AUTHOR )
+   pr_author();
+else
+{
+   if ( rtype == INFO )
+      pr_info();
+}
+   ...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmtype, d_cotype</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_crwrite"></A>d_crwrite</H3>
+<FONT SIZE="2"><P>Write to field in current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_crwrite</B>(long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type from the current record.</P>
+<P>value<BR>
+A pointer to the new value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_crwrite</B> writes the data pointed to by <I>value</I> to data field <I>FIELD</I> in the current record.  If <I>FIELD</I> is a key field, the key will automatically be updated.  If <I>FIELD</I> is used as a sort field of an ascending or descending ordered set, the record's position in the set will automatically be adjusted accordingly.  If <I>FIELD</I> is an array field, the entire array is written.  Elements of an array cannot be written individually.  This function cannot be used to modify fields that constitute a compound key.  Call <B>d_recwrite</B> to modify compound keys.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on record type of current record.  If <I>FIELD</I> is named in a sorted set and is being changed, a write lock will be required on the data files involved in the set.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_COMKEY<BR>
+Records containing compound keys cannot be updated.</P>
+<P>S_DUPLICATE<BR>
+Duplicate key.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_ISCOMKEY<BR>
+Illegal operation using a compound key field.</P>
+<P>S_NOCR<BR>
+The current record is null.</P>
+<P>S_NOTLOCKED<BR>
+Record type containing field is not locked.  If <I>FIELD</I> is used in a sorted set, the set must be locked.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* Change info record id_code*/
+chg_id(old_id, new_id)
+char *old_id;
+char *new_id;
+{
+   int stat = d_keyfind( ID_CODE, old_id, task, CURR_DB );
+   if ( stat == S_OKAY )
+      d_crwrite(ID_CODE, new_id, task, CURR_DB);
+   else
+   {
+      if ( stat == S_NOTFOUND )
+         printf("id_code %s not found\n", old_id);
+   }
+   return;
+} </PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_csmwrite, d_csowrite, d_recwrite</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csmget"></A>d_csmget</H3>
+<FONT SIZE="2"><P>Get database address of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csmget</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current member's database address is to be returned.</P>
+<P>dba<BR>
+A pointer to a DB_ADDR variable that receives the database address of the current member.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the database address of the current member of <I>SET</I> into the database address variable to which <I>dba</I> points.  This function is used in conjunction with the <B>d_csmset</B> function for saving and restoring the current member of a set.  If the current member is null (NULL_DBA), code S_NOCM is returned as a status (that is, <B>dberr</B> is not called) and <I>*dba</I> will receive the null database address.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  If the record type of the current member is timestamped, you should also call function <B>d_gtscm</B> to get the last access timestamp for the current member.  Later, when <B>d_csmset</B> restores the current member, function <B>d_stscm</B> should also be 
+  called to restore the last access timestamp associated with that current 
+  member record.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCM<BR>
+The current member is null.  S_NOCOM is returned as a status not an error.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* print keywords for info record */
+
+DB_ADDR dba;
+   ...
+/* save current member of key_to_info set in
+   case info record was retrieved from a keyword scan */
+d_csmget(KEY_TO_INFO, &amp;dba, task, TIMS_DBN);
+   ...      /* print keywords thru info_to_key */
+/* restore current member */
+d_csmset(KEY_TO_INFO, &amp;dba, task, TIMS_DBN);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crget, d_crset, d_csmset, d_csoget, d_csoset, d_gtscm</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csmread"></A>d_csmread</H3>
+<FONT SIZE="2"><P>Read data from field of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csmread</B>(int<I> SET</I>, long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current member will be read.</P>
+<P>FIELD<BR>
+The field type to be read from the current member.</P>
+<P>value<BR>
+A pointer to the data area that will receive the field contents.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csmread</B> copies the contents of <I>FIELD</I> from the current member of <I>SET</I> to the area to which <I>value</I> points.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>This function updates the timestamp in the currency table for the current member of the set from the database.  </P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> member record type to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+Record has been deleted.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current member.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCM<BR>
+The current member is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name /
+int status;
+   ...
+/* print all authors in the database */
+for ( status = d_findfm(AUTHOR_LIST, task, TIMS_DBN); 
+   status == S_OKAY; 
+   status = d_findnm(AUTHOR_LIST, task, TIMS_DBN) ) 
+{
+   d_csmread(AUTHOR_LIST, NAME, name, task, TIMS_DBN);
+   printf("%ss\n", name);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crread, d_csoread</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csmset"></A>d_csmset</H3>
+<FONT SIZE="2"><P>Set database address of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csmset</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for the current member to be assigned.</P>
+<P>dba<BR>
+A pointer to the database address that becomes the current member of <I>SET</I>.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csmset</B> copies the database address pointed to by <I>dba</I> to the current member of <I>SET</I>.  The current owner of <I>SET</I> becomes the record that is the current owner of the new member.  This function is generally used in conjunction with <B>d_csmget</B> (it can also be used with <B>d_crget</B> or <B>d_csoget</B>) for saving and restoring the current member of a set.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  If the record type of the current member is timestamped, <B>d_stscm</B> should also 
+  be called to set the last access timestamp for the current member.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_mem[<I>SET</I>] = *<I>dba</I>;</P>
+<P>curr_own[<I>SET</I>] = owner of *<I>dba</I> through <I>SET</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVADDR<BR>
+Invalid database address.  You may have passed the database address itself rather than a pointer to it.</P>
+<P>S_INVMEM<BR>
+Record type is not a legal member of the specified set.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* print keywords for info record */
+DB_ADDR dba;
+   ...
+/* save current member of key_to_info set in
+   case info record was retrieved from a keyword scan */
+d_csmget(KEY_TO_INFO, &amp;dba, task, CURR_DB);
+   ...      /* print keywords thru info_to_key */
+/* restore current member */
+d_csmset(KEY_TO_INFO, &amp;dba, task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crset, d_csmget, d_csoset, d_gtscm, d_stscm</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csmwrite"></A>d_csmwrite</H3>
+<FONT SIZE="2"><P>Write to field in current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csmwrite</B>(int <I>SET</I>, long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type of the current member to be written.</P>
+<P>FIELD<BR>
+The field type from the current member.</P>
+<P>value<BR>
+A pointer to the new value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csmwrite</B> writes the data pointed to by <I>value</I> to data field <I>FIELD</I> in the current member of <I>SET</I>.  If <I>FIELD</I> is a key field, the key is automatically updated.  If <I>FIELD</I> is used as a sort field of an ascending or descending ordered set, the record's position in the set is automatically adjusted accordingly.  If <I>FIELD</I> is an array field, the entire array is written.  Elements of an array cannot be written individually.  Fields used in a compound key cannot be modified with this function; use <B>d_recwrite</B> instead.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on <I>SET</I> and key file containing <I>FIELD</I>, or write lock on <I>SET</I> member record type.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_COMKEY<BR>
+Records containing compound keys cannot be updated.</P>
+<P>S_DUPLICATE<BR>
+Duplicate key.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current member.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_ISCOMKEY<BR>
+Illegal operation using a compound key field.</P>
+<P>S_NOCM<BR>
+The current member is null.</P>
+<P>S_NOTLOCKED<BR>
+Record type containing <I>FIELD</I> is not locked.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name */
+int status;
+   ...
+/* change author "Worth" to "Wirth" */
+for ( status = d_findfm(AUTHOR_LIST, task, CURR_DB); 
+   status == S_OKAY;
+   status = d_findnm(AUTHOR_LIST, task, CURR_DB) ) 
+{
+   d_csmread(AUTHOR_LIST, NAME, name, task, CURR_DB);
+   if ( strcmp(name, "Worth") == 0 )
+      d_csmwrite(AUTHOR_LIST, NAME, "Wirth", task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crwrite, d_csowrite, d_recwrite</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csoget"></A>d_csoget</H3>
+<FONT SIZE="2"><P>Get database address of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csoget</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current owner's database address is to be returned.</P>
+<P>dba<BR>
+A pointer to a DB_ADDR variable that receives the database address of the current owner.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function copies the database address of the current owner of <I>SET</I> into the database address variable to which <I>dba</I> points.  This function is used in conjunction with the <B>d_csoset</B> function for saving and restoring the current owner of a set.  If the current owner is null (NULL_DBA), code S_NOCO is returned as a status (that is, <B>dberr</B> is not called), and *<I>dba</I> will receive the null database address.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  If the record type of the current owner is timestamped, you should also call function <B>d_gtsco</B> to get the last access timestamp for the current owner.  Then, when the current owner is later restored by <B>d_csoset</B>, function <B>d_stsco</B> should also be called to restore the last 
+  access timestamp associated with that current owner record.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.  Returned as a status, not an error.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR dba;
+...
+/* save current author on the stack for later processing */
+d_csoget(HAS_PUBLISHED, &amp;dba, task, my_dbn);
+...
+/* restore saved author as owner of has_published */
+d_csoset(HAS_PUBLISHED, &amp;dba, task, my_dbn);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crget, d_csmget, d_gtsco, d_stsco</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csoread"></A>d_csoread</H3>
+<FONT SIZE="2"><P>Read data from field of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csoread</B>(int <I>SET</I>, long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current owner will be read.</P>
+<P>FIELD<BR>
+The field type to be read from the current owner.</P>
+<P>value<BR>
+The pointer to the data area that will receive the field contents.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csoread</B> copies the contents of <I>FIELD</I> from the current owner of <I>SET</I> to the area to which <I>value</I> points.  If <I>FIELD</I> is an array field, the entire array is read.  Elements of an array cannot be read individually.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>This function updates the timestamps in the currency table for the current owner of the set and for the set from the database.  </P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> or owner record type to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+Record has been deleted.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current owner.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name /
+   ...
+/* print author name associated with info record */
+d_csoread(HAS_PUBLISHED, NAME, name, task, CURR_DB);
+printf("author: %s\n", name);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crread, d_csmread, d_recread</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csoset"></A>d_csoset</H3>
+<FONT SIZE="2"><P>Set database address of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csoset</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for the current owner to be assigned.</P>
+<P>dba<BR>
+A pointer to the database address that becomes the current owner of <I>SET</I>.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csoset</B> copies the database address pointed to by <I>dba</I> to the current owner of <I>SET</I>.  The current member of <I>SET</I> is made null.  If <I>dba</I> is null, or if *<I>dba</I> is NULL_DBA, the current owner and current member of <I>SET</I> are set to NULL_DBA.  This function is usually used in conjunction with function <B>d_csoget</B> for saving and restoring the current owner of a set.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  If the record type of the current owner is timestamped, you should also call <B>d_stsco</B> to set the last access timestamp for the 
+  current owner.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_own[<I>SET</I>] = *<I>dba</I> (NULL_DBA if <I>dba</I>==NULL);</P>
+<P>curr_mem[<I>SET</I>] =      NULL_DBA;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVADDR<BR>
+Invalid database address.  You may have passed the database address itself rather than a pointer to it.</P>
+<P>S_INVOWN<BR>
+Record associated with <I>dba</I> is not a valid owner of <I>SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR dba;
+...
+/* save current author on stack for later processing */
+d_csoget(HAS_PUBLISHED, &amp;dba, task, CURR_DB);
+...
+/* restore saved author as owner of has_published */
+d_csoset(HAS_PUBLISHED, &amp;dba, task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crset, d_csmset, d_csoget, d_gtsco, d_stsco</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csowrite"></A>d_csowrite</H3>
+<FONT SIZE="2"><P>Write to field in current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csowrite</B>(int <I>SET</I>, long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type of the current owner to be written.</P>
+<P>FIELD<BR>
+The field type from the current owner.</P>
+<P>value<BR>
+A pointer to the new value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_csowrite</B> writes the data, to which <I>value</I> points to, into data field <I>FIELD</I> in the current owner of <I>SET</I>.  If <I>FIELD</I> is a key field, the key is automatically updated.  If <I>FIELD</I> is used as a sort field of an ascending or descending ordered set, the record's position in the set is automatically adjusted.  If <I>FIELD</I> is an array field, the entire array is written.  Elements of an array cannot be written individually.  This function cannot be used to modify fields of a compound key.  Call <B>d_recwrite</B> to modify compound keys.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Write lock on owner record type, or write lock on <I>SET</I> and key file containing <I>FIELD</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_COMKEY<BR>
+Records containing compound keys cannot be updated.</P>
+<P>S_DUPLICATE<BR>
+Duplicate key.</P>
+<P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current member.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_ISCOMKEY<BR>
+Illegal operation using a compound key field.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+<P>S_NOTLOCKED<BR>
+Record type containing <I>FIELD</I> is not locked.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  In shared mode, changes can only be made from within a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* change author to "Wirth, N." */
+d_findco(HAS_PUBLISHED, task, CURR_DB);
+d_csowrite(HAS_PUBLISHED, NAME, "Wirth, N.", task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crwrite, d_csmwrite, d_recwrite</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_csstat"></A>d_csstat</H3>
+<FONT SIZE="2"><P>Test timestamp status of current set</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_csstat</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the status is to be checked.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function tests the status of the current <I>SET</I> by comparing the last access time for the set in the currency table against  the update timestamp stored in the set pointer on disk.  </P>
+<P>The set type must have been specified as timestamped in the DDL schema file for the database.  The timestamp status is returned as defined below.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DELETED<BR>
+The set occurrence has been deleted since it was last accessed.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record type instead of a set type.</P>
+<P>S_OKAY<BR>
+The set occurrence has not been changed by another user since it was last accessed.</P>
+<P>S_TIMESTAMP<BR>
+The set type is not timestamped.</P>
+<P>S_UPDATED<BR>
+The set occurrence was modified since last accessed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_csoset(AUTHOR_LIST, &amp;saved_dba, task, CURR_DB);
+d_stscs(AUTHOR_LIST, saved_ts, task, CURR_DB);
+if ( d_csstat(AUTHOR_LIST, task, CURR_DB) == S_OKAY )
+{
+   /* continue set scan */
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_cmstat, d_crstat, d_csstat, d_gtscs, d_recstat, d_stscs</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_ctbpath"></A>d_ctbpath</H3>
+<FONT SIZE="2"><P>Set the country table path variable</P>
+<P>int <B>d_ctbpath</B>(const char *<I>path</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>path<BR>
+A string containing the path to the directory that contains the country table file.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the path to the directory containing the country table file.  This function must be called before the database is opened.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+The database is open.  Function called after <B>d_open</B>.</P>
+<P>S_NAMELEN<BR>
+The path name is too long.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>...
+d_ctbpath("/tables/charset1/");
+d_open("tims", "o", task);
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_mapchar, d_off_opt, d_on_opt</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_curkey"></A>d_curkey</H3>
+<FONT SIZE="2"><P>Set key positions for keys in current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_curkey</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the current key positions for all keys in the current record from the key values in the current record.  Thus, a subsequent <B>d_keynext</B> call for any of those key fields returns the next highest key or the next instance of a duplicate key.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>The "current key" pointer used internally by <B>d_keyread </B>will be at the last key field for this record as listed in the schema.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Record lock when database is opened in shared mode.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_OKAY<BR>
+The key positions successfully set.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char sea_zip[6], cust_zip[6], id[4];
+   ...
+/* locate some customers with same zip as "SEA" */
+if ( d_keyfind(CUST_ID, "SEA", task, 0) == S_OKAY )
+{
+   d_crread(ZIP_CODE, &amp;sea_zip, task, 0);
+   d_curkey(task, 0);
+   while ( d_keynext(ZIP_CODE, task, 0) == S_OKAY )
+   {
+      d_crread(ZIP_CODE, &amp;cust_zip, task, 0);
+      if ( strcmp(sea_zip, cust_zip) != 0) 
+         break;
+      d_crread(CUST_ID, id, task, 0);
+      printf("cust_id = %s\n", cust_id);
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P></FONT></BODY>
+</HTML>

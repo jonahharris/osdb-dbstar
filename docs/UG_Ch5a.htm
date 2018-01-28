@@ -1,0 +1,844 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 5</TITLE>
+</HEAD>
+<BODY>
+
+<FONT SIZE="6"><P ><A name="Manipulation"></A>Chapter 5<BR>
+Database Manipulation</P>
+</FONT><H2><A name="Introduction"></A>5.1   Introduction</H2>
+<FONT SIZE="2"><P>Using <B><I>db.*</B></I>, databases are manipulated by C language application programs through calls to functions provided in the <B><I>db.*</B></I> runtime library.  Database manipulation capabilities include all functions needed to create, retrieve, modify and delete information in a database.  Also included are functions that control the operation of the <B><I>db.*</B></I> runtime environment.  The library functions that pertain specifically to multi-user database manipulation are described in the <B><I>db.*</B></I> <I>Multi-User</I> <I>Guide</I>.</P>
+<P>The runtime library functions are grouped into different categories based on each one's purpose.  See the list of categories below.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="516">
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>database control</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>Functions that open, close, and initialize databases, and set runtime control parameters and options.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>currency control</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>Functions that access and manipulate the currency tables.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>data retrieval</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>Functions that access and read information from the database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>data creation</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>All functions used to store new information and relationships in the database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>data modification</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>Functions that modify information and relationships stored in the database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>data deletion</FONT></P></TD>
+<TD WIDTH="72%" VALIGN="top">
+<FONT SIZE="2"><P>Functions used to remove information and relationships from the database.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Note that all <B><I>db.*</B></I> function names are prefixed by <B>d_</B> (for example, <B>d_keyfind</B>) so as to avoid name conflicts with other user or system library functions.  The return value of all <B><I>db.*</B></I> functions is an integer completion status for the requested operation.  A status code of zero (S_OKAY) indicates that the operation completed successfully.  These status codes will be introduced as required in the discussions that follow.  A complete list can be found in section 5.8, "Database Error Reporting," and complete descriptions are provided in the <B><I>db.*</B> Reference Manual</I>.  </P>
+<P>The purpose of this chapter is to introduce the use of the principal functions through explanation and examples.  Complete details relating to the use of each function are provided in the <B><I>db.*</B> Reference Manual</I>.</P>
+<P>Most of the <B><I>db.*</B></I> functions must be passed a task parameter and a database number.  In the examples, a task pointer called <I>task</I> and a constant called <I>CURR_DB</I> ("use the current database") has been passed to the functions.  The task pointer must always be passed to <B><I>db.*</B></I> functions to facilitate reentrancy.  The database number must always be passed, even when only one database is open.  See section 5.9.2, "Accessing Multiple Databases," for complete details regarding multiple database access and the database number argument.</P>
+</FONT><H2><A name="Control"></A>5.2   Database Control</H2>
+<FONT SIZE="2"><P>Database control functions provide control over the runtime system's operational environment.  They provide for the opening and closing of databases, location and names of database files, initialization of databases and files, and various runtime tuning parameters and options.</P>
+<P>The database control functions are listed in Table 5-1 and have been grouped into two categories.   The "pre-open" functions are those that can only be called prior to a <B>d_open</B> call, which opens the database.  The "post-open" functions can only be called after the database has been opened.  Functions <B>d_off_opt</B> and <B>d_on_opt</B>, however, can be executed either before or after the database is opened.</P>
+<B><P ALIGN="center">Table 5-1  Database Control Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Pre-Database Open Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbdpath</B>(<I>dbd_dir, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory containing the database dictionary.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbfpath</B>(<I>dbf_dir, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory containing the database files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dblog</B>(<I>log_name, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path or name of the database transaction log file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbtaf</B>(<I>taf_name, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path or name of the database family </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>transaction activity file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbtmp</B>(<I>tmp_dir, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory to contain temporary files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_ctbpath</B>(<I>ctb_dir, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory containing the country table file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_lockcomm</B>(<I>lm_type, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set the protocol type of the lock manager.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_lockmgr</B>(<I>lm_name, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set name of lock manager.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_checkid</B>(<I>userid, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Check a userid to see if it is valid and unique.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbuserid</B>(<I>userid, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set database user identifier.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_open</B>(<I>dbnames, mode, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Open a (set of) database(s).</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_opentask</B>(<I>&amp;task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Create a new task context.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_renfile</B>(<I>dbname, FILE,filenm, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Substitute a database file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_renclean</B>(<I>, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Clean up all memory related to previous renfile commands.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setfiles</B>(<I>num, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set the maximum number of open files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setpages</B>(<I>num, num, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set the number of pages in the cache.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbini</B>(<I>ini_dir, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to the <B><I>db.*</B></I> initialization file.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Post-Database Open Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_close</B>(<I>task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Close database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_closeall</B>(<I>task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Close all open data and key file handles (not databases).</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_closetask</B>(<I>task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Close a task context.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_destroy</B>(<I>dbname</I>, <I>task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Destroy (delete) all data and key files in the database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_iclose</B>(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Incrementally close a database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_initfile</B>(<I>FILE, task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Initialize a database file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_initialize</B>(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Initialize all database files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_iopen</B>(<I>dbnames, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Incrementally open a (set of) database(s).</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_off_opt</B>(<I>options, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Turn off specified runtime options.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_on_opt</B>(<I>options, task</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Turn on specified runtime options.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H3><A name="Opening"></A>5.2.1   Opening and Closing Databases</H3>
+<FONT SIZE="2"><P>Function <B>d_open</B> is called to open a database.  It is called with the name(s) of the database(s) to be opened and a parameter that identifies the mode of database access (see Chapter 6, "Transaction Processing").</P>
+<P>For example, the following code will open database <B>tims</B> in exclusive access:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_opentask(&amp;task);
+d_open("tims", "x", task);
+</PRE>
+</FONT><FONT SIZE="2"><P>Database access or update functions called prior to a successful opening of the database will return error code S_DBOPEN.</P>
+<P>When <B>d_open</B> is called, the <B><I>db.*</B></I> runtime library will allocate and initialize memory space for all of its internal tables, and will read into memory the database dictionary for the requested databases.  Memory is also allocated for the <B><I>db.*</B></I> cache.  If there is not enough memory available for the tables or cache, <B>d_open</B> will return status code S_NOMEMORY (see function <B>d_setpages</B>).</P>
+<P>Function <B>d_close</B> will close all open databases by flushing all buffers, closing all database files, and freeing all of its dynamically allocated memory.</P>
+</FONT><BLOCKQUOTE>Note:<I>  </I>The database should always be closed before a program terminates.  Failure to do so could impair the integrity of (that is, corrupt) the database.</BLOCKQUOTE>
+<FONT SIZE="2"><P>If a subsequent <B>d_open</B> call is made before the first database is closed, <B><I>db.*</B></I> will abort any active transaction, close the open database(s), and open the new database(s). (See section 5.9, "Multiple Database Access," to learn how to open and access more than one database at a time.)</P>
+</FONT><H3><A name="Environment"></A>5.2.2   Operational Environment</H3>
+<FONT SIZE="2"><P>The following files are included in a<B><I> db.*</B></I> database:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="522">
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>Dictionary files:</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>dbname</I>.dbd</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">
+<FONT SIZE="2"><P>Database Dictionary</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>Control files:</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>db.star.taf</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">
+<FONT SIZE="2"><P>Transaction Activity File</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>db.star.ctb</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">
+<FONT SIZE="2"><P>International Character Set Mapping File</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<B><I><FONT SIZE="2"><P>userid</I>.log</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">
+<FONT SIZE="2"><P>Database Overflow/log File</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>db.star.ini</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">
+<FONT SIZE="2"><P>Initialization File for settings and options</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="26%" VALIGN="top">
+<P><FONT SIZE="2"><B>Database files:</B></FONT></P></TD>
+<TD WIDTH="74%" VALIGN="top">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<FONT SIZE="2"><P>Data and key files are defined in the DDL specification</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>Unless otherwise specified, all files are located in the user's current (or working) directory.</P>
+<P>Several techniques are available for providing the path names of alternative directories for the dictionary, control, and database files.</P>
+</FONT><H4><A name="Path"></A>Path Specification in d_open</H4>
+<FONT SIZE="2"><P>The name of the database, as passed to function <B>d_open</B>, can include a path name of the directory containing the dictionary and database files.  The path name may be absolute or relative.  See the following example for UNIX,</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open("/timsdb/tims", "x", task);
+</PRE>
+</FONT><FONT SIZE="2"><P>This example will prefix /<B>timsdb</B>/ to all file specifications as specified in the DDL, including any directory path.  Thus the file specification for the dictionary would be /<B>timsdb</B>/<B>tims.dbd</B> and the spec for the data file would be /<B>timsdb</B>/<B>tims.dat</B>.</P>
+<P>Multiple databases (see section 5.9, "Multiple Database Access") that are located in different directories can be opened simply by providing <B>d_open</B> with the appropriate path names, as in the following example: </P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open("/centura/tims;/acme/tims", "x", task);
+</PRE>
+</FONT><FONT SIZE="2"><P>Here, database 0 would be the <B>tims</B> database for Centura and database 1 would be the <B>tims</B> database for Acme.  Both directories would need to contain the dictionary file <B>tims.dbd</B> even if they are identical.  (Under UNIX/Linux they could be linked.)</P>
+</FONT><H4><A name="Variables"></A>Environment Variables</H4>
+<FONT SIZE="2"><P>Five environment variables can be used to identify the directories that contain the dictionary, control, and database files.</P>
+<P>The directory containing the dictionary files can be specified by an environment variable named DBDPATH.  The directory that is to contain the database files can be specified by an environment variable named DBFPATH, shown in the following example.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=/dbdefs/
+set DBFPATH=/timsdb/
+</PRE>
+</FONT><BLOCKQUOTE>Note:<I>  </I>Function <B>d_open</B> will append a slash (/) in UNIX/Linux, to these path names if not specified.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Assume that the DDL for database <B>tims</B> includes the following data and key file statements:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>data file "centura/tims.dat" contains ...
+key  file "centura/tims.key" contains ...
+</PRE>
+</FONT><FONT SIZE="2"><P>When the database is opened, <B><I>db.*</B></I> would expect to find file <B>tims.dbd</B> in directory /<B>dbdefs</B> (that is, the file specification for the dictionary would be /<B>dbdefs</B>/<B>tims.dbd</B>).  The file specifications for the database files would be /<B>timsdb</B>/<B>centura</B>/<B>tims.dat</B> and /<B>timsdb</B>/<B>centura</B>/<B>tims.key</B>.</P>
+<P>In addition to the above, the <B>d_open</B> call may contain a partial path name:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "wayne//tims", "x", task );
+</PRE>
+</FONT><FONT SIZE="2"><P>In this case the additional path specification (<B>wayne</B>/) placement would precede the DBDPATH or DBFPATH values.  The resulting file names are shown below:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/dbdefs/wayne/tims.dbd
+/timsdb/wayne/centura/tims.dat
+/timsdb/wayne/centura/tims.key
+</PRE>
+</FONT><FONT SIZE="2"><P>You can provide any combination of path specifications in the environment variables DBDPATH and DBFPATH, in the <B>d_open</B> statement, and in the schema.  The resulting paths to the data and key files are built according to the following rules:</P>
+
+<UL>
+<LI>A path is considered absolute if it starts with a "/" 
+  character. Otherwise the path is considered relative. Logical device 
+  specifications are transparent. 
+  
+<LI>The final path is constructed by concatenating the 
+  various paths from the various sources. Construction stops when the final path 
+  becomes absolute. 
+  
+<LI>In constructing the final path for the dictionary file, the (optional) path supplied to <B>d_open</B> is 
+  used, preceded by the (optional) path in the environment variable DBDPATH. 
+  
+<LI>In constructing the final path for the data and key files, the (optional) path in the schema is used, preceded by the (optional) path supplied to <B>d_open</B>, with the (optional) path in the environment variable DBFPATH preceding all.</LI></UL>
+
+<P>Consider the examples below.</P>
+<B><P>Case 1   No path information:</P>
+<I><P>Environment variable values:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=
+set DBFPATH=
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Application code d_open statement:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "tims", "o", task );
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>DDL specification of files:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>data file "tims.dat" contains ...
+key file  "tims.key" contains ...
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Resulting file names:</P><DIR>
+<DIR>
+
+</I><P>tims.dbd<BR>
+tims.dat<BR>
+tims.key</P></DIR></DIR>
+
+<P>Case 2   Environmental path information</P>
+<I><P>Environment variable values:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=/usr/anita/
+set DBFPATH=/usr/anita/
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Application code d_open statement:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "tims", "o", task );
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>DDL specification of files:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>data file "data/tims.dat" contains ...
+key file  "data/tims.key" contains ...
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Resulting file names:</P><DIR>
+<DIR>
+
+</I><P>/usr/anita/tims.dbd<BR>
+/usr/anita/data/tims.dat<BR>
+/usr/anita/data/tims.key</P></DIR></DIR>
+
+<P>Case 3   Environment variables overridden by d_open statement:</P>
+<I><P>Environment variable values:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=/dbd_dir
+set DBFPATH=/dbf_dir
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Application code d_open statement:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "/usr/anita/tims", "o" );
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>DDL specification of files:</P>
+</B></I></FONT><FONT COLOR="#0000ff">
+<PRE>data file "data/tims.dat" contains ...
+key file  "data/tims.key" contains ...
+</PRE>
+</FONT><B><I><FONT SIZE="2"><P>Resulting file names:</P><DIR>
+<DIR>
+
+</I><P>/uar/anita/tims.dbd<BR>
+/usr/anita/data/tims.dat<BR>
+/uar/anita/data/tims.key</P></DIR></DIR>
+
+</B><P>Both DBDPATH and DBFPATH can contain multiple elements, separated by semicolons.  The elements in the path variables correspond one-for-one with the database numbers of multiple open databases; they are not search paths.  For example, the environment variables may have the following settings:</P></FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=/sales;/invntory
+set DBFPATH=/dbfiles;/dbfiles
+</PRE>
+</FONT><FONT SIZE="2"><P>Look at the following:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "sales;invntory", "s", task );
+</PRE>
+</FONT><FONT SIZE="2"><P>This open will find the sales dictionary in /<B>sales</B>/<B>sales.dbd</B>, the sales data and key files in /<B>dbfiles</B>/, the inventory dictionary in /<B>invntory</B>, and the inventory data and key files in /<B>dbfiles</B>/.</P>
+<P>The same paths would be used if the second database were incrementally opened:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open( "sales", "s", task );
+...<BR>
+d_iopen( "invntory", task );
+</PRE>
+</FONT><FONT SIZE="2"><P>If the number of elements in one of the path variables is less than the database number of an open database, then the "extra" databases get no path.  However, if only one path is given, it applies to all databases.  Note that the DBFPATH shown above did not need to contain the same directory twice.  The following value would have the same effect:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>set DBFPATH=/dbfiles
+</PRE>
+</FONT><FONT SIZE="2"><P>A path may contain null elements.  If the path ends in a semi-colon, then all subsequent elements are null and the search will be made in the current directory.  For example, the following DBDPATH contains a null element 1, and DBFPATH contains null elements 1, 2, ...</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>set DBDPATH=c:/sales;;c:/sales
+set DBFPATH=c:/dbfiles;
+</PRE>
+</FONT><FONT SIZE="2"><P>The location and name of the transaction activity file ("TAF" file, see section 6.2, "Operational Environment") can be specified with environment variable DBTAF.  Environment variable DBLOG can be used to specify the location and name of the database log file.  If either variable ends with the directory separator character ("/"), the default file names are appended to the specified path name in order to form the fully qualified file name.  The default file names are <B>db.star.taf</B> for the transaction activity file and <B><I>userid</I>.log</B> for the log file, and are assumed to be located in the working (or current) directory.  If the environment variable does not end with the directory separator character, <B><I>db.*</B></I> will assume that the variable is the complete file name.</P>
+<P>The <I>userid</I> must be defined either through an environment variable called DBUSERID or through function <B>d_dbuserid</B> (as described in the next section).  There is no default.   The user identifier is used to activate communication between the <B><I>db.*</B></I> user and the lock manager, and is used in the forming of the default name of the user's database log file.  Note that the <I>userid</I> is only needed when the database is opened in shared or exclusive access mode.  It is not needed in one-user mode or in the single-user version.</P>
+<P>There is only one transaction activity file across the system for each database family, and it must be accessible to every user.  Each user must have his or her own individual log file, which must also be accessible to all users on the system.  Also, all log files for each database family must be located in the same physical directory.</P>
+</FONT><H4><A name="EnvironmentControl"></A>Environment Control Functions</H4>
+<FONT SIZE="2"><P>For each of the environment variables discussed in the preceding section, there is a <B><I>db.*</B></I> runtime function that allows dynamic setting of the variable.  Each of these functions is passed a string specifying the value of the appropriate environment variable.  Table 5-2 shows the relationship of these functions to each of the environment variables.  If used, these functions must be called before the database is opened.  Also, all the above mentioned environment variables except DBUSERID could be placed in the <B>db.star.ini</B> file instead of the environment.</P>
+<B><P ALIGN="center">Table 5-2.  Environment Variables and Related Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="28%" VALIGN="top">
+<P><FONT SIZE="2"><B>Environment Variable</B></FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>Function Name</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<P><FONT SIZE="2"><B>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>DBUSERID</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbuserid</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set database user identifier.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>DBDPATH</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbdpath</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory containing the dictionary and header files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>DBFPATH</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbfpath</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set path to directory containing the database files.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>DBLOG</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dblog</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set path or name of database log file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>DBTAF</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_dbtaf</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set path or name of database family transaction activity file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="28%" VALIGN="top">
+<FONT SIZE="2"><P>LOCKMGR</FONT></P></TD>
+<TD WIDTH="21%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_lockmgr</B></FONT></P></TD>
+<TD WIDTH="51%" VALIGN="top">
+<FONT SIZE="2"><P>Set the name of the lock manager to be used by this application.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H4><A name="Substituting"></A>Substituting Database Files</H4>
+<FONT SIZE="2"><P>Alternate names for data and key files can be specified at runtime, prior to opening a database, through use of the <B>d_renfile</B> function.  In order to use this function, however, a file identifier must be provided in the DDL data and key file statements for those files that are to be renamed.  The DDL file statement syntax including the specification of a file identifier is as follows:</P>
+<B><P>data file</B> [<I>fileid</I> =] <I>filename</I> <B>contains</B> <I>recname</I> [,<I>recname</I>]... ;<BR>
+<B>key file</B> [<I>fileid</I> =] <I>filename</I> <B>contains</B> <I>recname</I> [,<I>recname</I>]... ;</P>
+<P>If provided, <I>fileid</I> must be an identifier.  It will be included in <B>dbname.h</B> as a <B>#define</B> constant that is defined to be the file table dictionary entry number for the specified data or key file.</P>
+<P>See the example below:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>database tims {&lt;
+   data file timsdat = "tims.dat" contains ...;
+   key  file timskey = "tims.key" contains ...;
+   ...
+</PRE>
+</FONT><FONT SIZE="2"><P>File <B>tims.h</B> would include the following constants:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#define   TIMSDAT 0
+#define   TIMSKEY 1
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>d_renfile</B> could then be used to substitute the files as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_renfile("tims", TIMSDAT, "centura.dat", task);
+d_renfile("tims", TIMSKEY, "centura.key", task);
+d_open("tims","x", task);
+</PRE>
+</FONT><FONT SIZE="2"><P>The calls to <B>d_renfile</B> must be issued prior to the call to <B>d_open</B> of database <B>tims</B>.  The name of the database needs to be specified in the <B>d_renfile</B> call, to distinguish between files contained in different databases if more than one is opened.  </P>
+</FONT><BLOCKQUOTE>Note<B><I>:</B> </I>When <B>d_open</B> is locating the database files, the database file specification provided in the <B>d_renfile</B> call overrides the environment variable (DBFPATH) and any path prefix to the database name.  The dictionary and control file specifications are unaffected.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The <B>d_renfile</B> function has a companion function, <B>d_renclean</B>.  Function <B>d_renclean</B> can only be called while all databases are closed, and will clean up all memory and references used by <B>d_renfile</B>.  This allows switching back and forth between databases as seen in the following example.  In this example, there are two copies of the data files, one copy that is shared by everyone on the network (drive <B>s:</B>) and the other one on the users hard drive (drive <B>c:</B>).</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open("tims", "s", task);
+   /* &amp; normal
+   processing on network copy */ d_close(task); d_renfile("tims",
+TIMSDAT,
+
+" /tims/tims.dat", task); d_renfile("tims", TIMSKEY,
+" /tims/tims.key", task): d_open("tims", "o",
+
+task): /* &amp;
+   processing on the local copy */ d_close(task);
+/*
+
+clean up all memory from previous d_renfile functions. */ d_renclean(task);
+d_open("tims",
+
+"s", task); /*
+   &amp; back to processing on the network copy */
+d_close(task);
+</PRE>
+</FONT><H3><A name="Dynamic"></A>5.2.3   Dynamic Database Initialization</H3>
+<FONT SIZE="2"><P>Dynamic database initialization functions allow a program to initialize an entire database, or one or more files, in a database at program execution time.  These functions are useful when a first-time initialization needs to be included as part of an application or when a temporary database is needed.    </P>
+</FONT><BLOCKQUOTE>Note:<I>  </I>These functions will destroy existing data.  They are not part of a normal database open sequence.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Function <B>d_initialize</B> will initialize all database data and key files associated with the open database.  In multi-user environments, it can only be called when the database is opened in exclusive access mode or exclusive locks have been placed on all the files.  Function <B>d_destroy</B> is called to close the database and to delete all of the database files comprising the open database.</P>
+</FONT><BLOCKQUOTE>Note:<I>  </I>If <B>d_renfile</B> has been called, <B>d_destroy</B> will remove the new file names and leave the original ones untouched.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Individual files that have a <I>fileid</I> specified in the DDL file statement can be initialized using function <B>d_initfile</B>.  For example, the following DDL defines files that keep track of a daily user login history:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>key file day_key = "dayfile.key" contains login_id;
+data file day_data = "dayfile.dat" contains login_history;
+</PRE>
+</FONT><FONT SIZE="2"><P>These files are initialized by the application when the user logs in at the beginning of the day, as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include "db.star.h"
+#include "login.h"
+#include "mis.h"
+DB_TASK *task;
+...
+/* Open Login and Mgt Info System databases */
+d_opentask(&amp;task);
+d_open("login;mis", "s", task);
+
+/*   Since each user has his own login file, an 
+   exclusive lock on that file will preclude the use of
+   other locks and yield better performance. */
+d_reclock(LOGIN_HISTORY, "x", task, CURR_DB);
+
+/* Initialize daily login files */
+d_initfile(DAY_KEY, task, CURR_DB);
+d_initfile(DAY_DATA, task, CURR_DB);
+
+...
+</PRE>
+</FONT><H3><A name="Runtime"></A>5.2.4   Runtime Control</H3>
+<FONT SIZE="2"><P>Runtime control functions inform the <B><I>db.*</B></I> runtime of the maximum number of files that can be opened at a time and the size of the database cache, and are used to turn on or off one or more of several runtime options.  These functions provide the flexibility to tune runtime performance to meet the requirements of individual applications.</P>
+</FONT><H4><A name="Maximum"></A>Maximum Open Files</H4>
+<FONT SIZE="2"><P>Many operating systems impose a limitation on the number of files that an application program can have open at one time.  UNIX/Linux may have an upper limit of open files.  Many database management systems restrict the maximum number of files in a database to this operating system limit, but <B><I>db.*</B></I> allows up to 32,767 files to be accessed in a single database.  This is done by dynamically opening and closing files as necessary to keep the number of open files within the operating system's limit. </P>
+<P>Before the database is opened, the program must inform <B><I>db.*</B></I> of the maximum number of data and key file handles it can have open at a time.  This is accomplished with function <B>d_setfiles</B>, which is passed an integer value specifying this maximum. Function <B>d_setfiles</B> must be called before the database is opened, and the value passed must be less than or equal to the operating system limit, minus the maximum number of additional files the application will have open at a time.  The default is a maximum of eight open files at a time.</P>
+<P>For example, normally a standard C program will have (at least) three files open upon initiation: <B>stdin</B>, <B>stdout</B>, and <B>stderr</B>.  If the operating system limit is 100, then the following call will ensure that <B><I>db.*</B></I> will not open too many files:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_setfiles(90, task);        /* db.* can open 90 files */
+d_open("tims", "o", task); /* Open database "tims" */
+</PRE>
+</FONT><FONT SIZE="2"><P>Setting the number of open files too small may result in some performance degradation due to unnecessary file closings and openings.</P>
+<P>If there are occasions when the application needs more file handles than are available, it is possible to tell the runtime to close all files it currently holds open.  The <B>d_closeall</B> function will close all files under <B><I>db.*</B></I> control that are currently open.  The files will be re-opened as needed.  If this function is used frequently, overall performance will decrease due to the extra opening and closing of files.</P>
+</FONT><H4><A name="Cache"></A>Size of Runtime Cache</H4>
+<B><I><FONT SIZE="2"><P>db.*</B></I> performs all input and output for the 
+database files through a </FONT><FONT FACE="Courier" SIZE="2"> </FONT><FONT SIZE="2">cache consisting 
+of a fixed number of database page buffers. This technique yields large 
+performance benefits by reducing the number of actual disk accesses required to 
+read or write information in the database. </P>
+<P>The programmer can specify the number of buffers to allocate for the cache with function <B>d_setpages</B>.  In general, the more pages specified the better the potential performance gains.   The first argument to this function specifies the number of pages in the standard database cache.  A second argument specifies the number of pages in the transaction overflow-index cache (which should be small because an overflow should occur infrequently).</P>
+<P>If <B>d_setpages</B> is not called, <B><I>db.*</B></I> will allocate 100 pages in the database cache and five pages in the transaction overflow cache.  The cache lookups are performed using a hashing algorithm, as shown below:  </P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_setpages(200, 4, task);
+</PRE>
+</FONT><FONT SIZE="2"><P>The initial size of the pages allocated for the database cache will be equal to the size of the largest page in the database.  Thus, if the largest page is 4096 bytes long, then the database cache in the above example will occupy 524K bytes (128 * 4096).  The size of the pages in the overflow cache is fixed at 1024 bytes.  If there is not enough memory available to accommodate the requested number of pages, function <B>d_open</B> will return status S_NOMEMORY.</P>
+</FONT><H4><A name="Settings"></A>Option Settings</H4>
+<FONT SIZE="2"><P>Various runtime option settings allow you to do these activities plus others:</P>
+
+<UL>
+<LI>Turn on or off the use of delete chain slots (for 
+  when new records are created) 
+  
+<LI>Turn on or off transaction logging and recovery 
+  
+<LI>Turn on or off archive logging 
+  
+<LI>Change between case-insensitive and case-sensitive 
+  sorting 
+  
+<LI>Dictate how often to close files</LI></UL>
+
+<P>Rather than supplying separate functions to control the setting of these runtime options, <B><I>db.*</B></I> provides two parameter-based system option setting functions called <B>d_on_opt</B> and <B>d_off_opt</B>.  These functions are passed a bit status word, which has a bit associated with each option.  These options have been assigned constants in <B>db.star.h</B>.  See the <B><I>db.*</B></I> <I>Reference Manual</I> for a complete list.</P>
+<P>Here are some examples.  To turn on delete chain usage and archive logging:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_on_opt(DBCHAINUSE | ARCLOGGING, task);
+</PRE>
+</FONT><FONT SIZE="2"><P>To turn off transaction logging and archive logging:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_off_opt(TRLOGGING | ARCLOGGING, task);
+</PRE>
+</FONT><FONT SIZE="2"><P>Transaction and archive logging are discussed in Chapter 6, "Transaction Processing."</P>
+<P>The ability to turn on or off the use of deleted record slots provides some application control over the placement of related records in the database.  If all member record occurrences of a given set are entered together, and use of the delete chain is turned off, the records will all be physically placed in the order in which they're entered at the end of the data file.  This will improve performance when, later, they are all accessed together.</P>
+<P>To establish case-insensitive sorting with keys:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_on_opt(IGNORECASE, task);
+</PRE>
+</FONT><FONT SIZE="2"><P>This option will re-define the collating sequence of characters, and must be used for the lifetime of a database.  You cannot build a database with this option turned on, then later use it with it turned off.</P>
+<P>The default settings have transaction logging and delete chain use turned <I>on</I>, and archive logging and case-insensitive sorting turned <I>off</I>.  </P>
+</FONT><H2><A name="Currency"></A>5.3   Currency Tables</H2>
+<FONT SIZE="2"><P>All of the data contained in a <B><I>db.*</B></I> database is accessed through use of the currency tables.  Thus, a thorough understanding of the use of these tables is necessary.</P>
+<P>The retrieval of <B><I>db.*</B></I> data is always a two-step process.  First the location of the data is established, and then the data is read.  The located data is always in the form of a specific record occurrence.  The database address of a record is the location in the database where the record is stored.  The currency tables contain database addresses as follows:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="22%" VALIGN="top">
+<I><FONT SIZE="2"><P>current record</I></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>The database address of the most recently accessed record occurrence.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top">
+<I><FONT SIZE="2"><P>current owner</I></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>The database address of an owner record occurrence for the set.  There is a current owner entry for each set in the database.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="22%" VALIGN="top">
+<I><FONT SIZE="2"><P>current member</I></FONT></P></TD>
+<TD WIDTH="78%" VALIGN="top">
+<FONT SIZE="2"><P>The database address of a member record occurrence for the set.  There is a current member entry for each set in the database.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>A currency table value is established through the record location functions (for example, <B>d_keyfind</B> or <B>d_findnm</B>), and through additional functions that directly modify currency table entries (for example, <B>d_setor</B> copies the <I>current record</I> value to the <I>current owner</I> entry of the specified set).  Once a record has been located, its database address is automatically stored in the currency table.  Its contents can then be read (for example, <B>d_recread</B> reads the contents of the <I>current record</I>).  </P>
+<P>Locating record occurrences through set relationships directly involves manipulation of the currency tables.  This process is called set  navigation.  The currency tables are used to keep track of the path through the network of set relationships that was followed to arrive at a particular record occurrence.  </P>
+<P>A portion of the <B>tims</B> database schema is given in Figure 5-1, with an example of a possible currency table state showing pointers to particular record occurrences in the database.</P>
+<B><P ALIGN="center"></P>
+<P ALIGN="center"><IMG alt="Example Currency Table" border="0" height="371" src="dbstar_5-1.gif" width="466">     </P>
+<P align="center">Fig. 5-1. Example Currency Table</P>
+</B><P>Because of the importance of the currency tables, a rich set of functions is provided to give the programmer complete control over currency table settings.  These functions are listed in Table 5-3.  The <B>d_setXY</B> functions have a naming convention in which<B> X</B> specifies the destination currency and <B>Y</B> specifies the source currency for the assignment operation.  For example, in <B>d_setro</B>, the <B>r</B> indicates that the current record is to be assigned and the <B>o</B> indicates that it is to be assigned from the current owner of the specified set.  Use of the currency tables will be explained in the sections which follow.</P>
+<B><P ALIGN="center">Table 5-3  Currency Control Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Currency Manipulation Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setro</B><I>(SET, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current record from current owner of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setrm</B><I>(SET, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current record from current member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setor</B><I>(SET,task,  dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current owner of <I>SET</I> from current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setom</B><I>(SET1, SET2, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current owner of <I>SET1</I> from current member of <I>SET2</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setoo</B><I>(SET1, SET2, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current owner of <I>SET1</I> from current owner of <I>SET2</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setmr</B><I>(SET,task,  dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current member of <I>SET</I> from current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setmo</B><I>(SET1, SET2, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current member of <I>SET1</I> from current owner of <I>SET2</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setmm</B><I>(SET1, SET2,task,  dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set current member of <I>SET1</I> from current member of <I>SET2</I>.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Currency Access Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_crget</B><I>(dba, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get database address of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_crset</B><I>(dba, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set database address of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csmget</B><I>(SET, dba, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get database address of current member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csmset</B><I>(SET, dba, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set database address of current member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csoget</B><I>(SET, dba, task, dbn)</I></FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Get database address of current owner of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="40%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csoset</B>(SET, dba, task, dbn)</FONT></P></TD>
+<TD WIDTH="60%" VALIGN="top">
+<FONT SIZE="2"><P>Set database address of current owner of SET.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H2><A name="Retrieval"></A>5.4   Data Retrieval</H2>
+<FONT SIZE="2"><P>Table 5-4 lists the functions used for data retrieval.</P>
+<B><P ALIGN="center">Table 5-4  Data Retrieval Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Key Access Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keyfrst(</B><I>KEY, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find record with first <I>KEY</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keylast(</B><I>KEY, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find record with last <I>KEY</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keyfind(</B><I>KEY, task,  val, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find first record with exactly matching <I>KEY</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keynext(</B><I>KEY, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find record with next <I>KEY</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keyprev(</B><I>KEY, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find record with previous <I>KEY</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keyread(</B><I>val, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Read contents of last key scanned.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_curkey(</B><I>task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set current keys from current record.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Set Navigation Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_findfm(</B><I>SET, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find first member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_findlm(</B><I>SET, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find last member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_findnm(</B><I>SET, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find next member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_findpm(</B><I>SET, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find previous member of <I>SET</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_findco(</B><I>SET,task,  dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find owner of current record.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Direct Access Retrieval Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recfrst(</B><I>REC, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find first occurrence of record type <I>REC</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_reclast(</B><I>REC, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find last occurrence of record type <I>REC</I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recnext(</B><I>task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find next occurrence of current record type.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recprev(</B><I>task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Find previous occurrence of current record type.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recset(</B><I>REC, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Set the current occurrence of the record type to the current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recread(</B><I>val, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Read whole contents of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_crread(</B><I>FLD, val, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Read data from field of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csmread(</B><I>SET, FLD, val, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Read data from field of current member. </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csoread(</B><I>SET, FLD, val, task, dbn</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Read data from field of current owner.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_encode_dba(</B><I>file, slot,task,  dba</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Encode database address from file and slot number.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_decode_dba(</B><I>dba, file, slot, task</I><B>)</B></FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Decode file and slot number from database address.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Record occurrences are located using <B><I>db.*</B></I>'s key retrieval functions, set navigation functions, direct access, or any combination of these.</P>
+</FONT>
+</BODY>
+</HTML>

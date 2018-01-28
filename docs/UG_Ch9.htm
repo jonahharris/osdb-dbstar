@@ -1,0 +1,66 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 9</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="Unicode"></A>Chapter 9<BR>
+<I>db.*</I> Unicode Support</H1>
+<H2><A NAME="Compiler"></A>9.1  Unicode Support at the Compiler and OS Level</H2>
+<FONT SIZE=2><P>Support for Unicode varies widely for different operating systems; consequently, these differences affect the levels of support available in <B><I>db.*</B></I>.  Currently, Unicode support in Linux and UNIX is limited.</P>
+<P>On Linux and UNIX, Unicode string manipulation functions are provided, but I/O functions are not.  Some display functions, such as <B>puts</B> and <B>gets</B>, have Unicode equivalents, but not all.  This level of support makes it unlikely that as a <B><I>db.*</B></I> user, you will write applications that use only Unicode strings, or that you will require a <B><I>db.*</B></I> library with Unicode string arguments.</P>
+<P>The most common standard for storing international character sets on UNIX and Linux is UTF-8 (see note below).  This encoding standard provides a method for mapping Unicode characters to multi-byte sequences, so that they can be stored as conventional 8-bit character strings.  <B><I>db.*</B></I> supports UTF-8 on platforms where the standard is available.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  The acronym UCS stands for "Universal Character Set".  The set was developed jointly by the Unicode Consortium and the International Organization for Standardization (ISO).  UTF is an acronym for "UCS Transformation Format".</BLOCKQUOTE>
+<H3><A NAME="String"></A>String Fields in the Database</H3>
+<FONT SIZE=2><P>Regardless of whether the <B><I>db.*</B></I> library accepts Unicode or ANSI string arguments, or does internal string manipulation in Unicode, a need may exist for Unicode string fields in a database on any platform that supports Unicode at any level.</P>
+<P>Although Unicode strings are really just arrays of unsigned <B>short</B>s, <B>int</B>s, or <B>long</B>s (according to platform), they cannot be handled exactly the same way as these underlying data types.  If Unicode string fields are defined as keys, <B><I>db.*</B></I> must sort them using the string collation functions provided in the OS for doing locale-specific collation.  This differs from the binary sorting used for fields defined as <B>short</B>, <B>int</B>, or <B>long</B>.  Thus, <B><I>db.*</B></I> must support Unicode string fields as a separate type from their underlying data types.  Apart from their size, Unicode string fields are treated in much the same way as regular, <B>char</B> string fields.</P>
+</FONT><H3>Definitions</H3>
+<FONT SIZE=2><P>The data type used for Unicode characters is called <B>wchar_t</B> on all the systems supported by <B><I>db.*</B></I>.  (Most of these systems also define <B>_WCHAR_T</B>, which is the equivalent of <B>wchar_t</B>.)  Unfortunately, the definition of <B>wchar_t</B> is not the same across all platforms:</P>
+<B><P ALIGN="CENTER">Table 9-1.  OS Definitions for wchar_t</P></B></FONT>
+<TABLE CELLSPACING=0 BORDER=0 CELLPADDING=7 WIDTH=542>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<B><FONT SIZE=2><P>Platform</B></FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<B><FONT SIZE=2><P>wchar_t Definition</B></FONT></TD>
+</TR>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<FONT SIZE=2><P>Solaris</FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<FONT SIZE=2><P>long</FONT></TD>
+</TR>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<FONT SIZE=2><P>Unixware</FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<FONT SIZE=2><P>long</FONT></TD>
+</TR>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<FONT SIZE=2><P>QNX</FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<FONT SIZE=2><P>long</FONT></TD>
+</TR>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<FONT SIZE=2><P>HPUX</FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<FONT SIZE=2><P>unsigned int</FONT></TD>
+</TR>
+<TR><TD WIDTH="36%" VALIGN="TOP">
+<FONT SIZE=2><P>Linux</FONT></TD>
+<TD WIDTH="64%" VALIGN="TOP">
+<FONT SIZE=2><P>unsigned long</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=2><P>All of the platforms in the table above provide Unicode equivalents of string handling functions such as <B>strcpy</B>, <B>strcmp</B>, etc.  Typically, these functions are named <B>wcscpy</B>, <B>wcscmp</B>, etc.  </P>
+</FONT><H2><A NAME="Implementation"></A>9.2  <I>db.*</I> Implementation</H2>
+<FONT SIZE=2><P>Support in <B><I>db.*</B></I> for Unicode is implemented by Unicode data fields (data type <B>wchar_t</B>), which are supported on all platforms.</P>
+<P>To enable support, the preprocessor symbol UNICODE_DATA must be defined when <B><I>db.*</B></I> is compiled.  This symbol is defined automatically in <B>db.star.h</B>, on all platforms.</P>
+<P>The <B><I>db.*</B></I> product also allows Unicode strings to be stored in <B>char</B> fields, using UTF-8 format.  Provided the runtime locale is set correctly, and the <B><I>db.*</B></I> runtime option <B>MBSSORT</B> is enabled, key fields containing UTF-8 strings will be sorted correctly.</P>
+</FONT><H3><A NAME="Fields"></A>Unicode Data Fields</H3>
+<FONT SIZE=2><P>In <B><I>db.*</B></I> (on all platforms), the <B>ddlp</B> utility recognizes the data type <B>wchar_t</B> for database fields.  In the database dictionary (DBD file), these fields are represented by the character "C" similar to lowercase "c" for <B>char</B> fields.  The size of these fields is system-dependent.  On Linux and UNIX, its size is 4 bytes.</P>
+<P>The Country Table is not used in sorting Unicode data.  Since these characters are sorted correctly by the Unicode string collation functions, there is no need for any mechanism such as the Country Table.  The "ignorecase" option (specified in file <B>db.star.ctb</B>, or through function <B>d_on_opt</B>) is, however, recognized when Unicode database fields are sorted.</P>
+<P>Note that the Country Table is still usable with <B>char</B> fields in <B><I>db.*</B></I>.</P>
+</FONT><H2><A NAME="Prototypes"></A>9.3  Unicode Prototypes for Specific Functions</H2>
+<FONT SIZE=2><P>The prototypes for approximately one-third of the <B><I>db.*</B></I> library functions are different in the Unicode version than in the standard version.  These are all functions containing <B>char*</B> data types.  In the majority of these, <B>char*</B> becomes <B>wchar_t*</B>.</P></FONT></BODY>
+</HTML>

@@ -1,0 +1,862 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 4</TITLE>
+</HEAD>
+<BODY>
+<H3><A name="Alignment"></A>4.3.2 ddlp Alignment</H3><FONT size="2">
+<P>The structures defined in <B>dbname.h</B> may be used to store the contents of a record. 
+When a variable is defined as a certain structure, the variable may be passed by 
+reference to <B><I>db.*</B></I> 
+functions for storage into or retrieval from the database. The offsets of each 
+element in the structure is dependent on how the compiler aligns structure 
+elements. When <B>ddlp</B> is built with a certain compiler, 
+it performs its own measurements on the compiler s alignments and uses those to 
+compute offsets into the record s structure. Hence the offsets computed by <B>ddlp</B> and the offsets in the C structure should match up 
+if the application program is built with the same compiler as <B>ddlp</B>.</P>
+<P>To see if a different compiler, or a newer version of the 
+compiler will result in a different alignment, rename your existing database 
+dictionary (<B>.dbd)</B> file and then run a <B>ddlp</B> built with the new compiler on your schema. Then 
+use <B>prdbd</B> to examine the alignments of the two 
+dictionaries. If they're the same, you won't have a problem using the different 
+compiler. If they're different, you can choose whether or not to convert your 
+application to the newer version. </P>
+<P>If you have existing data that needs to be preserved, you 
+can use the <B>dbexp</B> and <B>dbimp</B> utilities.</P></FONT>
+<H4><A name="Nested"></A>Nested Structures</H4><FONT size="2">
+<P>Be very careful about using nested structures in records. 
+The alignment of nested structures is very compiler-dependent. Although <B><I>db.*</B></I> compensates for this 
+dependence, <B>ddlp</B> may not always be able to produce 
+the correct alignment of nested structures.</P>
+<P>While numeric and character data can be included in the 
+same record, we recommend that numeric data and character data not be mixed 
+together. You should put the <B>double</B>s, <B>long</B>s, <B>int</B>s, and <B>short</B>s first, with the <B>char</B>s 
+last. This will create the smallest possible records without artificially 
+packing the structures and avoid most alignment problems.</P>
+<P>If you plan to use nested structures, we recommend that 
+they start on word boundaries (that is, with numeric data). Starting the 
+structures on eight-byte boundaries may be necessary on some machines when the 
+structures contain <B>double</B> data types.</P></FONT>
+<H2><A name="Considerations"></A>4.4 Database Design Considerations</H2><FONT size="2">
+<P>C programmers prefer the flexibility to make intelligent 
+decisions based on a number of design alternatives, rather than having to rely 
+on a less flexible system (which may do a lot more of our work for us, but not 
+always in the way we want it done). Much of the power of <B><I>db.*</B></I> stems from the 
+flexibility it allows the application developer in organizing the database. This 
+flexibility, however, requires the programmer to make design decisions from a 
+wide variety of alternatives. </P>
+<P>This section presents database design considerations as 
+they pertain to <B><I>db.*</B></I>. 
+These design considerations are separated into logical design and physical 
+design issues. Logical design (as defined here) involves those aspects of the 
+database organization that directly affect the manner in which the C 
+applications have to access and manipulate the stored information. Physical 
+design addresses the organization of the database into data and key files and 
+(except for file renaming and initialization) is transparent to the application 
+program.</P></FONT>
+<H3><A name="Logical"></A>4.4.1 Logical Design Considerations</H3><FONT size="2">
+<P>The logical design considerations discussed here address 
+the use of keys, sets, and multiple databases. Note that the examples given show 
+only the DDL and not the actual code that uses it. Chapter 5, "Database 
+Manipulation," will complete many of these examples by providing the necessary 
+code.</P></FONT>
+<H4><A name="UseKeys"></A>Use of Keys</H4>
+<H5>General Key Usage</H5><FONT size="2">
+<P>Key fields are basically used:</P>
+<UL>
+  <LI>To provide fast access to individual record 
+  occurrences 
+  <LI>To provide efficiently sorted and selectable retrieval 
+  of a large number of record occurrences</LI></UL>
+<P>What are the possibilities for locating a specific record 
+occurrence among many? One could read and inspect each record occurrence in the 
+order they were stored in the file, until the desired record is found. This 
+would take some time if there are many occurrences. On average, half of the 
+records on file would have to be inspected to find a specific record, and all 
+would have to be inspected to determine that the record was not on file.</P>
+<P>Alternatively, sets could be navigated through the 
+network structure to locate the desired record (see section 4.5.3, "Database 
+Design"). This would generally mean that fewer records would have to be read, 
+but the process still would be too slow, depending on the application 
+requirements.</P>
+<P>Because of the efficiency of the B-tree indexing method, 
+locating a record through a key will involve at most only a few disk read 
+operations (usually three or four). Thus, it is an ideal way to locate specific 
+record occurrences rapidly.</P>
+<P>In <B><I>db.*</B></I>, any field defined in a record can be a key. 
+Thus there are a wide variety of potential ways to access a particular record. 
+Fields can be defined as unique keys, to prevent the entry of records containing 
+duplicate key values. When key fields are not defined as unique, records with 
+duplicate keys are allowed to reside in the database. For example, zip code may 
+be a key in a person record containing an address.</P>
+<P>In the checking account database, <B>check_no</B> was defined as a unique key to allow the 
+program to retrieve the check record for a particular check number. Other 
+examples of data fields that would be good candidates for keys are:</P>
+<DIR>
+<P>employee number</P>
+<P>social security number</P>
+<P>vehicle identification number</P>
+<P>inventory item number</P>
+<P>budget code</P>
+<P>serial number</P>
+<P>personal name</P></DIR>
+<P>Many different kinds of fields containing coded values 
+are best implemented using a key. If new codes are needed, they can be added to 
+the database without recompiling. For example, consider the following record 
+declarations:</P></FONT><FONT color="#0000ff"><PRE>/* vehicle make validation table */
+record vehicle   {
+   unique key vma_code[7];      /* vehicle make code */
+   char vma_desc[25];         /* vehicle make description */
+}
+/* vehicle fleet record */
+record fleet {
+   unique key char vin[25];   /* vehicle id number */
+   char vma[5];               /* vehicle make */
+   char vmo[5];               /* vehicle model */
+   char vyr[3];               /* vehicle year */
+   int  lsd;               /* last svc. date */
+}
+</PRE></FONT><FONT size="2">
+<P>An example vehicle record occurrence might 
+be:</P></FONT><FONT color="#0000ff"><PRE>vma_code:   CHEV
+vma_desc:   Chevrolet
+</PRE></FONT><FONT size="2">
+<P>When a new <B>fleet</B> record is 
+entered, the application program can easily validate that the <B>vma</B> field contains a correct code by doing a key find 
+operation on its contents (specifics of how to do this are explained in section 
+5.4.1, "Data Retrieval Using Keys").</P>
+<P>The <B>check_date</B> field in the 
+checking account database example was not a unique key. This provided the 
+ability to write multiple checks with a common date and to quickly retrieve all 
+checks written on a specific date or within a particular range of dates.</P>
+<P>Key fields can also be used for rapid pattern-matching 
+type searches. Many more keys than records can be retrieved in a single disk 
+read. Use of a key field for certain search requirements will result in much 
+faster processing, especially when all occurrences need to be checked by the 
+search operation. </P>
+<P>For example, consider a law enforcement database 
+containing "method of operation" records, which give the details of how specific 
+crimes were committed. These records contain perhaps 25 data fields, each 
+containing a numeric code identifying a particular aspect of the crime. One 
+field in the record might describe a burglar's method of entry into a home as 
+follows:</P></FONT>
+<TABLE border="0" cellPadding="7" cellSpacing="0" width="361">
+  
+  <TR>
+    <TD vAlign="top" width="19%"><B ><FONT size="2">
+      <P>Code</B></FONT></P></TD>
+    <TD vAlign="top" width="81%"><B ><FONT size="2">
+      <P>Meaning</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">1</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Broke in through front door</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">2</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Broke in through back door</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">3</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Broke in through window</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">4</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Picked front door lock</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">5</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Picked back door lock</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">6</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Came down the chimney</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="19%"><FONT size="2" >
+      <P align="justify">7</FONT></P></TD>
+    <TD vAlign="top" width="81%"><FONT size="2" >
+      <P>Other</FONT></P></TD></TR></TABLE><FONT size="2">
+<P>The reason for maintaining m.o. records in the database 
+is, of course, to allow searches for a match of a selection of the fields. The 
+key for the search would be a 25-element byte array in which each element's 
+value would be a numeric code, with zero meaning "not supplied." 
+</P></FONT><FONT color="#0000ff"><PRE>record mo {
+   key char mo_data[25][1];
+}
+</PRE></FONT><FONT size="2">
+<P>The fields in the key would be ordered with the highest 
+priority search field first and the lowest priority search field last. The 
+highest priority search field is the one most often used in the searches. By 
+listing it first, you can reduce the number of keys to be scanned in the maximum 
+number of cases. If the first field is not used in the search, all keys must be 
+scanned.</P></FONT>
+<H5>Compound Key Usage</H5><FONT size="2">
+<P>In general, compound keys are used when one of the 
+following conditions exists:</P>
+<UL>
+  <LI>A data field needs to participate in more than one key 
+  in the record. 
+  <LI>A key is needed that contains multiple fields, where a 
+  mix of ascending and descending order is required among the sort 
+fields.</LI></UL>
+<P>Suppose a record is to be searched based on the contents 
+of two fields, where search values for either field are not always available. If 
+a <B>struct</B> key field were used and the first field in 
+the key was not available, all keys would need to be scanned. The use of two 
+compound keys would solve the problem.</P></FONT><FONT color="#0000ff"><PRE>record combo_search {
+   int field1;
+   int field2;
+   compound key f1_1st {
+      field1; field2;
+   }
+   compound key f2_1st {
+      field2; field1;
+   }
+}
+</PRE></FONT><FONT size="2">
+<P>If only <B>field1</B> data were 
+available for the search, then key <B>f1_1st</B> would be 
+scanned. If only <B>field2</B> data were supplied, then key 
+<B>f2_1st</B> would be scanned. If both were supplied, by 
+convention, <B>f1_1st</B> would be scanned.</P>
+<P>Compound keys allow sort fields to be individually sorted 
+in either ascending or descending order. Suppose in the checking account 
+database we wanted to be able to list the checks sorted by the <B>paid_to</B> field, and, within that, in check number order 
+with the most recent checks listed first, as in the following example 
+:</P></FONT><FONT color="#0000ff"><PRE>record check
+{
+   unique key int check_no;
+   key int check_date;
+   char paid_to[48];
+   float amount;
+   compound key pay_list
+   {
+      paid_to ascending;
+      check_no descending;
+   }
+}
+</PRE></FONT>
+<H5>Optional Key Usage</H5><FONT size="2">
+<P>Optional keys are not created when the record is created, 
+but only when specifically requested by the application program through the <B>d_keystore</B> function. </P>
+<P>Optional keys should be used for fields that are not 
+mandatory (the field's contents are not always supplied), but that need to be 
+keyed when they are used. </P>
+<P>Optional keys can also be used when it is desirable to 
+defer the key creation to a time other than when the record is first stored. In 
+real-time applications the number of record updates per a given time period 
+(called the transaction rate) often needs to be maximized. Normally, the key 
+fields in a record are created when the record is created, and this involves 
+additional overhead of up to three or four disk input and output operations per 
+key. The ability to defer key creation can greatly improve the transaction rate. 
+Usually a separate program performs the key creation during non-peak system load 
+times (for example, late at night).</P></FONT>
+<H4><A name="UseSets"></A>Use of Sets</H4><FONT size="2">
+<P>Set relationships form the basis of the network database 
+model. The basic use of sets in forming one-to-many relationships was introduced 
+in Chapter 2, "Database Concepts," and illustrated in the checking account 
+database example. This section will expand the use of sets by showing how they 
+can be used to implement many-to-many relationships and variable-length 
+records.</P></FONT>
+<H5>Many-to-Many Relationships</H5><FONT size="2">
+<P>Many-to-many set relationships are best explained through 
+an example. A typical example is students and classes in college. Each class has 
+many students and each student takes many classes. Thus, there is a many-to-many 
+relationship between classes and students.</P>
+<P>Sets, however, only implement one-to-many relationships. 
+On the surface, it might appear that the following incorrect implementation 
+using two sets would work.</P></FONT><FONT color="#0000ff"><PRE>record class {
+   unique key char class_id[6];
+   ... other fields
+}
+record student {
+   key char name[36];
+   ... other fields
+}
+set my_students {
+   order last;
+   owner class;
+   member student;
+}
+set my_classes {
+   order last;
+   owner student;
+   member class;
+}
+</PRE></FONT><FONT size="2">
+<P>The schema diagram in Figure 4-1 illustrates the 
+relationships.</P><B>
+<P align="center"></P>
+<P align="center"><IMG alt="dbstar_4-1.gif - 2336 Bytes" border="0" height="173" src="dbstar_4-1.gif" width="233" > </P>
+<P align="center">Fig. 4-1. Incorrect Many-to-Many 
+Implementation</P></B>
+<P>Consider, however, the following instance of the <B>my_students</B> set.</P></FONT><FONT color="#0000ff"><PRE>Class:   Computer Science 101 (CS101)
+
+Students:   Smith
+      Jones
+      Kelly
+      Carlson
+</PRE></FONT><FONT size="2">
+<P>A problem occurs when the <B>my_classes</B> set instances for these students is examined. 
+Each student in CS101 must have that same class as a member of his <B>my_classes</B> set instance. This is not possible, however, 
+since CS101 can only be connected to a single owner in the <B>my_classes</B> set.</P>
+<P>The correct technique for implementing many-to-many 
+relationships does indeed utilize two sets but through the use of an 
+intersection record type, as follows: </P></FONT><FONT color="#0000ff"><PRE>record class {
+   unique key char class_id[6];
+   ... other fields
+}
+record student {
+   key char name[36];
+   ... other fields
+}
+record intersect {
+} 
+set my_students {
+   order last;
+   owner class;
+   member intersect;
+}
+set my_classes {
+   order last;
+   owner student;
+   member intersect;
+}
+</PRE></FONT><FONT size="2">
+<P>Figure 4-2 shows the schema diagram that corresponds to 
+the above DDL.</P><B>
+<P align="center"></P>
+<P align="center"><IMG alt="dbstar_4-2.gif - 2237 Bytes" border="0" height="125" src="dbstar_4-2.gif" width="250" > </P>
+<P align="center">Fig. 4-2. Correct Many-to-Many 
+Implementation</P></B>
+<P>Each <B>student</B> record occurrence 
+will have its own set of <B>intersect</B> record occurrences 
+through the <B>my_classes</B> set. Each of these intersect 
+records is also owned by a specific class record through the <B>my_students</B> set. Similarly, each <B>class</B> record will have its own set of <B>intersect</B> record occurrences through the <B>my_students</B> set, each of which is owned by an individual 
+student record through the <B>my_classes</B> set. </P>
+<P>In this case the intersection record has no user-defined 
+data in it. However, it could be an ideal place to store the student's grade for 
+the class if that was needed. In that case you would probably want to change the 
+name of the record type from <B>intersect</B> to <B>grade</B> or some other more meaningful name.</P>
+<P>A description of the actual database manipulation 
+involved in maintaining many-to-many relationships, based on the database design 
+example presented in section 4.5, is provided in Chapter 5.</P></FONT>
+<H5>Variable-length Records</H5><FONT size="2">
+<P>Only fixed-length records are allowed in <B><I>db.*</B></I>. In systems where 
+variable-length records are supported, they are often implemented by storing the 
+variable-length information in a linked list of fixed-length segments. This 
+technique can be implemented by the <B><I>db.*</B></I> application developer through sets.</P>
+<P>In the simplest example, a note of arbitrary length is 
+associated with a record such as a customer record. If the note is stored as a 
+field in the customer record, then an arbitrary limit on the length of the note 
+text would need to be imposed. Much of the space taken up by the field would 
+never be used. If, however, a separate record type were defined to store a 
+single line of text, a set relationship between the customer and note text line 
+would allow any number of text lines to be connected to a particular customer. 
+The schema diagram in Figure 4-3 shows this relationship.</P><B>
+<P align="center"></P>
+<P align="center"><IMG alt="dbstar_4-3.gif - 1699 Bytes" border="0" height="139" src="dbstar_4-3.gif" width="135" > </P>
+<P align="center">Fig. 4-3. Example Variable-Length Text 
+Implementation</P></B>
+<P>The corresponding DDL statements are shown 
+below.</P></FONT><FONT color="#0000ff"><PRE>record customer {
+   unique key char cust_id[7];
+   char company[21];
+   ... other fields
+}
+record text {
+   char line[80]; 
+}
+set cust_notes {
+   order last;
+   owner customer;
+   member text;
+}
+</PRE></FONT><FONT size="2">
+<P>Use of multiple member sets can save even more space. 
+Consider the alternative schema diagram in Figure 4-4.</P><B>
+<P align="center"><IMG alt="Better Variable-Length Text Implementation" border="0" height="145" src="dbstar_4-4.gif" width="298" > </P>
+<P align="center">Fig. 4-4. Better Variable-Length Text 
+Implementation</P></B>
+<P>The DDL corresponding to this implementation 
+follows:</P></FONT><FONT color="#0000ff"><PRE>record customer {
+   unique key char cust_id[7];
+   char company[21];
+   ... other fields
+}
+record text30 {
+   char t30_line[30]; 
+}
+record text55 {
+   char t55_line[55];
+}
+record text80 {
+   char t80_line[80];
+}
+set cust_notes {
+   order last;
+   owner customer;
+   member text30;
+   member text55;
+   member text80;
+}
+</PRE></FONT><FONT size="2">
+<P>Multiple member sets allow any occurrences of the record 
+types that are defined as valid members to exist in the same set instance. Thus, 
+in this example, a customer record may have <B>text30</B>, 
+<B>text55</B>, and <B>text80</B> record 
+occurrences connected through the <B>cust_notes</B> set. 
+This allows the program to choose the record type that best fits the amount of 
+text actually entered for a given line of text. Note, however, that each of the 
+text record types should be contained in a separate data file, or no real space 
+savings will occur (see section 4.4.2, "Physical Design Considerations"). </P>
+<P>The C code that manages the <B>cust_notes</B> set connections is described in Chapter 5, 
+"Database Manipulation."</P></FONT>
+<H4><A name="Multiple"></A>Use of Multiple Databases</H4><FONT size="2">
+<P>Application programs can open and access more than one 
+database at a time. The use of multiple databases in an application can yield 
+certain advantages and therefore should be a consideration in the design of the 
+database. In this sense, an application's database may actually consist of 
+several <B><I>db.*</B></I> 
+databases.</P>
+<P>There are at least two situations in which multiple 
+database design is useful:</P>
+<UL>
+  <LI>A temporary control or working database is desired 
+  <LI>An application is to consist of optional, modular 
+  components</LI></UL>
+<P>Sometimes temporary application control information needs 
+to be manipulated in sufficient quantities to benefit from the use of database 
+operations on that data. This information can be stored in a temporary working 
+database, which is initialized when the program begins and deleted when the 
+program terminates. </P>
+<P>An accounting package is a good example of a modular 
+database application. Most such packages provide separate modules for various 
+accounting functions. Companies only purchase the modules they need. A typical 
+package would include these modules :</P>
+<DIR>
+<DIR>
+<P>General Ledger</P>
+<P>Accounts Receivable</P>
+<P>Accounts Payable</P>
+<P>Payroll</P>
+<P>Inventory</P>
+<P>Sales Orders</P></DIR></DIR>
+<P>Almost all the modules require the general ledger module. 
+The amount of shared information between the other modules depends on the 
+application.</P>
+<P>When designing an application that will use multiple 
+databases, keep in mind that inter-database relationships can exist, but can 
+only be implemented relationally through keys or through the use of <B>DB_ADDR</B> fields containing the database addresses of 
+records in another database. It is not possible to have a set with an owner 
+defined in one database and a member defined in another. However, an account 
+number stored in the accounts receivable database can be used to find the 
+associated account record in the general ledger.</P></FONT>
+<H3><A name="Physical"></A>4.4.2 Physical Design Considerations</H3><FONT size="2">
+<P>This section describes those aspects of the physical 
+characteristics of a <B><I>db.*</B></I> 
+database that can impact the disk space usage and access performance of an 
+application program. An understanding of these physical implementation issues 
+will help you design the most efficient databases possible under <B><I>db.*</B></I>.</P></FONT>
+<H4><A name="FileStructure"></A>The <I>db.*</I> File 
+Structure</H4><FONT size="2">
+<P>Data and key files consist of pages, which contain a 
+specific number of fixed-length record and key slots. Control information, as 
+well as the normal record and key contents, are stored in these fixed-length 
+slots. The size of the record and key slots in a file is based on the size of 
+the largest record or key contained in that file. Smaller records or keys will 
+of necessity contain unused slot space.</P>
+<P>The amount of control information in a key is always 10 
+bytes. However, the amount of space required for the control information in a 
+record varies, and can therefore have database design implications.</P>
+<P>The control information maintained by <B><I>db.*</B></I> in a record is as 
+follows:</P>
+<UL>
+  <LI>Record number (two bytes), required 
+  <LI>Database address (four bytes), required 
+  <LI>Optional key bit maps (one byte for every eight 
+  optional keys defined in the record) 
+  <LI>If record type is timestamped, creation timestamp 
+  (four bytes) 
+  <LI>If record type is timestamped, update timestamp (four 
+  bytes) 
+  <LI>One set pointer (12 or 16 bytes) for each set for 
+  which record type is defined as an owner. A set pointer for a timestamped set 
+  uses 16 bytes, otherwise only 12 bytes are used 
+  <LI>One member pointer (12 bytes) for each set for which 
+  record type is defined as a member</LI></UL>
+<P>The information to be considered in database design is 
+the space required for set and member pointers, as this is determined from the 
+DDL. </P>
+<P>Chapter 14, "File Formats and Dictionary Tables," 
+describes in detail the structure of <B><I>db.*</B></I> files, records, and keys.</P></FONT>
+<H4><A name="Placement"></A>Record and Key Placement</H4><FONT size="2">
+<P>The factors that dictate the optimal placement of records 
+and keys into files are not always easy to determine, and are sometimes even 
+mutually exclusive. Here are some "rules of thumb" to assist you. Some of these 
+involve conflicting requirements. The best determination for your particular 
+environment will be based on your own intuition supported by some testing, but 
+ultimately through experience gained from actual use.</P>
+<UL>
+  <LI>Place dissimilar sized records and keys in separate 
+  files. 
+  <LI>Minimizing the slot space that would be unused in the 
+  smaller records is the motivation for this guideline. 
+  <LI>Place records and keys in separate files for better 
+  multi-user concurrency.</LI></UL>
+<DIR>
+<DIR>
+<P>The chances of multiple users locking the same file is 
+increased when several record or key types are contained in the same file. 
+Placing each key and record type in its own file will minimize access 
+conflicts.</P></DIR></DIR>
+<UL>
+  <LI>Place owner and member record types in the same file 
+  for improved set access performance.</LI></UL>
+<DIR>
+<DIR>
+<P>If new owner and member record occurrences are stored and 
+connected in the same transaction and if they are located on the same file the 
+likelihood of their being placed on the same database page is increased. This 
+could yield better set access performance. </P></DIR></DIR>
+<UL>
+  <LI>Minimize the number of separate key files to improve 
+  cache performance.</LI></UL>
+<DIR>
+<DIR>
+<P>Caching is a technique in which frequently accessed 
+database pages are kept in memory, thus reducing the amount of actual disk input 
+and output required. Using fewer key files increases the probability that needed 
+index pages will be in the cache.</P></DIR></DIR>
+<UL>
+  <LI>Experiment with the size of the pages to change the 
+  number of slots per page.</LI></UL>
+<DIR>
+<DIR>
+<P>Once the application is built, there will be only a fixed 
+amount of memory left over that can be used for the <B><I>db.*</B></I> cache. Some applications get better performance 
+from a smaller number of larger-sized pages that contain more slots per page. 
+Other applications get better performance from a larger number of smaller-sized 
+pages that contain fewer slots per page.</P></DIR></DIR></FONT>
+<H4><A name="Report"></A>ddlp File Structure Report</H4><FONT size="2">
+<P>The File Structure Report is produced by using the <B>-r</B> option on the <B>ddlp</B> command 
+line. This report summarizes the physical characteristics for each file and 
+record type defined in the DDL. The report produced for the checking account 
+database is given below.</P></FONT><FONT color="#0000ff"><PRE>db.* 1.0.0 Summary of Database: ckngacct
+Fri Dec 17 15:05:41 1999
+
+FILE: chkg.dat
+   Id  : 0
+   Type: data
+   Size of record slots : 90
+   Record slots per page: 5
+   Unused page space    : 58
+
+FILE: chkg.k01
+   Id  : 1
+   Type: key
+   Size of record slots : 16
+   Record slots per page: 63
+   Unused page space    : 6
+
+FILE: chkg.k02
+   Id  : 2
+   Type: key
+   Size of record slots : 14
+   Record slots per page: 145
+   Unused page space    : 8
+
+RECORD: BUDGET
+   Id  : 0
+   File: chkg.dat [0]
+   Total set pointers   : 1
+   Total member pointers: 0
+   Offset to data       : 26
+   Size of record       : 90
+   Unused slot space    : 0
+
+RECORD: CHECK
+   Id  : 1
+   File: chkg.dat [0]
+   Total set pointers   : 0
+   Total member pointers: 1
+   Offset to data       : 18
+   Size of record       : 78
+   Unused slot space    : 12
+</PRE></FONT><FONT size="2">
+<P>The summary for each data and key file includes the 
+following:</P>
+<UL>
+  <LI>File name 
+  <LI>File id number 
+  <LI>File type: data or key 
+  <LI>Size of each record or key slot in bytes 
+  <LI>Total number of slots per page 
+  <LI>Total amount of unused page space</LI></UL>
+<P>The information most significant to database design is 
+the number of slots per page and the amount of unused page space in a data file. 
+The unused page space occurs because the slot size multiplied by the number of 
+slots per page does not always exactly equal the size of the database page. Much 
+of this unused space can be reserved by adding an extra (unused) data field to 
+the largest record on the file. The length of the field is computed as 
+follows:</P>
+<DIR>
+<DIR>
+<P>length = (unused page space) / (slots per 
+page)</P></DIR></DIR>
+<P>The unused space is contained in a record so that if 
+additional data needs to be stored in that record, space will be available. If 
+the reserved space is large enough, the new field can be added without 
+restructuring the database.</P>
+<P>The record summary contains the following 
+information.</P>
+<UL>
+  <LI>Record name 
+  <LI>Record number 
+  <LI>File in which record is contained 
+  <LI>Total number of set pointers (sets owned by record) 
+  <LI>Total number of member pointers (sets in which record 
+  is member) 
+  <LI>Offset to start of data from start of record 
+  <LI>Total size of record in bytes 
+  <LI>Amount of unused slot space</LI></UL>
+<P>The design-related information in this report is the 
+unused slot space. This space can easily be converted into a usable form by 
+adding an extra field the length of the unused slot space to the record. Then, 
+as explained above, the space is available for additional data to be stored in 
+the record at a later date, without requiring a restructure of the database.</P>
+<P>Also important in calculating the size of the records is 
+the ordering and size of the data types used in the record. Most systems require 
+numeric data to start on word boundaries. This means that if the field preceding 
+a numeric field does not end on a word boundary, unseen and unusable padding is 
+inserted to force the numeric data to the word boundary. When character and 
+numeric data are not carefully mixed, wasted space can be generated.</P></FONT>
+<H4><A name="Sizes"></A>File Page Sizes</H4><FONT size="2">
+<P>To optimize file access performance, the page sizes for 
+data and key files should be a multiple of the file block size used by your 
+operating system. Many systems have a block size of 512 bytes. In these systems 
+block sizes of 512, 1024, 1536, etc. would be acceptable. </P>
+<P>The best page size for a given file is not always easily 
+determined, and will be based on application implementation details. Key file 
+pages should be large enough to hold a reasonable number of keys, so that the 
+number of levels in the resulting B-tree are kept as small as possible (less 
+than or equal to four). Data file page sizes should be based on the number of 
+records you want to store on each page. For example, if all members of a set are 
+stored together, then they will likely be stored in contiguous record slots. If 
+they will usually be accessed together as well, then you may decide that the 
+page size should be large enough to hold the average number of set members in 
+order to minimize the actual disk accesses necessary to read each member.</P>
+<P>The initial <B><I>db.*</B></I> runtime page buffers are sized based upon the 
+largest page size specified in the DDL. For example, if you have specified four 
+files with a 1024-byte page size and one file with a 4096-byte page size, <B><I>db.*</B></I> will allocate 4096 bytes 
+for each page in the cache. You need to be aware of your memory requirements in 
+deciding on page sizes.</P></FONT>
+<H2><A name="DesignExample"></A>4.5 Database Design Example</H2>
+<H3><A name="DesignIntroduction"></A>4.5.1 Introduction</H3><FONT size="2">
+<P>The example to be presented in this section is an 
+elaboration of the <B>tims</B> database introduced in 
+Chapter 3. It will be used in examples throughout the remainder of this 
+document. A solid understanding of this example design is necessary.</P>
+<P>The requirements for the <B>tims</B> 
+application are given first, followed by a description of the schema with 
+explanations of how the design will be used to satisfy the stated 
+requirements.</P></FONT>
+<H3><A name="Requirements"></A>4.5.2 Requirements</H3><FONT size="2">
+<P>The system is to be used to maintain a database of 
+technical information contained in books, technical journals or magazines, and 
+articles. In the following discussion, a single book, journal issue, or article 
+will be generally referred to as an info item. </P>
+<P>The following data is to be stored for each book, 
+journal, or article:</P>
+<DIR>
+<DIR>
+<P>author's name</P>
+<P>information id code</P>
+<P>title</P>
+<P>publisher</P>
+<P>date published</P>
+<P>abstract</P>
+<P>topical key words</P></DIR></DIR>
+<P>The id code will be a unique Dewey-Decimal library code 
+assigned by the user. The abstract will be a brief description (up to several 
+paragraphs) of the info item. Each info item may have several key words 
+associated with it that identify topics discussed in it.</P>
+<P>Functions are to be provided to allow info item entry and 
+deletion. </P>
+<P>The info item data is to be retrieved as follows:</P>
+<UL>
+  <LI>By author name, where all info items for a given 
+  author are reported 
+  <LI>By id code, through which individual occurrences can 
+  be found or all occurrences can be retrieved in id code order 
+  <LI>By key word, where all info items for a given key word 
+  are reported</LI></UL>
+<P>The ability to keep track of loaned books and magazines 
+is also to be provided, where the borrower's name, the date borrowed, and the 
+date returned are stored for each item loaned. A loan history is to be 
+maintained for each info item. In addition, the ability to report all unreturned 
+info items is to be provided.</P></FONT>
+<H3><A name="DatabaseDesign"></A>4.5.3 Database Design</H3><FONT size="2">
+<P>The schema diagram for the database design is shown in 
+Figure 4-5 below.</P><B>
+<P align="center"></P>
+<P align="center"><IMG alt="dbstar_4-5.gif - 5346 Bytes" border="0" height="366" src="dbstar_4-5.gif" width="396" > </P>
+<P align="center">Fig. 4-5. tims Database Schema</P></B>
+<P>The principal data for each info item is stored in a 
+record called <B>info</B>. This includes the id code, title, 
+publisher, and publication date. Also included is a coded-value field for 
+storing the type of info, where 0 = book, 1 = journal or magazine and 2 = 
+article. The id code will be a key in order to quickly find specific <B>info</B> occurrences.</P>
+<P>Because there may be many books or articles written by a 
+single author, storing the author name in the <B>info</B> 
+record would replicate multiple occurrences of the same author. This is often 
+referred to as redundant data. So, the author is stored in a separate record 
+with a set, <B>has_published</B>, connecting an author to 
+that author's <B>info</B> records.</P>
+<P>Since the <B>info</B> records for a 
+given author are to be retrievable by author name, a set, ordered by author 
+name, called <B>author_list,</B> has been defined with the 
+system record as the owner. To find a specified author, this set is searched. 
+This is sufficient for a small personal library where there would be relatively 
+few authors (less than 100) and the system is only used by a single user. In a 
+large library with many authors, access would be faster if we used the author 
+name as a key field and did not use a set. Here (mainly for instructional 
+purposes), the assumption is that the system is for a small, personal 
+library.</P>
+<P>A simple variable-length text structure is used for 
+storing the abstract. A record type called <B>text</B> is 
+defined that stores a text string of up to 80 characters, including a sentinel 
+null byte. A set called <B>abstract</B> with order <B>last</B> is defined with <B>info</B> as 
+owner and <B>text</B> as member, forming a one-to-many set 
+between an <B>info</B> record and each line of abstract 
+text.</P>
+<P>The relationship between key words and item <B>info</B> records is many-to-many. A key word is stored in a 
+record type named <B>key_word</B>. The key word is a string 
+field that is keyed to allow rapid retrieval of individual key word occurrences 
+and to allow alphabetized key word perusal. The many-to-many relationship is 
+implemented through the use of two sets, as described in section 4.4.1, "Logical 
+Design Considerations." <B>Key_word</B> records and <B>info</B> records are connected to an intersection record 
+called <B>intersect</B>. Set <B>key_to_info</B> is used to find the <B>info</B> records corresponding to a particular key word. Set 
+<B>info_to_key</B> is used to find the key words associated 
+with a given <B>info</B> record. The <B>intersect</B> record has one field to hold a copy of the <B>info</B> type from its <B>info</B> owner 
+through the <B>info_to_key</B> set. By eliminating an extra 
+disk read of the <B>info</B> record for non-books, this 
+facilitates the kind of key word searches where, for example, you're only 
+interested in finding the books covering a specific topic. Redundant data is 
+sometimes incorporated into a database design in order to improve data access 
+performance.</P>
+<P>A record type named <B>borrower</B> 
+will contain the name of the borrower, the date loaned, and the date returned. 
+The borrower's name will be a key field, in order to be able to quickly find all 
+of the items borrowed by a particular person. Dates will be stored as a long 
+integer of the form YYMMDD (for example, 870709 is July 9, 1987). A date of zero 
+indicates that the loaned item has not yet been returned. When an item is 
+loaned, a new borrower record is created and is connected to two sets. A set 
+called <B>loaned_books</B> connects the <B>borrower</B> record to the <B>info</B> 
+record for the loaned item. These records will normally remain members of this 
+set even after the item is returned, to maintain a loan history for each item in 
+the library. The <B>borrower</B> record is also connected to 
+a set called <B>loan_history</B>, which is owned by the 
+system record. This set is scanned when a list of all unreturned books is 
+desired. Both sets are in <B>last</B> order so the records 
+will be connected in chronological order (without having to specify ascending 
+order by date loaned).</P>
+<P>One final set has been included. The set named <B>article_list</B> has <B>info</B> records 
+participating as both owner and member of the same set (which is legal in <B><I>db.*</B></I>). Here, the set is 
+intended to connect article <B>info</B> records to the <B>info</B> record of the journal or magazine in which it is 
+published. </P>
+<P>The <B><I>db.*</B></I> DDL that implements the <B>tims</B> database design is presented on the next page. Two 
+data files and two key files have been defined. Data file <B>tims.d01</B> contains the <B>system</B> 
+record (of which there is only one occurrence and is small because it has no 
+fields), <B>key_word</B> records and <B>intersect</B> records. Data file <B>tims.d02</B> contains the occurrences of record types <B>author</B>, <B>borrower</B>, <B>info</B>, and <B>text</B>. This 
+organization is arbitrary in this case since the database is not large. </P>
+<P>Key field <B>id_code</B> is much 
+smaller than keys <B>friend</B> and <B>word</B> and is therefore stored in a separate key file, as 
+is shown in the example below.</P></FONT><FONT color="#0000ff"><PRE>/*--------------------------------------------------------------------
+Technical Information Management System (TIMS) Database
+--------------------------------------------------------------------*/
+database tims
+{
+   data file "tims.d01" contains system, key_word, intersect;
+   data file "tims.d02" contains author, borrower, info, text;
+   key  file "tims.k01" contains id_code;
+   key  file "tims.k02" contains friend, word;
+   
+   record author {
+      char name[32];               /* author's name: "last, first" */
+   }                               /* or editor's name */
+   record info {
+      unique key char id_code[16]; /* dewey dec. code */
+      char info_title[80];         /* title of book, article, mag. */
+      char publisher[32];          /* name of publisher */
+      char pub_date[12];           /* date of publication */
+      short info_type;             /* 0=book, 1=mag, 2=art */
+   }
+   record borrower {
+      key char friend[32];         /* name of borrower */
+      long date_borrowed;          /* dates are stored initially */
+      long date_returned;          /* numeric YYMMDD */
+   }
+   record text {
+      char line[80];               /* line of abstract text */
+   }
+   record key_word {
+      unique key char word[32];    /* subject key words */
+   }
+   record intersect {
+      short int_type;              /* copy of info_type */
+   }
+   set author_list {
+      order ascending;
+      owner system;
+      member author by name;
+   }
+   set has_published {
+      order ascending;
+      owner author;
+      member info by info_title;
+   }
+   set articles {
+      order last;
+      owner info;
+      member info;
+   }
+   set loaned_books {
+      order last;
+      owner info;
+      member borrower;
+   }
+   set abstract {
+      order last;
+      owner info;
+      member text;
+   }
+   set key_to_info {
+      order last;
+      owner key_word;
+      member intersect;
+   }
+   set info_to_key {
+      order last;
+      owner info;
+      member intersect;
+   }
+   set loan_history {
+      order last;
+      owner system;
+      member borrower;
+   }
+}
+</PRE></FONT><FONT size="2">
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></B></BODY>
+</HTML>

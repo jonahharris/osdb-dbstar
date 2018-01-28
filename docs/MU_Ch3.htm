@@ -1,0 +1,131 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Multi-User Guide Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Issues"></A>Chapter 3<BR>
+Platform Issues</H1>
+<H2><A name="Introduction"></A>3.1 Introduction</H2>
+<FONT SIZE="2"><P>The<B><I> db.*</B></I> product currently runs on the following variations of the Linux platform: Red Hat 6.1, Red Hat eCos, Caldera, and Suse 6.3.  The beginning of this chapter discusses the Linux operating system.  The final section of this chapter describes the various lock managers, their characteristics, and the effect each may have on your application.  </P>
+</FONT><H2><A name="Notes"></A>3.2 Operating System Notes</H2>
+<H4>SYNCFILES</H4>
+<FONT SIZE="2"><P>When a transaction is completed, <B><I>db.*</B></I> must ensure that all the database changes have been physically written to disk before returning back to the application.  Provided that the <B><I>db.*</B></I> runtime option SYNCFILES is enabled (the default), files will be committed to disk at the proper time using the <B>fsync</B> function<B>.</B>  This ensures that, by the time <B><I>db.*</B></I> begins updating the data and key files in a transaction, the log file is committed to disk.  Likewise, when <B><I>db.*</B></I> has finished writing to the data and key files, it will commit these to disk.</P>
+</FONT><H4>PORTABLE</H4>
+<FONT SIZE="2"><P>A <B><I>db.*</B></I> application accesses the TAF file frequently.  Therefore, in a multi-user environment, several applications may potentially be accessing the TAF file simultaneously.  To prevent corruption of the TAF file, <B><I>db.*</B></I> uses a form of file locking to serialize access (not the same mechanism as used by data and key file locks).  The lock manager is not used.  <B><I>db.*</B></I>, by default, uses operating system file locks instead.  </P>
+<P>Some systems fail to provide any form of file locking.  <B><I>db.*</B></I> therefore provides an alternative, portable locking mechanism for the TAF file, which uses a "guard file" to indicate whether the TAF file is locked.  As long as the guard file exists, the TAF file is not locked.  If the guard file does not exist, then the TAF file is locked.  This mechanism can be switched on by calling <B>d_on_opt(PORTABLE)</B> or by adding "portable=1" to the [db.star] section of <B>db.star.ini</B>.  The <B>PORTABLE</B> option also applies to the DBL file, if you are using the General lock manager.</P>
+</FONT><BLOCKQUOTE>Note:  db.* applications using the same TAF file must all use the same mechanism to lock the TAF file.</BLOCKQUOTE>
+<H4>Lock Manager Network Timeout</H4>
+<FONT SIZE="2"><P>Communications between the <B><I>db.*</B></I> runtime and the lock manager always take the form of a request sent by the runtime, followed by a reply sent by the lock manager.  Every time the runtime sends a message to the lock manager the runtime blocks until a reply is received.  However, in the event of a communication failure at the transport level, a reply from the lock manager may never be received.  </P>
+<P>The number of seconds <B><I>db.*</B></I> waits before returning a timeout error can be controlled by adding an entry to the <B>db.star.ini</B> file in the lock manager section.  See below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>[LOCKMGR]
+net_timeout=45</PRE>
+</FONT><FONT SIZE="2"><P>The default value is 30 seconds.  Once a network timeout error has occurred, the <B><I>db.*</B></I> runtime assumes the connection to the lock manager is lost, so you will have to close the database.  Thus you should choose a timeout value long enough to ensure that timeouts do not occur during routine operation.</P>
+<P>Do not confuse the network timeout with the lock timeout, described in Chapter 7 of the <B><I>db.*</B> User's Guide</I>, which determines the number of seconds the lock manager waits before denying a lock request for files that are already locked by another user.  The network timeout should always be set to a value longer than the lock timeout; if the network timeout is not longer, <B><I>db.*</B></I> will automatically increase it.</P>
+<P>Note that you can set both network and lock timeout values in the <B>db.star.ini</B> file.  See below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>[LOCKMGR]
+timeout=
+&lt;seconds&gt;;lock timeout, default 10 seconds<BR>
+net_timeout=
+&lt;seconds&gt;;network timeout, default 30 seconds</PRE>
+</FONT><H2><A name="Managers"></A>3.3 UNIX and Linux Lock Managers</H2>
+<H3><A name="Manager"></A>3.3.1 Choosing a Lock Manager</H3>
+<FONT SIZE="2"><P>The first consideration for choosing a lock manager is whether it is available on your OS and OS configuration.  The UNIX domain socket lock manager is only available on UNIX/Linux platforms that support this socket type (including most UNIX variants with the exception of a few older versions).  The TCP lock manager is available on all UNIX/Linux variants.</P>
+<P>The next consideration is whether you require a local or network lock manager.  A local lock manager can only service clients on the same system as the lock manager and will almost always have significantly better performance than network lock managers.  Network lock managers are necessary when a database is shared over a network file system and the client applications may be on different machines.  Note that in the case of network lock managers none, some, or all clients may be on the same machine as the lock manager.  However, if all clients are on the same machine, a local lock manager is normally preferable.</P>
+<P>The UNIX domain socket lock manager is local and the TCP lock manager is network.  The local/network distinction is blurred by the TCP lock manager, which can (and by default does) use UNIX domain sockets for local connections to provide local communication speed where possible while still supporting network connections.  Additional configuration, performance, and reliability issues arise when using a network lock manager with client applications on a remote machine.</P>
+<P>If the above considerations do not conclusively determine which lock manager to use, you may wish to discriminate based on performance.  However, aside from the network vs. local performance difference, the differences tend to be primarily platform dependent.</P>
+</FONT><H3><A name="TempFiles"></A>3.3.2 Temporary Files</H3>
+<FONT SIZE="2"><P>The UNIX domain socket and TCP lock managers place files used during communication with <B><I>db.*</B></I> applications in the <B>/tmp<I> </B></I>directory (the default <B><I>db.*</B></I> temporary directory).  If your UNIX/Linux system has background processes that arbitrarily delete files from <B>/tmp</B>, communication problems will arise when critical files are deleted (for example, you may receive the error message <B>S_NOLOCKMGR)</B>.  The default temporary directory can be changed for a lock manager either by using the command line option <B>-z dir_name</B> or by setting the DBTMP environment variable to the directory you want to use.  The environment variable DBTMP, the <B>db.star.ini</B> file, and the functions <B>d_dbtmp</B> and <B>d_dbtmp</B> can all be used to change the default <B><I>db.*</B></I> temporary directory for an <B><I>db.*</B></I> application.  Note that it is critical for a lock manager and all the <B><I>db.*</B></I> applications that will be using it to have the same temporary directory.  </P>
+</FONT><H3><A name="Starting"></A>3.3.3 Starting a Lock Manager</H3>
+<FONT SIZE="2"><P>All of the lock managers discussed in this section can be started from the command line.  On UNIX/Linux, the lock manager will by default use <B>fork()</B> to spawn a copy of itself to run in the background, and then the command line invocation will return.  This behavior can be suppressed by the <B>-n</B> switch. </P>
+<P>A lock manager can also be started as part of the system startup process by editing or creating the appropriate system initialization file.  In the case of BSD UNIX platforms, the most likely file to modify is <B>/etc/rc.local</B>.  In the case of System V UNIX, you probably need to create a file in the <B>/etc/init.d</B> or <B>/etc/rc2.d</B> directories.  For the correct approach, consult the system administration documentation for your system.  In all cases, it is normally sensible to start the lock manager near or at the end of the system startup process.</P>
+</FONT><H3><A name="Terminating"></A>3.3.4 Terminating a Lock Manager</H3>
+<FONT SIZE="2"><P>All lock managers discussed in this section can be terminated cleanly from the CONSOLE utility using the SHUTDOWN command, or doing one of the following:</P>
+<P>Use the CONSOLE utility shutdown command line switch:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>console -m<I>type</I> -a lockmgr_name -s</PRE>
+</FONT><FONT SIZE="2"><P>Use the <B>lmclear</B> utility: </P>
+</FONT><FONT COLOR="#0000ff"><PRE>lmclear -l -a lockmgr_name -m<I>type</PRE></I></FONT><FONT SIZE="2"><P>Or send the process the SIGINT signal using the <B>kill</B> command: </P>
+</FONT><FONT COLOR="#0000ff"><PRE>kill -2 process_id</PRE>
+</FONT><FONT SIZE="2"><P>(where <B>process_id</B> is determined using the <B>ps</B> command)</P>
+<P>In the above examples, <I>type</I> can be ‘t’ for TCP/IP or ‘p’ for UNIX domain sockets.</P>
+<P>On most systems a control key (for example, &lt;Ctrl+C&gt;) generates SIGINT, and this can be used when a lock manager is not running in the background.  Note that the use of SIGKILL to terminate a lock manager (<B>kill -9 process_id</B>), or an application using a lock manager, should  happen only as a last resort.  This signal cannot be caught or handled and, thus, no cleanup can occur.  </P>
+<P>This type of termination, certain types of crashes, and, in the case of lock manager clients, failure to use the API to exit cleanly (for example, calling <B>exit()</B> with databases still open) constitutes "abnormal termination."  Note that all lock managers attempt to detect clients that have terminated abnormally and then perform the necessary cleanup.  However, due to limitations of the type of communication being used, OS limitations, or the specific nature of the abnormal termination, it may not be possible for the lock manager to detect the termination and carry out the cleanup.</P>
+<P>In the event of an abnormal termination of the UNIX domain socket lock manager, the TCP lock manager, or an application using one of them, it may be necessary to remove UNIX domain socket files from DBTMP manually.  </P>
+</FONT><H3><A name="TerminatingClient"></A>3.3.5 Terminating a Lock Manager Client</H3>
+<FONT SIZE="2"><P>A<B><I> db.*</B></I> application that uses a lock manager should take special care to always close any database it opens before it terminates, regardless of how the application is terminated.  Writing a program that simply closes any open databases before the application exits normally is generally <I>not</I> adequate on UNIX/Linux.  The reason is that programs are often terminated abnormally from signals generated either by users or the system itself.  </P>
+<P>For many applications it is a viable option to simply block most or all user-generated signals such as SIGINT or SIGQUIT.  For 1)  those user-generated signals that cannot simply be blocked, and 2)  system-generated signals (such as SIGSEGV, segmentation fault, or SIGBUS, bus error), which indicate the program is no longer in a runnable state, the alternative is to write and install a signal handler that is called in when the signal occurs.  The signal handler can attempt to close any open databases and perform any other necessary cleanup before the application terminates.  </P>
+<P>In some cases a system-generated signal is received, but the application has reached a state where it can no longer run all the code necessary to close the open databases.  In addition, some signals such as SIGKILL cannot be caught or blocked.  The only defense against such terminations is to educate users regarding the consequences of initiating one (in such cases as SIGKILL) and how to clean up after a termination (for example, using <B>lmclear</B>) if it cannot be avoided.  </P>
+<P>For more information on writing programs that can optimally deal with signals, refer to your OS documentation.  On UNIX/Linux systems, the <B>signal()</B> man pages are a likely place to begin your search for information.</P>
+</FONT><H3><A name="Resource"></A>3.3.6 Resource Issues</H3>
+<FONT SIZE="2"><P>All the lock managers discussed in this section consume system or per process resources largely as a function of the number of client applications (users) they have.  It is usually necessary to increase system defined limits for these resources to support large numbers of users.  The memory used by the lock managers for any practical number of users is not typically significant.</P>
+<P>The TCP and UNIX domain socket lock managers consume file descriptors on a one per user basis plus a fixed overhead.  For safety and simplicity, a reasonable estimation for the number of file descriptors needed is ten plus the number of users.  Most UNIX/Linux platforms have a per process open file descriptor limit configured into and enforced by the kernel.  On many of these systems, there is both a soft limit that is set lower by default than the hard limit enforced by the kernel.  Where an API is available, these lock managers attempt to set the soft limit to the hard limit to avoid problems.  Increasing the hard limit involves reconfiguring the kernel.  Some systems (mostly SVR4) have a kernel configuration file that is read at boot time to set soft and hard limit parameters.  On other systems such as BSD UNIX variants, the normal procedure involves editing a configuration file and rebuilding the kernel.  In any case, the procedures are highly system dependent and have potential to cause serious harm to the system (for example, the system will no longer boot) if carried out incorrectly.  Carefully read your relevant system administration documentation before attempting any such procedure.</P>
+<P>On systems that implement the System V IPC primitives in the kernel, modifying these parameters involves reconfiguring the kernel as discussed above.  On systems in which the System V IPC system does not involve the kernel, there will be a different means of setting these parameters unless they happen to only be constrained by other resource limits.  Again, consult your relevant system administration documentation carefully before attempting to make any changes.</P>
+</FONT><H3><A name="Naming"></A>3.3.7 Lock Manager Naming </H3>
+<H4>Setting Lock Manager Names</H4>
+<FONT SIZE="2"><P>When not using the default lock manager name (see below for specific cases), the name of a lock manager is most typically specified using the <B>-a</B> command line switch when starting the lock manager.  However it can also be set via the LOCKMGR environment variable.  The name of the lock manager being used by an application can be set using the <B>d_lockmgr</B> API call, the LOCKMGR environment variable, or the <B>db.star.ini</B> file. </P>
+</FONT><H4>Local Lock Managers</H4>
+<FONT SIZE="2"><P>Naming local lock managers is quite simple.  The UNIX domain socket lock manager has the default name of "lockmgr".  When using only one lock manager of given type on a system, no complications arise from using the default and you avoid the necessity of setting the lock manager name for both the lock manager and lock manager clients.  When using multiple lock managers on the same system, it is necessary to set the appropriate names as described above (although one lock manager can continue to use the default name if desired).  </P>
+</FONT><H4>TCP Lock Manager</H4>
+<FONT SIZE="2"><P>Naming for the TCP lock manager is more complicated than for any of the others, partly because of its inclusion of the UNIX domain lock manager functionality.  As with the other UNIX lock managers the default name is "lockmgr".  This works perfectly provided only local connections are used.  This limited case is equivalent to using the UNIX domain socket lock manager, and the same naming considerations apply.  </P>
+<P>However, to obtain a network (TCP) connection to the lock manager it is necessary to identify the lock manager's host and (either implicitly or explicitly) the port on which it is listening.  You can implicitly specify the port by putting a "db.star tcp" port specification in each system's <B>/etc/services</B> file, or in a network NIS services map, or by allowing it to default to 1523.  </P>
+<P>A complete explicit TCP lock manager name for a TCP connection is of the form <B><I>hostname:port</B></I> where <B><I>hostname</B></I> is either a host's primary name, an alias registered in <B>/etc/hosts</B>, in NIS host maps, or with DNS (some of which will not be available on many systems), or an IP address.  See the following list for an example:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>IP address:port</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>192.0.1.205:1523</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>hostname:port</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>db.star:1611</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>hostname:port</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>db.star.domain.com:1611</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>IP address (implicit port)</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>192.0.1.204</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>hostname (implicit port)</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>db.star</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>hostname (implicit port)</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>db.star.domain.com</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="56%" VALIGN="top">
+<FONT SIZE="2"><P>local name (for UNIX domain sockets only)</FONT></P></TD>
+<TD WIDTH="44%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2"><P>lockmgr2</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>As a result of these considerations, the default name "lockmgr" can only work for TCP connections if the lock manager port is specified implicitly, and the host it is on has a primary name or alias of "lockmgr".  However, note that it is still possible to mix TCP and UNIX domain socket connections in the same lock manager.  Simply choose your name by taking TCP considerations into account and then using the <I>hostname</I> part of the name as the lock manager name for local clients.  See the following as an example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>lm -mt -a wlw:1550
+setenv LOCKMGR wlw
+ida -mt</PRE>
+</FONT><FONT SIZE="2"><P>If you specify a name in <B>hostname:port</B> format, even if the lock manager is local, a TCP connection will be established.  Finally, keep in mind that the UNIX domain lock manager and the UNIX domain socket part of the TCP lock managers share the same name space on the local system.</P>
+<P>While any of the formats described above will work, you cannot mix them.  If you do, you will get a S_TAFSYNC TAF synchronization error, because lock manager names written to the TAF files will not match.  Choose one representation for the lock manager name and stick with it.</P>
+<P>More than one TCP lock manager can be run from the same host provided that both the name <I>and</I> the port are unique.  For example, two lock managers named <B>lockmgr:1523</B> and <B>lockmgr2:1523</B> cannot be run on the same host, nor can <B>wlw:1523</B> and <B>wlw:1524</B>.  You must set up one or more host aliases to obtain the distinct <I>hostname</I> components of the lock manager names.</P>
+</FONT><H3><A name="Filesystems"></A>3.3.8 NFS Filesystems </H3>
+<FONT SIZE="2"><P>The TCP lock manager relies on file identifiers generated by the runtime of the form <I>fsname@hostname</I> plus the <B>i-node</B>.  The <B>fsname</B> is the absolute path of a mount point and <I>hostname</I> is the server name or alias for that mount point as extracted from the local mounted filesystem table.  The <B>i-node</B> parameter is the <B>i-node</B>.  Creating alternate paths to the mount point or individual files using symbolic links can also confuse the TCP lock manager and lead to data corruption.  For example, an NFS host named <B>ufs2</B> may have a database stored in a directory named <B>/Centura/shared/db/tims</B>, with one of the files named <B>tims.d01</B> at an i-node of 34453.  An NFS client may have that directory mounted as <B>/db/tims</B>.  The runtime library will construct the following canonical identifier for the file:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>/Centura/shared/db/tims@ufs2:34453 </PRE>
+</FONT><FONT SIZE="2"><P>This identifier will be the same from other workstations that may have the database drive mounted on a different local path.</P>
+<P>Databases accessed by <B><I>db.*</B></I> that are kept on NFS file systems are more susceptible to data loss and corruption than files kept on a local disk because of the extra levels of caching involved.  If an NFS client system crashes (on most UNIX systems this happens rarely if ever) or suffers a power loss, data updates in its local cache that were not written back to the file server will be lost.  <B><I>db.*</B></I> provides the SYNCFILE option to help address this problem.  The SYNCFILES option causes a cache synchronization operation to be carried out after every write operation (usually by the <B>fsync()</B> function call).  On a few older NFS file systems, this operation may not work reliably.  This option has an impact on database performance, and should be used only when there is a possibility of losing important data.</P>
+</FONT><H2><A name="FileIssues"></A>3.4 TAF File Issues on UNIX/Linux</H2>
+<FONT SIZE="2"><P>         As discussed elsewhere in this manual, lock managers are  not involved in the locking of the TAF file. Instead this  task is handled strictly by the runtime library code.</P>
+<P>On UNIX, the default method for locking the TAF file is the UNIX OS <B>lockf()</B> function.  On Linux, <B>flock()</B> is used.  Its functionality is primarily provided by a daemon <B>rpc.lockd</B>, which runs on the file server.  Thus, this function is capable of handling lock requests from applications on multiple machines for the same file shared via a network file system.  As such, it is fully capable of working with applications using the <B><I>db.*</B></I> network locking approach as implemented by the TCP lock manager.  Historically, there have been significant correctness and reliability problems with <B>lockf()</B> and specifically <B>rpc.lockd</B>.  In recent years these problems have largely been corrected.  However, source customers still have the option of compiling the runtime to use the predecessor to <B>lockf()</B>, the <B>flock() </B>function<B>.</B>  The locks for <B>flock() </B>are only visible on the local machine, but it has the advantage of being faster than <B>lockf()</B> (usually ) and not having the correctness problems seen in older versions of <B>lockf()</B>.  Be aware, however, that UNIX is phasing out <B>flock() </B>and the function is already not available on some platforms.</P>
+<P>An alternate method of locking the TAF file that is not dependent on OS functions (that may have bugs or are not available) is the "portable locking" option.  This option is implemented using a "guard file" strategy, and the code is enabled by calling the function <B>d_on_opt</B> with the PORTABLE constant.  To lock the TAF file, a process will attempt to delete a file named <B>db.star.lfg</B>, which serves as the guard file.  If the <B>unlink</B> succeeds, then the TAF file is considered locked by that process.  If the <B>unlink</B> fails, the lock is not granted and the process will sleep for one second and try again.  The process that does succeed will re-create <B>db.star.lfg</B> after accessing the TAF file.  When using this portable locking method it may be necessary to create <B>db.star.lfg</B> before any processes begin execution.  If <B>db.star.taf</B> does not exist, <B><I>db.*</B></I> automatically creates both it and <B>db.star.lfg</B>.</P>
+
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

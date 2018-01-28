@@ -1,0 +1,829 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 5</TITLE>
+</HEAD>
+<BODY>
+
+<H2><A name="Creation"></A>5.5   Data Creation</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> functions used to create record and key occurrences and to make set connections are listed in Table 5-5 below.</P>
+<B><P ALIGN="center">Table 5-5  Data Creation Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>Record/Key Creation Functions</B></FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<P><FONT SIZE="2"><B>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_fillnew</B>(<I>REC</I>, <I>val, task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Create and fill contents of new record occurrence.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_setkey</B>(<I>FLD</I>, <I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Set key field value for new record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_makenew</B>(<I>REC</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Make a new record occurrence slot and store associated keys.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_crwrite</B>(<I>FLD</I>, <I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Write data to specified field of new record occurrence.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keystore</B>(<I>FLD</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Create optional key entry.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Set Creation Function</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_connect</B>(<I>SET</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Connect new record to <I>SET</I>.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>New record occurrences are entered into the database by using either the <B>d_fillnew</B> or <B>d_makenew</B> function.  To <B>d_fillnew</B> is passed the record type of the record to be created and a pointer to the record's value.  This pointer usually points to a variable of that record's <B>struct</B> type, as declared in file <B><I>dbname</I>.h</B>.  Function <B>d_makenew</B> creates an (almost) empty record occurrence, in which the field values will be stored later, usually through individual calls to <B>d_crwrite</B>.  However, <B>d_makenew</B> must store the key fields in the record and create the key file entries at the time of the call.  Prior to the call to <B>d_makenew</B>, function <B>d_setkey</B> must be called for each (non-optional) key field, to save the values of each key field for <B>d_makenew</B>.  Generally, it is simplest to use only <B>d_fillnew</B>, which automatically creates the key entries for you without a call to<B> d_setkey</B>.  Function <B>d_makenew</B> is useful when a record is to be created before the contents of the fields are known, or for creation of records that have no fields (such as an empty intersection record of a many-to-many set).</P>
+<P>Function <B>d_keystore</B> is used to create the key file entries for optional keys in the current record.  Optional keys are often used to defer key creation until non-peak system load times, in order to maximize data entry performance.</P>
+<P>The data creation process involves not only record creation, but set creation as well.  After a record has been created, it often needs to be connected to appropriate sets.  This may involve data retrieval to set up the currency tables properly.</P>
+<P>Entry of an <B>info</B> record into the <B>tims</B> database provides a good illustration of what is typically involved in creating <B><I>db.*</B></I> data. </P>
+<P>Three functions are presented below.  Function <B>ent_info</B> enters the <B>info</B> record and, if necessary, the <B>author</B> record, and makes the proper set connections.  Function <B>enter_key_words</B> is called by <B>enter_info</B> to read each key word from the user and set up the many-to-many relationship with the entered <B>info</B> record.  Function <B>enter_abstract</B> is called to read from the user each line of the abstract and connect it to the <B>info</B> record through set abstract.  One function that is called but not shown is function <B>get_info</B>, which reads from the user, the author name, and <B>info</B> record fields.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include &lt;stdio.h&gt;
+#include "db.star.h"
+#include "tims.h"
+
+static struct info irec;   /* info record variable */
+static struct author arec;   /* author record variable */
+extern DB_TASK *task;
+
+/* Enter technical information records into TIMS database */
+ent_info()
+{
+   char s[SIZEOF_NAME];   /* generic string variable */
+   int status;
+
+   /* enter tech info into TIMS database */
+   while (get_info() != EOF)
+   {
+      /* see if author exists */
+      for (   status = d_findfm(AUTHOR_LIST, task, CURR_DB); 
+            status == S_OKAY;
+            status = d_findnm(AUTHOR_LIST, task, CURR_DB))
+
+      {
+         d_crread(NAME, s, task, CURR_DB);
+         if (strcmp(arec.name, s) == 0) 
+            break;      /* author record on file */
+      }
+      if (status == S_EOS) 
+      {
+         /* author not on file 
+            -- create record and connect to author list */
+         d_fillnew(AUTHOR, &amp;arec, task, CURR_DB);
+         d_connect(AUTHOR_LIST, task, CURR_DB);
+      }
+
+      /* make author current owner of has_published set */
+      d_setor(HAS_PUBLISHED, task, CURR_DB);
+
+      /* create new tech. info record */
+      if (d_fillnew(INFO, &amp;irec, task, CURR_DB) == S_DUPLICATE)
+         printf("duplicate id_code: %s\n", irec.id_code);
+      else 
+      {
+         /* connect to author record */
+         d_connect(HAS_PUBLISHED, task, CURR_DB);
+         
+         /* set current owner for key words and abstract */
+         d_setor(INFO_TO_KEY, task, CURR_DB);
+         d_setor(ABSTRACT, task, CURR_DB);
+         enter_key_words();
+         enter_abstract();
+      }
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>After the data has been collected from the user (<B>get_info</B>), function <B>ent_info</B> is used to scan the <B>author_list</B> set for the user-specified author name. If 
+no match is found 
+(status == S_EOS), an <B>author</B> record is created and connected to <B>author_list</B> (the current owner of <B>author_list</B> is always the <B>system</B> record).  The found or newly created <B>author</B> record is set as the current owner of set <B>has_published</B>, using <B>d_setor</B>.  The <B>info</B> record is created and if its <B>id_code</B> is not a duplicate, the id is connected to its <B>author</B> record.  The new <B>info</B> record occurrence is then made the current owner of sets <B>info_to_key</B> and <B>abstract</B>.  Key words and abstract text will be connected to it by the function calls that follow.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Enter any key words */
+static enter_key_words()
+{
+   char s[SIZEOF_KWORD];
+   for ( ; ; ) 
+   {
+      printf("key word: ");
+      if ((getstring(s,SIZEOF_KWORD) == NULL) || (s[0] == '\0'))
+         break;
+      /* see if key word record exists */
+      if (d_keyfind(KWORD, s, task, CURR_DB) == S_NOTFOUND)
+      {
+         /* create new key word record */
+         d_setkey(KWORD, s, task, CURR_DB);
+         d_makenew(KEY_WORD, task, CURR_DB);
+      }
+      
+      /* create empty intersection record */
+      d_setor(KEY_TO_INFO, task, CURR_DB);
+      d_makenew(INTERSECT, task, CURR_DB);
+      d_crwrite(INT_TYPE, &amp;irec.info_type, task, CURR_DB);
+      d_connect(KEY_TO_INFO, task, CURR_DB);
+      d_connect(INFO_TO_KEY, task, CURR_DB);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>enter_key_words</B> shows how to create many-to-many relationships.  For each key word entered by the user, <B>d_keyfind</B> is called to check if it is already on file.  If not, a new <B>key_word</B> record is created.  The found (or new) <B>key_word</B> is then set as the current owner of the <B>key_to_info</B> set, and an <B>intersect</B> record is created, which is then connected to both the <B>key_word</B> record through set <B>key_to_info</B> and the <B>info</B> record through set <B>info_to_key</B>.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Enter abstract description */
+static enter_abstract()
+{
+   struct infotext infotext;
+
+   for ( ; ; )
+   {
+      printf("abstract: ");
+      if ((getstring(infotext.line, SIZEOF_LINE) == NULL) ||
+          infotext.line[0] == '\0')
+         return;
+      d_fillnew(INFOTEXT, &amp;infotext.line, task, CURR_DB);
+      d_connect(ABSTRACT, task, CURR_DB);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>enter_abstract</B> is very simple.  As each line of abstract text is entered, the text record is created and connected to the <B>info</B> record, which is the current owner of set <B>abstract</B>.</P>
+</FONT><H2><A name="Modification"></A>5.6   Data Modification</H2>
+<FONT SIZE="2"><P>The functions used to modify fields, records, and sets are shown in Table 5-6. </P>
+<B><P ALIGN="center">Table 5-6  Modification Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Record/Key Modification Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_recwrite</B>(<I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Write contents of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_crwrite</B>(<I>FLD</I>, <I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Write data in field of current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csmwrite</B>(<I>SET</I>, <I>FLD</I>, <I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Write data in field of current member of set.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_csowrite</B>(<I>SET</I>, <I>FLD</I>, <I>val</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Write data in field of current owner of set.</FONT></P></TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">&nbsp;</TD>
+</TR>
+<TR><TD VALIGN="top" COLSPAN="2">
+<P><FONT SIZE="2"><B>Set Modification Functions</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_discon</B>(<I>SET</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Disconnect current member from set.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="42%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_connect</B>(<I>SET</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="58%" VALIGN="top">
+<FONT SIZE="2"><P>Connect current record to set.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Modification of data is very straightforward.  To modify a record or field, you first retrieve the record, read the record or field contents, make the desired changes and then write out the updated data using a record modification function.</P>
+<P>Set modifications often involve disconnecting a record from one set and connecting it to another.</P>
+</FONT><BLOCKQUOTE>Note<B><I>:</B> </I>If two or more fields in a record are used as sort fields in an ascending or descending set, and function <B>d_recwrite</B> is used to modify the contents of both fields, better performance will result if you first disconnect the record from the set before calling <B>d_recwrite</B> and then reconnect the record after returning from <B>d_recwrite</B>.  Otherwise, <B><I>db.*</B></I> will still adjust the position of the set for each field.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Optional keys are automatically modified if a key existed for the old value when its field was modified.  If a key entry did not exist for the old value, none will be created for the new value.  However, the field's value in the record is updated.</P>
+</FONT><H2><A name="Deletion"></A>5.7   Data Deletion</H2>
+<FONT SIZE="2"><P>The functions involved in data deletion appear in Table 5-7.</P>
+<B><P ALIGN="center">Table 5-7.  Data Deletion Functions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_delete</B>(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Delete current record.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_keydel</B>(<I>KEY</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Delete optional key value.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_discon</B>(<I>SET</I>, <I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Disconnect current member from set.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="39%" VALIGN="top">
+<P><FONT SIZE="2"><B>d_disdel</B>(<I>task, dbn</I>)</FONT></P></TD>
+<TD WIDTH="61%" VALIGN="top">
+<FONT SIZE="2"><P>Disconnect current record from all sets and delete it.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2">
+<P>A record can only be deleted if it is not connected as an owner or member of any sets.  The general deletion procedure is, therefore, to disconnect a record from all sets for which it is a member and disconnect all members from sets owned by that record, and then delete the record.  All disconnections and the delete can be performed with one call by using function <B>d_disdel</B>.</P>
+<P>Function <B>d_keydel</B> is used to delete the key entry of an optional key field in the current record.  The field value in the record itself, however, does not change.  All key entries, including optional keys, are deleted from their respective key  files when a record is deleted using either function <B>d_delete</B> or <B>d_disdel</B>.</P>
+<P>Below is the code for function <B>del_info</B>, which deletes an <B>info</B> record from the <B>tims</B> database.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include &lt;stdio.h&gt;
+#include "db.star.h"
+#include "tims.h"
+
+/* Delete technical information records from tims database */
+del_info()
+{
+   struct info irec;   
+   long count;
+   char id[SIZEOF_ID_CODE], name[SIZEOF_NAME];
+
+   /* find info to be deleted */
+   printf("id_code: " );
+   gets(id);
+   if (d_keyfind(ID_CODE, id, task, CURR_DB) == S_NOTFOUND)
+   {
+      printf("id_code %s not on file\n", id);
+      return;
+   }
+   d_recread(&amp;irec, task, CURR_DB);
+
+   /* get author name */
+   d_findco(HAS_PUBLISHED, task, CURR_DB);
+   d_crread(NAME, name, task, CURR_DB);
+   ... /* confirm delete request */
+   ... /* disconnect and delete any listed articles */
+   ... /* disconnect and delete borrowers */
+   
+   /* disconnect and delete abstract */
+   d_setom(ABSTRACT, HAS_PUBLISHED, task, CURR_DB);
+   while (d_findfm(ABSTRACT, task, CURR_DB) == S_OKAY)
+   {
+      d_discon(ABSTRACT, task, CURR_DB);
+      d_delete(task, CURR_DB);
+   }
+   
+   /* disconnect and delete intersect and (possibly) key word */
+   d_setom(INFO_TO_KEY, HAS_PUBLISHED, task, CURR_DB);
+   while (d_findfm(INFO_TO_KEY, task, CURR_DB) == S_OKAY)
+
+   {
+      d_discon(INFO_TO_KEY, task, CURR_DB);
+      d_setmr(KEY_TO_INFO, task, CURR_DB);
+      d_discon(KEY_TO_INFO, task, CURR_DB);
+      d_delete(task, CURR_DB);
+      d_members(KEY_TO_INFO, &amp;count, task, CURR_DB);
+      if (count == 0L) 
+      {
+         /* delete key word */
+         d_setro(KEY_TO_INFO, task, CURR_DB);
+         d_delete(task, CURR_DB);
+      }
+   }
+   /* disconnect info record from author and delete */
+   d_discon(HAS_PUBLISHED, task, CURR_DB);
+   d_delete(task, CURR_DB);
+
+   /* delete author too, if he has no other pubs */
+   d_members(HAS_PUBLISHED, &amp;count, task, CURR_DB);
+   if (count == 0L) 
+   {
+      d_setmo(AUTHOR_LIST, HAS_PUBLISHED, task, CURR_DB);
+      d_discon(AUTHOR_LIST, task, CURR_DB);
+      d_delete(task, CURR_DB);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>del_info</B> first prompts the user for the id code of the <B>info</B> record to be deleted.  If the id code is on file, the <B>info</B> record contents are read into variable <B>irec</B>, the author name is found from the owner of <B>info</B> through set <B>has_published</B>, and a confirmation of the delete is requested by displaying the data (not shown).</P>
+<P>If the info item to be deleted is a journal or magazine, any articles contained in it must also be deleted.  This is done first (not shown).</P>
+<P>Next, any <B>borrower</B> records that are members of that info item are disconnected and deleted (also not shown).</P>
+<P>The abstract is deleted by repeatedly disconnecting and deleting the first member of the <B>abstract</B> set until there are no more members.  Note that the current owner of <B>abstract</B> had to be initially set to the <B>info</B> record that is the current member of <B>has_published</B> (as established by the earlier <B>d_findco</B>(HAS_PUBLISHED) call).</P>
+<P>Deletion of the key words associated with the <B>info</B> record is similar, but more complicated.  Intersect records are deleted just like the abstract was, except that they need to be disconnected from set <B>key_to_info</B> as well as from set <B>info_to_key</B>.  If the <B>key_to_info</B> set is empty after deleting the intersect record, the <B>key_word</B> must also be deleted.  Note the call to <B>d_setro</B> to set the current record from the current owner of set <B>key_to_info</B> (that is, the <B>key_word</B> record).  This is necessary because function <B>d_delete</B> deletes the current record, and the <B>key_word</B> record was not the current record.</P>
+<P>The <B>info</B> record is disconnected from its final set, <B>has_published</B>, and can now be deleted.  Function <B>d_discon</B> disconnects the current member from the specified set and makes the deleted record the current record.  </P>
+<P>One last task is a check to see if the author has other <B>info</B> items in the database.  If not, then the <B>author</B> record is disconnected from set <B>author_list</B> and is deleted as well.</P>
+</FONT><H2><A name="Error"></A>5.8   Database Error Reporting</H2>
+<FONT SIZE="2"><P>All <B><I>db.*</B></I> runtime functions return an integer database status code as the value of the function.  These status codes are classified into the following three categories:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="529">
+<TR><TD WIDTH="27%" VALIGN="top">
+<P><FONT SIZE="2"><B>User</B> <B>Errors</B></FONT></P></TD>
+<TD WIDTH="73%" VALIGN="top">
+<FONT SIZE="2"><P>These correspond to programming errors, such as passing a record type to a function with a set type as its argument.  User error codes range from -1 to -99.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="27%" VALIGN="top">
+<P><FONT SIZE="2"><B>System</B> <B>Errors</B></FONT></P></TD>
+<TD WIDTH="73%" VALIGN="top">
+<FONT SIZE="2"><P>These errors occur when <B><I>db.*</B></I> detects an abnormal database condition, such as no more file space.  System error codes range from -900 to -999.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="27%" VALIGN="top">
+<P><FONT SIZE="2"><B>Function Statuses</B></FONT></P></TD>
+<TD WIDTH="73%" VALIGN="top">
+<FONT SIZE="2"><P>These errors occur when <B><I>db.*</B></I> detects an abnormal database condition, such as no more file space.  System error codes range from -900 to -999.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>When user errors are reported, either the arguments to a <B><I>db.*</B></I> function are not correct or the database environment has not been properly set up for the called function.  For example, function <B>d_csoread</B> will return user error S_NOCO if the current owner of the specified set is NULL_DBA.  All user errors in a <B><I>db.*</B></I> program should be corrected.</P>
+<P>Only one system error is recoverable.  The system error S_NOSPACE is returned when there is no more space available on the disk, but it is recoverable.  A recovery technique is described with function <B>d_trend</B> in the<I> <B>db.*</B> Reference Manual</I>.  All other system errors (and sometimes even error S_NOSPACE) indicate that a serious error has occurred and processing should be terminated immediately.  Usually, these errors result from an application programming error that corrupts the <B><I>db.*</B></I> runtime environment.  These errors are caused by improper use of pointers, by memory mismanagement, and by operations on strings that are not terminated by a null byte.  The most common pointer error is passing a function argument by value rather than by reference (that is, rather than by using a pointer).</P>
+<P>The standard <B><I>db.*</B></I> C header file, <B>db.star.h</B>, contains constant definitions for all status and error codes that can be returned from a <B><I>db.*</B></I> function.  This file should be <B>#include</B>d in each C source file that uses <B><I>db.*</B></I>.  Detailed explanations for each status code can be found in the <B><I>db.*</B> Reference Manual</I>.</P>
+<P>The internal function <B>dberr</B> is automatically called by the <B><I>db.*</B></I> runtime functions whenever a user or system error occurs.  Whenever a user or system error occurs, this version of <B>dberr</B> will display the error code and description, and then prompt for a &lt;Return&gt; to continue.  You may need to customize the error reporting to make it more suitable for the user interface style of your application.</P>
+<P>The recommended method is to use <B>d_set_dberr</B>, which allows you to supply the <B><I>db.*</B></I> runtime with a callback function to call when reporting an error.  After calling <B>d_set_dberr</B>, the <B>dberr</B> function will call the function you supply, instead of printing the message itself. Your error reporting function should be declared as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>void EXTERNAL_FIXED my_dberr(int, char *);
+</PRE>
+</FONT><FONT SIZE="2"><P>The first parameter is the error number, and the second parameter is the textual message that <B>dberr</B> would have printed regarding the error.  The void EXTERNAL_FIXED preceding the function name ensures that its declaration will match that expected by <B><I>db.*</B></I>.  The macros are defined in <B>db.star.h</B>.  Use the function as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#define "db.star.h"
+
+void EXTERNAL_FIXED my_dberr(int, char *);
+...
+main()
+{
+   ...
+   d_set_dberr(my_dberr, task);
+   ...
+}
+void EXTERNAL_FIXED my_dberr(int err_no, char *err_msg)
+{
+   /* Special handling of some error codes here */
+   if (err_no &lt;= -900)
+   {
+      /* take care in calling d_close, because it may
+         call dberr again */
+      exit(err_no);
+   }
+   ...
+   /* You may choose to ignore some codes */
+   if (err_no == S_NOCM) 
+      return;
+   ...
+   /* Report errors */
+   ...
+   return;
+}
+</PRE>
+</FONT><H2><A name="Multiple"></A>5.9   Multiple Database Access</H2>
+<FONT SIZE="2"><P>Using <B><I>db.*</B></I>, more than one database can be open and accessed within a single application program.  This capability has been implemented with very little performance impact for those <B><I>db.*</B></I> applications that only need to access a single database.  Section 4.4.1, "Logical Design Considerations," described some of the uses of multiple database access from a database design standpoint.  This section explains how to open and access multiple databases. </P>
+</FONT><H3><A name="Opening"></A>5.9.1   Opening Multiple Databases</H3>
+<FONT SIZE="2"><P>To open more than one database, the desired database names are passed, separated by a semicolon (;), as the first argument to function <B>d_open</B> or <B>d_iopen</B>.  No white space (that is, spaces, tabs, etc.) should be embedded between the database names.  An improperly constructed list will result in error S_INVDB being returned.  Any number of databases may be opened, limited only by the amount of available memory.  All opened databases are opened in the same mode.  It is not possible to open some in exclusive access and others in shared or one-user access.  You can, however, open all databases in shared mode and then place exclusive locks on all of the files in one or more databases.</P>
+<P>A currency value is defined called current database.  The current database will be zero (that is, the first one listed) after execution of <B>d_open</B>.  See the example below:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>if ((status=d_open("genledg;acctsrec;acctspay", "s", task)) != S_OKAY) {
+   if (status == S_UNAVAIL)
+      printf("database(s) not currently available\n");
+   exit(1);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Here, the databases named <B>genledg</B>, <B>acctsrec</B> and <B>acctspay</B> are all opened for shared access.  Each is assigned a number by the system in order from left to right, beginning with zero.  Thus database 0 is <B>genledg</B>, database 1 is <B>acctsrec</B>, and database 2 is <B>acctspay</B>.  These numbers are used to specify to the runtime functions which database to access.  After the <B>d_open</B> call, database <B>genledg</B> will be the current database.</P>
+<P>It is not necessary to open all databases at one time.  The function <B>d_iopen</B> will incrementally open a new (set of) database(s) in the same open mode as the already opened databases.  The following statements would be equivalent to the example above, except that the current database will be two instead of zero:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>if ((status = d_open("genledg", "s", task)) != S_OKAY ||
+    (status = d_iopen("acctsrec", task)) != S_OKAY    ||
+    (status = d_iopen("acctspay", task)) != S_OKAY)) 
+{
+   if (status == S_UNAVAIL)
+   {
+      printf("database(s) not currently available\n");
+      exit(1);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Whether the databases are opened all at once, or incrementally, they may all be closed with the <B>d_close</B> call.  They may be incrementally closed with the <B>d_iclose</B> call.  For example, after the above opens, the call:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_iclose(1, task);
+</PRE>
+</FONT><FONT SIZE="2"><P>will close the <B>acctsrec</B> database.  All database numbers will shift accordingly (in this case, the database number for <B>acctspay</B> will shift from two to one).  If database 2 (<B>acctspay</B>) was the current database, then database 1 (still <B>acctspay</B>) will be the current database following the <B>d_iclose</B>.</P>
+<P>In addition to the current database, a current record is maintained for each database.  Whenever the current database is changed, the current record for the old database is saved and the current record for the database that is to be made current is restored.</P>
+</FONT><H3><A name="Accessing"></A>5.9.2   Accessing Multiple Databases</H3>
+<FONT SIZE="2"><P>There are two methods for accessing multiple databases.  Every database-specific function must be called with a database number (<I>dbn</I>).  The <I>dbn</I> may be -1, which causes the current database to be used.  The <B>db.star.h</B> header file contains a <B>#define</B> constant called CURR_DB that is equal to -1.  The current database may be altered by the <B>d_iopen</B> or <B>d_setdb</B> functions. Alternatively, the <I>dbn</I> parameter may be a positive number that explicitly selects a database.  These methods may be used interchangeably.</P>
+<P>If only one database is opened, the database number parameter is still required and must be zero (0) or CURR_DB.</P>
+</FONT><BLOCKQUOTE>Note<B><I>:</B> </I>When a module (that is, a <B>.c</B> file) is to access multiple databases, care must be taken to ensure that there are no record, field, or set name conflicts between those databases.  If there are, the compiler will only recognize the last <B>#define</B> statement from the <B><I>dbname</I>.h</B> files containing the duplicate names.</BLOCKQUOTE>
+<H4>Method 1</H4>
+<FONT SIZE="2"><P>In this method, function <B>d_setdb</B> is called to set the current database.  The<I> dbn</I> parameter  must be -1 (or its equivalent CURR_DB).  An example of this technique follows.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include "db.star.h"
+...
+
+d_open("genledg;acctsrec", "s", task);
+   ...
+/* enter billing record into acctsrec database */
+d_setdb(1, task);
+d_fillnew(BILLING, &amp;bill, task, CURR_DB);
+
+/* find and update ledger account in genledg database */
+d_setdb(0, task);
+d_keyfind(ACCT_ID, bill.gl_id, task, CURR_DB);
+d_recread(&amp;glacct, task, CURR_DB);
+   ..   /* update gen. ledger account record */
+d_recwrite(&amp;glacct, task, CURR_DB);
+</PRE>
+</FONT><H4>Method 2</H4>
+<FONT SIZE="2"><P>In this method, the database number is passed as to the <B><I>db.*</B></I> functions that access or control database content.  An example of this technique follows.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open("genledg;acctsrec", "s", task);
+   ...
+/* enter billing record into acctsrec database */
+d_fillnew(BILLING, &amp;bill, task, 1);
+
+/* find and update ledger account in genledg database */
+d_keyfind(ACCT_ID, bill.gl_id, task, 0);
+d_recread(&amp;glacct, task, 0);
+   ..   /* update gen. ledger account record */
+d_recwrite(&amp;glacct, task, 0);
+</PRE>
+</FONT><H4>Mixed Method</H4>
+<FONT SIZE="2"><P>It is possible to use <B>d_setdb</B> to set the current database, but override it with an explicit database number when necessary.  </P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_open("genledg;acctsrec", "s", task);
+   ...
+/* enter billing record into acctsrec database */
+d_setdb(0, task);
+d_fillnew(BILLING, &amp;bill, task, 1);
+
+/* find and update ledger account in genledg database */
+d_keyfind(ACCT_ID, bill.gl_id, task, CURR_DB);
+d_recread(&amp;glacct, task, CURR_DB);
+   ..   /* update gen. ledger account record */
+d_recwrite(&amp;glacct, task, CURR_DB);
+</PRE>
+</FONT><H2><A name="MultipleTasks"></A>5.10   Multiple Tasks</H2>
+<FONT SIZE="2"><P>An application always has a <I>current state</I>.  This includes such factors as which database is open, the current record, current set owners and members, record and set locks, and many other items that represent the situation of the application.  Below is a list of the most significant task-specific data:</P>
+
+<UL>
+<LI>Whether there is an open database 
+  
+<LI>The DBUSERID 
+  
+<LI>The DBDPATH 
+  
+<LI>The DBFPATH 
+  
+<LI>The CTBPATH 
+  
+<LI>The status of all key files (position, last found 
+  value, etc.) 
+  
+<LI>The database options 
+  
+<LI>The names of renamed files 
+  
+<LI>The default page size of database(s) 
+  
+<LI>The current record 
+  
+<LI>The current set owners 
+  
+<LI>The current set members 
+  
+<LI>The complete data dictionary (or dictionaries, if 
+  multiple databases are open) 
+  
+<LI>The status of all record, set, and key locks 
+  
+<LI>The country table 
+  
+<LI>All in-memory timestamp information 
+  
+<LI>The current records as used by the sequential 
+  scanning functions 
+  
+<LI>The database address of the system record 
+  
+<LI>The transaction id 
+  
+<LI>The transaction log file name</LI></UL>
+
+<P>A <I>task</I> is a db.* structure used to store state information, and is established by a call to <B>d_opentask</B>.  The one parameter to this function is a pointer to a pointer of type DB_TASK.  The <B>d_opentask</B> function will allocate a structure to contain all of the task-specific state information and point the task pointer to it.  The <B>d_closetask</B> function should always be called to clean up and free all memory allocated by <B>d_opentask</B>.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include "db.star.h"
+ 
+main()
+{
+   DB_TASK *task;
+
+   d_opentask(&amp;task);         /* New task */
+
+   d_open("db", "x", task);   /* Open database in task */
+      /* Use the database */
+   d_close(task);
+
+   d_closetask(task);         /* Close task, free memory */
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The DB_TASK parameter must be supplied for (nearly) every <B><I>db.*</B></I> function, and at least one call must be made to <B>d_opentask</B>.  The task parameter is placed before the database number parameter for those functions that use a database number.  Otherwise, it is the last argument.  </P>
+<P>A <B><I>db.*</B></I> task defines as an independent unit of code execution, or it could also be referred to as a <I>session</I>. In addition to maintaining state information, each task may represent a different transaction. This is a deliberately broad definition.  You can program multiple database tasks within a single process.  You also may open a task for multiple <I>threads</I> within a process.  The <B><I>db.*</B></I> functions are thread-safe, provided one task is used only within one thread.</P>
+<P>A separate task can be opened for the purpose of accessing additional databases in a different open mode.  For example, you may have a database open in shared mode, but then want to open an additional database exclusively.  </P>
+<P>The following code shows a simple single-process application using two contexts.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include "db.star.h"
+
+DB_TASK *ControlTask;
+DB_TASK *ClientTask;
+
+main()
+{
+   struct client cl2;
+   d_opentask(&amp;ControlTask);
+   d_open("ctrl", "x", ControlTask);
+   /* Initialize control database */
+   ...
+   d_opentask(&amp;ClientTask);
+   d_open("client1;client2;client3", "s", ClientTask);
+   ...
+   /* Access client3 database */
+   d_fillnew(CLIENT, &amp;cl2, ClientTask, 2);
+   ...
+   d_close(ClientTask);
+   d_closetask(ClientTask);
+   ...
+   d_close(ControlTask);
+   d_closetask(ControlTask);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>In this example, two variables of type *DB_TASK are defined.  One task is created to open a single control database in exclusive access mode.  Then a second task is created to open a group of shared databases, each representing one client. One or more client database may be updated by a transaction within the client task.</P>
+<P>There are two functions that do not take a task parameter.  They are:</P><DIR>
+<DIR>
+
+<P>d_decode_dba</P>
+<P>d_encode_dba</P></DIR>
+</DIR>
+
+</FONT><H2><A name="International"></A>5.11   International Character Sets</H2>
+<FONT SIZE="2"><P>In <B><I>db.*</B></I>, support for international character sets provides the ability to redefine the display and collating sequence of any character in the ASCII character set.  An additional effect is the ability to ignore the case of letters in sorting.  For example, the German "Ä" is just a different way of writing "AE" and needs to be sorted as such.  However, the standard ASCII tables, which define the normal sort orders, put the letter "A" at 65 and the "Ä" at well over 127 (depending on the code page being used by your computer), causing the normal sort order to be far from what is desired.</P>
+<P>At the center of this capability is the country table.  The country table contains one entry for each character that is to be recognized as a displayable character, or that is to be sorted in an order other than its normal sequence.  An optional country table directive allows all lowercase letters to be mapped into uppercase letters during sorting.</P>
+<P>The country table is contained in a file named <B>db.star.ctb</B>.  <B><I>db.*</B></I> will read the country table file, if present, during each database open.  The country table file is found by searching the directory indicated in the CTBPATH environment variable (the country table path can also be established with the <B>d_ctbpath</B> function or the <B>db.star.ini</B> file).  If CTBPATH has not been set, then the current directory will be searched.</P>
+<P>Note:<I>  </I>A database that is built with a particular country table must always use the same country table, because sorted sets and keys will appear to be corrupted to <B><I>db.*</B></I> because they are out of order if the table is changed or omitted.</P>
+<P>When a country table is being used for sorting purposes, single character fields will be compared using the country table when they are declared as signed (e.g.,<B>char my_field;</B>).  Unsigned character fields will be sorted without the use of the country table.</P>
+<P>The country table has the following format:</P>
+<P>w,x,y,zz<BR>
+w,x,y,zz<BR>
+...</P>
+<P>where:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="528">
+<TR><TD WIDTH="6%" VALIGN="top">
+<P><FONT SIZE="2"><B>w</B></FONT></P></TD>
+<TD WIDTH="94%" VALIGN="top">
+<FONT SIZE="2"><P>=  Input character as stored on disk</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="6%" VALIGN="top">
+<P><FONT SIZE="2"><B>x</B></FONT></P></TD>
+<TD WIDTH="94%" VALIGN="top">
+<FONT SIZE="2"><P>=  Output character as displayed</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="6%" VALIGN="top">
+<P><FONT SIZE="2"><B>y</B></FONT></P></TD>
+<TD WIDTH="94%" VALIGN="top">
+<FONT SIZE="2"><P>=  Subsort value, described below (value 0 or 1)</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="6%" VALIGN="top">
+<P><FONT SIZE="2"><B>z</B></FONT></P></TD>
+<TD WIDTH="94%" VALIGN="top">
+<FONT SIZE="2"><P>=  Sort-as character(s) (up to two)</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The input character, <B>w</B>, will be displayed as the character <B>x</B> in <B>ida</B>, <B>datdump</B>, and <B>keydump,</B> since these utilities interpret the data.  It will be sorted as though it were <B>z</B>.  The <B>y</B> (or subsort) value indicates what to do when this character sorts to a value equal to an existing character.  The <B>z</B> (or sort-as) field can contain one or two characters.  If it contains two characters, then the input character will be sorted as though it were two characters.  By default any character not listed as an input character within the country table gets sorted and displayed as itself.</P>
+<P>When two or more characters are mapped to the same subsort character(s), they become members of a grouping.  The subsort value controls how characters in a group are subsorted within the group.  A zero means that the two input characters will be treated as identical.  A one means that the input characters are considered part of the same group, but are sorted by ASCII value within the group.  </P>
+<P>As an example, look at the country table and data below:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="460">
+<TR><TD WIDTH="18%" VALIGN="top">
+<P><FONT SIZE="2"><B>a,a,0,A</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>ab1</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<P><FONT SIZE="2"><B>b,b,0,B</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<P><FONT SIZE="2"><B>c,c,0,C</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA3</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<P><FONT SIZE="2"><B>...</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>aa4</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<P><FONT SIZE="2"><B>z,z,0,Z</B></FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>bb5</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>aB6</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>Ab7</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="82%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB8</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The left column below shows how this data would be sorted.  The right column shows the internal representation used during the sort.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="450">
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA3</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA3</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>aa4</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA4</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>ab1</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB1</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB2</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>aB6</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB6</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>Ab7</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB7</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>bb5</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB5</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB8</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB8</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Note that case in the original data is intermixed after the sorting.  Because of the zero subsort value, if we used <B>d_recwrite</B> to change the <B>bb5</B> to <B>BB5</B>, <B><I>db.*</B></I> would not write the change to disk since, according to the country table, the data did not change.  Note that this mapping of the lowercase letters to the uppercase letters with a subsort value of zero is exactly what <B>ignorecase</B> (explained later in this section) does in the country table.</P>
+<P>Suppose we use the same data with the same country table but we change all the subsort values to one as listed below,</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="450">
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>a,a,1,A</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>ab1</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>b,b,1,B</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>c,c,1,C</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA3</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>...</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>aa4</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>z,z,1,Z</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>bb5</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>aB6</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>Ab7</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">&nbsp;</TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB8</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>The sorting sequence will be changed from the normal ASCII ordering below </P>
+<B><P>A B C  ...  Z  ...  a b c  ...  z</P>
+</B><P>to the new ordering of:</P>
+<B><P>A a B b C c  ...  Z z </P>
+</B><P>The left column below shows how the above data will be sorted.  The right column shows the internal representation used during the sort.</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="450">
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>AA3</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A A 3</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>AB2</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A B 2</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>Ab7</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A B'7</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>aa4</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A'A'4</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>aB6</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A'B 6</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>ab1</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>A'B'1</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>BB8</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>B B 8</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="19%" VALIGN="top">
+<P><FONT SIZE="2"><B>bb5</B></FONT></P></TD>
+<TD WIDTH="81%" VALIGN="top">
+<P><FONT SIZE="2"><B>B'B'5</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>Since the subsort value of one means that the input characters are not identical, <B>bb5</B> could be easily changed to <B>BB5</B> because <B><I>db.*</B></I> would see the <B>bb</B> and <B>BB</B> as <I>not</I> exactly the same.</P>
+<P>One other point to note is that the country table processing is a one-pass lookup; it will not recursively lookup characters.  For example,</P>
+<B><P>d,d,0,a<BR>
+a,a,0,A</P>
+</B><P>maps <B>d</B> to <B>a</B> and also maps <B>a</B> to <B>A</B>.  However, transitive properties do not apply, which means that <B>d</B> would not be mapped to <B>A</B>.  To get <B>a</B> and <B>d</B> to be sorted as the same character(s), the exact sort-as string must be used for both as shown below:</P>
+<B><P>d,d,X,A<BR>
+a,a,X,A</P>
+</B><P>An additional country table directive may appear as the first line in <B>db.star.ctb</B>.  The first line may say <B>ignorecase</B>, which will cause all lowercase letters <B>(a </B>- <B>z)</B> to have their <B>sort-as</B> characters changed to their uppercase counterparts (<B>A </B>- <B>Z</B>) using a subsort value of zero.  Sorting will ignore the case of the letters, but the display of the characters will not be changed.  If the <B>ignorecase</B> option is not used, it is necessary to specify all of the sort-as characters in uppercase to get the same effect.</P>
+<P>A possible German country table is shown below:</P>
+<B><P>Ä,Ä,0,AE<BR>
+ä,ä,0,ae<BR>
+Ü,Ü,0,UE<BR>
+ü,ü,0,ue<BR>
+Ö,Ö,0,OE<BR>
+ö,ö,0,oe<BR>
+ß,ß,0,ss</P>
+</B><P>Case insensitivity for the same data would be indicated as follows:</P>
+<B><P>ignorecase<BR>
+Ä,Ä,0,AE<BR>
+ä,ä,0,AE<BR>
+Ü,Ü,0,UE<BR>
+ü,ü,0,UE<BR>
+Ö,Ö,0,OE<BR>
+ö,ö,0,OE<BR>
+ß,ß,0,SS</P>
+</B><P>A an example, given the case-sensitive, German table above, the string "Älan" would be sorted as if it was the string "AElan".</P>
+<P>Note:  The country table file is a binary file that just happens to contain only text data.  Usually the country table file will be created though the use of a text editor.  However, some text editors put end-of-file (EOF) markers (ASCII 26) at the end of files they create.  It is important to ensure your editor does not do this as it will cause problems during the interpretation of the file; the EOF marker will be treated as part of the string being read from the file.</P>
+<P>The functionality of the country table can be created programmatically using the <B>d_mapchar</B> and <B>d_on_opt</B> functions (see the function descriptions in the <B><I>db.*</B> Reference 
+Manual</I>).  The following calls can be made before opening the database to create the case-sensitive German character set mapping (note the change in the parameter ordering):</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_mapchar( 'Ä', 'Ä', "AE", 0, task );
+d_mapchar( 'ä', 'ä', "ae", 0, task );
+d_mapchar( 'Ü', 'Ü', "UE", 0, task );
+d_mapchar( 'ü', 'ü', "ue", 0, task );
+d_mapchar( 'Ö', 'Ö', "OE", 0, task );
+d_mapchar( 'ö', 'ö', "oe", 0, task );
+d_mapchar( 'ß', 'ß', "ss", 0, task );
+</PRE>
+</FONT><FONT SIZE="2"><P>This is the case insensitive option:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>d_on_opt( IGNORECASE );
+d_mapchar( 'Ä', 'Ä', "AE", 0, task );
+d_mapchar( 'ä', 'ä', "AE", 0, task );
+d_mapchar( 'Ü', 'Ü', "UE", 0, task );
+d_mapchar( 'ü', 'ü', "UE", 0, task );
+d_mapchar( 'Ö', 'Ö', "OE", 0, task );
+d_mapchar( 'ö', 'ö', "OE", 0, task );
+d_mapchar( 'ß', 'ß', "SS", 0, task );
+</PRE>
+</FONT>
+<FONT SIZE="2"><P>The use of the functions eliminates the need for the country table file, but there are big disadvantages to using the functions instead of the country table file.  The country table file is used by all <B><I>db.*</B></I> utilities and applications that call <B>d_open</B>.  Hence if a database is built by an application using the above function calls, and a utility such as <B>ida</B> is used on the database, it may find the keys in an order other than expected.  Worse yet, if it adds keys to the database, it will do so with a different collating sequence, which will cause the key files to become corrupted.</P>
+<P>The safest way to use international characters is to define them in a country table that will always be used when the database is used.  If the function calls are used in application code (to eliminate the extra file), it will still be necessary to use a country table file when the utilities are used on the same database.  Alternatively, the <B>ignorecase</B> and CTBPATH information can be put into the <B>db.star.ini</B> file.</P>
+
+<P>&nbsp;</P></FONT>
+</BODY>
+</HTML>

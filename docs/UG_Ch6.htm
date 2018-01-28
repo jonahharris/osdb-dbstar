@@ -1,0 +1,127 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 6</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Transaction"></A>Chapter 6<BR>
+Transaction Processing</H1>
+<H2><A name="Introduction"></A>6.1   Introduction</H2>
+<FONT SIZE="2"><P>Transaction processing is used to maintain the logical consistency of a database by allowing multiple, related updates to be grouped together and then written to the database as a unit.  For example, in the <B>tims</B> database the entry of a book into the library could involve the creation of up to five records (<B>author</B>, <B>info</B>, <B>text</B>, <B>intersect</B>, <B>key_word</B>) and connections to five sets (<B>author_list</B>, <B>has_published</B>, <B>abstract</B>, <B>info_to_key</B>, <B>key_to_info</B>).  If all of these changes were coded as a transaction and a failure occurred before the transaction ended, none of the changes would be in the database.  Without transaction processing, the changes would be written to the database only as necessary, and a failure would leave the database in an inconsistent state (for example, it could leave an <B>info</B> record that is not connected to an <B>author</B> record).</P>
+<P>Transaction processing is required during multi-user operation (see Chapter 7, "Multi-User Database Control").  It is recommended during one-user or exclusive operation, but not required.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>Transactions are <I>not</I> intended for use when reading the database. 
+  Reading may occur outside of transactions (with read locks if in shared mode). 
+  A transaction should begin only when an application is fully ready to perform 
+  an update to the database. Fully ready, in this case, means that the 
+  application should not have to wait for any more information from the user or 
+  otherwise during the update. The transaction should go from beginning to end 
+  without user interruption.</BLOCKQUOTE>
+<FONT SIZE="2"><P>Transaction logging is used to provide data integrity protection if a failure occurs while a transaction's changes are actually being written to the database.  The process wherein the changes are written to the database is called the transaction commit.  Failures that occur during a commit are detected by the system, automatically initiating a recovery operation, which takes a copy of the changes stored on the transaction log and completes the commit by writing those changes to the database.  Transaction logging is the process of writing the changes to the transaction log before doing the commit.</P>
+</FONT><H2><A name="Environment"></A>6.2   Operational Environment</H2>
+<FONT SIZE="2"><P>Transaction processing affects the following files:</P>
+<B>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px"><P>Control files:<BR>db.star.taf<BR>
+<I>dbuserid</I> .log</P>
+
+<P>Database files:<BR>
+
+</B>Data and 
+  key files defined in the DDL specification</P></BLOCKQUOTE>
+
+<P>The file named <B>db.star.taf</B> is a database-family transaction activity file (TAF).  In it are stored the names of the log files of all currently committing transactions.  Log files are typically named by adding the <B>.log</B> suffix to the DBUSERID, but not necessarily.  The DBUSERID is set with the environment variable DBUSERID, or with the <B>d_dbuserid</B> function.  The directory containing the TAF file is determined from a <B>d_dbtaf</B> function call, the <B>db.star.ini</B> file, or the DBTAF environment variable.  If none of the former define a path, then the current directory is used.  The directory containing the log file is determined from a <B>d_dblog</B> function call, the <B>db.star.ini</B> file, or the DBLOG environment variable.  The current directory is used if no DBLOG value is found.</P>
+</FONT><H2><A name="Functions"></A>6.3   Transaction Processing Functions</H2>
+<FONT SIZE="2"><P>Three functions are provided in <B><I>db.*</B></I> to support transaction processing.  These are listed in Table 6-1.  Function <B>d_trbegin</B> is used to mark the beginning of a transaction.  All changes specified after the <B>d_trbegin</B> call are written to the database at the same time, when function <B>d_trend</B> is called to end the transaction.  If any errors are detected, or if a requested lock is not available after <B>d_trbegin</B> has been called, function <B>d_trabort</B> can be called to abort the transaction.  Function <B>d_trabort</B> will discard any changes that have been made since the beginning of the transaction, ensuring that the state of the database is the same after <B>d_trabort</B> as it was before<B> d_trbegin</B>.</P>
+<B><P ALIGN="center">Table 6-1. Transaction Processing 
+Functions</B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trbegin</B>(<B>trx_id, task</B>)</FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>Begin transaction</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trend</B>(<B>task</B>)</FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>End transaction</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="35%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trabort</B>(<B>task</B>)</FONT></P></TD>
+<TD WIDTH="65%" VALIGN="top">
+<FONT SIZE="2"><P>Abort transaction</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"></P><P>When a database is opened in shared access mode (see Chapter 7, "Multi-User Database Control"), all database updates must be made from within a transaction (unless the files being updated have been exclusively lockedsee section 7.3.4, "Exclusive Locks").  When using one-user or exclusive modes, transactions are not required, but are recommended for all database updates.</P>
+<P>Function <B>d_trbegin</B> is called to notify the <B><I>db.*</B></I> runtime of the start of a new transaction.  Transactions cannot be nested within a task.  If <B>d_trbegin</B> is called from within a task with active transaction, error code S_TRACTIVE will be returned.</P>
+<P>Function <B>d_trend</B> completes a transaction by committing all changes to the database.</P>
+<P>Function <B>d_trabort</B> disregards all changes proposed since the <B>d_trbegin</B> call, and frees all unkept and non-exclusive file locks.</P>
+</FONT><H2><A name="Processing"></A>6.4   Transaction Processing</H2>
+<FONT SIZE="2"><P>A single transaction performs a great deal of work in order to guarantee the successful commit of an update.  It is necessary to guarantee that either <I>all</I> changes are applied, or <I>no</I> changes are applied (all transaction updates are considered an <I>atomic</I> operation).  The following list shows the sequence of function calls to be made by an application, along with the underlying action performed by <B><I>db.*</B></I>.</P>
+<B><P ALIGN="center">Table 6-2. Actions of Transaction 
+Processing Functions</B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="23%" VALIGN="top">
+<B><FONT SIZE="2"><P>Function</B></FONT></P></TD>
+<TD WIDTH="77%" VALIGN="top">
+<B><FONT SIZE="2"><P>Action</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="23%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trbegin</B></FONT></P></TD>
+<TD WIDTH="77%" VALIGN="top">
+<FONT SIZE="2"><P>The log file, usually <B><I>dbuserid</I>.log</B>, is initialized.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="23%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_lock</B></FONT></P></TD>
+<TD WIDTH="77%" VALIGN="top">
+<FONT SIZE="2"><P>A group lock request is issued.  All locks are granted or denied as a unit.  A group lock is recommended over a series of <B>d_reclock</B> and <B>d_setlock</B> calls to avoid deadlock.*</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="23%" VALIGN="top">
+<B><FONT SIZE="2"><P>transaction body</B></FONT></P></TD>
+<TD WIDTH="77%" VALIGN="top">
+<FONT SIZE="2"><P>Here, a series of function calls to modify the database are made.  If modified pages fill the cache (called a transaction overflow), then extra cache space is created by writing modified pages to the log file.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="23%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_trend</B></FONT></P></TD>
+<TD WIDTH="77%" VALIGN="top">
+<FONT SIZE="2"><P>During this call, the commit is made to the database.  At any point after the <B>d_trbegin</B> and before the <B>d_trend</B>, updates can be thrown away and locks released by issuing a <B>d_trabort</B> call.  During a <B>d_trend</B>, the following sequence occurs:</P>
+<P>1.  Modified database pages are written to the transaction log file <BR>
+(if transaction logging is 
+      enabled).<BR>2. Lock manager is informed of the commit.*<BR>3. The name of 
+      the log file is added to the TAF.<BR>4. Changed pages are written to the 
+      database from cache. If an overflow occurred earlier, then changed pages 
+      contained only in the log file are read from it and written to the 
+      database.<BR>5. The log file name is deleted from the TAF.<BR>6. Lock 
+      manager is informed of the end of the transaction.*<BR>7.  All unkept and non-exclusive file locks are freed. </FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="1"></P>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px">
+  <BLOCKQUOTE style="MARGIN-RIGHT: 0px"><P>    * This step occurs in a multi-user environment only.</P></BLOCKQUOTE></BLOCKQUOTE>
+</FONT><FONT SIZE="2"><P>One log file is maintained for each user.  This file is used within a transaction for storing modified database pages after the page buffers (cache) have been filled.  Thus, there is effectively no limit to the number of changes that can be made within a transaction.  When the transaction ends, all modified pages are first written to this file (whether or not an overflow occurred).  The database is then updated.</P>
+<P>If a transaction is aborted, the modified pages in the page buffers are cleared.</P>
+<P>An indexing technique has been developed to provide fast access to the changed database pages that are stored in the log file after a cache overflow has occurred.  It utilizes a separate cache for the management of all database pages on the log file.  The size of this index cache (that is, the number of page buffers) is specified as an argument to function <B>d_setpages</B> as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>d_setpages(dbpgs, ixpgs, task)</PRE>
+</FONT><FONT SIZE="2"><P>where <I>dbpgs</I> is an integer specifying the number of pages to be used for the standard database cache and <I>ixpgs</I> is an integer specifying the number of pages to be used for the overflow index cache.  Both arguments are required on any call to <B>d_setpages</B>.</P>
+<P>If your application is prone to large transaction overflows, you will want a fairly large index cache (for example, 17 pages).  Usually, however, a small number of index pages is all that is necessary (for example, five pages, the default).</P>
+</FONT><H2><A name="Recovery"></A>6.5   Database Recovery</H2>
+<FONT SIZE="2"><P>If a program crashes while a transaction is active (after the <B>d_trbegin</B> but before a transaction end or <B>d_trend</B> has been issued), the database is guaranteed to be consistent since it has not been written to.  Only the changes made since the beginning of the transaction are lost.  If the program fails while the modified pages are being written to the log file (step 1 in section 6.4, above), the same situation exists.  However, after the changes have been written to the log file, if the program fails while the database is being updated, recovery is possible.  If the program fails while committing the database from the log file, recovery is required.</P>
+</FONT><H3><A name="External"></A>6.5.1   External Recovery</H3>
+<FONT SIZE="2"><P>In a system with only one active user (one-user mode, or multi-user mode with only one active user), recovery is facilitated by the TAF.  If this one user crashes after the log file name has been written to the TAF (step 3 in section 6.4, above), but before it has been removed (step 5), then the assumption is made that the database needs recovering.  The TAF is checked the next time a database is opened.  If one or more log file names are present in the TAF, they are all recovered by the first application to use this TAF during the <B>d_open</B> call.</P>
+</FONT><H3><A name="Automatic"></A>6.5.2   Automatic Recovery</H3>
+<FONT SIZE="2"><P>In multi-user shared mode, automatic recovery is accomplished through cooperation between the transaction processing functions and the lock manager.  The lock manager, which runs as an independent process, is given the name of the log file when the update is initiated (referred to as the transaction commit point, step 2 in section 6.4, above) and is notified when the update is complete (step 6).  The recovery automatically occurs when the lock manager determines that a process performing a transaction commit has abnormally terminated.  When failed processes that were not doing a transaction commit are detected by the lock manager, the lock manager simply releases the locks held by the failed process.</P>
+<P>The recovery will occur automatically when the lock manager receives an open or lock request from another active process using the same TAF.  The lock manager will transfer responsibility for the completion of the failed transaction to the process requesting the open or lock.  The read locks held by the failed process are freed, but write locks are held until the transaction has recovered.</P>
+<P>Upon successful completion of the commit, the lock manager is informed and the log file name is removed from the TAF.  If both the committing process and the lock manager fail, all <B><I>db.*</B></I> processes on the system should be shut down.  When the lock manager is restarted, the first database process to open a database will check the TAF and perform an external recovery on any listed transaction log files.  The lock manager will delay all other database processes for the database families using that TAF until the recovery is complete.</P>
+<P>Both the log file and the TAF need to be accessible by all database tasks.  Moreover, all the log files for the users of each TAF need to be in the same physical directory.  The path and names of these files can be established through use of functions <B>d_dblog</B> and <B>d_dbtaf</B>, or through environment variables DBLOG and DBTAF, or with the <B>db.star.ini</B> file (see section 6.2, above).  All users of all databases need to have read/write access to all database files.  It is possible for an application using one database to do recovery for a completely different database, but only when both databases are using the same TAF.  It is recommended that each database family use a different TAF.</P>
+<P>Whenever <B><I>db.*</B></I> initiates a recovery operation, the error reporter is called with the message "recovery about to occur."  The purpose of this function is simply to inform the user that a recovery is about to take place.  You will probably wish to tailor the error reporting for your particular application requirements through <B>d_set_dberr</B>.  S_RECOVERY is probably one of the return codes that you will want to "ignore" in your error reporter.</P>
+</FONT><H2><A name="Logging"></A>6.6   Archive Logging</H2>
+<FONT SIZE="2"><P>A system-wide transaction archive log can be supported through user-defined functions, which can be called automatically by the <B><I>db.*</B></I> runtime system.  In the rare event that automatic recovery is not possible, the transaction identifier for the incomplete transaction will be known by the lock manager, and a user-initiated database restore can be performed.  This would involve reloading the database from the last complete backup and using a utility to reapply the changes recorded on the archive log, up to but not including the last transaction.</P>
+<P>Module <B>trlog.c</B> contains complete information, along with the skeletal function declarations necessary for implementing archive logging.</P>
+<P>The user-defined functions are needed because of the diversity of devices that could be used for storing the archive data (for example, cartridge tapes, floppies, files, nine-track tapes, write-once laser disks, etc.).  Access to these devices cannot be accommodated through any standard techniques.</P>
+<P>However, the performance cost incurred by maintaining an archive log, in addition to automatic transaction logging, would almost always be much greater than the benefits of the additional level of recoverability.  Keeping regular backups of the database files is the best method for protecting the database beyond the automatic recovery capability previously described.</P>
+
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

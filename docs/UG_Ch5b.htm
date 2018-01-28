@@ -1,0 +1,595 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 5</TITLE>
+</HEAD>
+<BODY>
+
+<H3><A name="UsingKeys"></A>5.4.1   Data Retrieval Using Keys</H3>
+<FONT SIZE="2"><P>Key field usage from the database design perspective was introduced in section 4.4.1, "Logical Design Considerations."  The database manipulation aspects of key field usage is presented here, using the  C code that would implement the examples presented in that section.</P>
+<B><P><A name="Validation"></A>Code Validation</P>
+</B><P>The following example from the "vehicle make" example illustrates how to use keys to validate coded data fields.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>char vma_desc[25];   /* variable to contain vehicle make */
+struct fleet f;      /* variable to hold a fleet record */
+
+get_user_info(&amp;f);   /* fleet record entered by user */
+
+/* validate correct vehicle make code */
+if (d_keyfind(VMA_CODE, f.vma, task, CURR_DB) == S_NOTFOUND)
+   entry_error("invalid vma code");
+else 
+{
+   /* read vehicle description */
+   d_crread(VMA_DESC, vma_desc, task, CURR_DB);
+   /* enter fleet record */
+   ...
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The vehicle make code entered by the user as part of the fleet record is used as the key value argument of the <B>d_keyfind</B> function, to check that a vehicle record for that make exists in the database.  If the record does exist, its description is read (function <B>d_crread</B>) and is displayed to the user once the record entry is completed.  VMA_CODE and VMA_DESC are constants defined in the database header file created by <B>ddlp</B>.  The second argument to both <B>d_keyfind</B> and <B>d_crread</B> are pointers to the variables that contain the necessary data.</P>
+<B><P><A name="Range"></A>Retrieval Based On a Range of Values</P>
+</B><P>Recall from the "checking account" database example of Chapter 4, "Database Design," that the check record type contained a key field called <B>check_date</B>.  This field was defined as a key field to facilitate rapid retrieval of the check record occurrences for a particular time period.  The example code below prints the checks dated in the month of May, 1993.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE >#include "db.star.h"
+#include "ckngacct.h"
+
+struct check chk;      /* check record variable */
+int start_date;         /* julian of start date of range */
+int end_date;            /* julian of end date of range */
+int date;               /* last scanned check date /
+DB_TASK task;            /* default task */
+
+/* application functions found elsewhere */
+extern char *calendar();   /* converts julian to calendar date */
+extern int julian();      /* converts calendar to julian date */
+main()
+{
+   int status;
+
+   status = d_opentask(&amp;task);
+   status = d_open("ckngacct", "o", task);
+
+   start_date = julian("05/01/93");
+   end_date   = julian("05/31/93");
+
+   /* position to first key in range */
+   if ((status=d_keyfind(CHECK_DATE, &amp;start_date, task, CURR_DB))
+         == S_NOTFOUND)
+       status = d_keynext(CHECK_DATE, task, CURR_DB);
+
+   /* scan thru all keys in range */
+   while (status == S_OKAY)
+   { 
+      d_keyread(&amp;date, task);
+      if (date &gt; end_date) 
+         break;               /* no longer in range */
+      d_recread(&amp;chk, task, CURR_DB);
+      printf("number      : %d\n", chk.check_no);
+      printf("date        : %s\n", calendar(chk.check_date));
+      printf("paid to     : %s\n", chk.paid_to);
+      printf("amount      : $ %f.2\n", chk.amount);
+      status = d_keynext(CHECK_DATE, task, CURR_DB); 
+   }
+   d_close(task);
+   d_closetask(task);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The <B>d_keyfind</B> call will position to the first check date key equal to start date.  If there are no checks dated 05/01/93 on file, then function <B>d_keynext</B> is called to position to the first check whose date is greater than the start date.  The <B>while</B> loop first reads the value of the positioned key using function <B>d_keyread</B>.  Note that this reads the key value only and does not read the record.  The record contents are only read if the check date returned from the <B>d_keyread</B> call is within the desired range.  Function <B>d_recread</B> reads the contents of the current record for display by the subsequent <B>printf</B> calls.  The final <B>d_keynext</B> call positions to the next check date key.</P>
+<B><P><A name="Complex"></A>Complex Searches</P>
+</B><P>The m.o. (modus operandi) example of Chapter 4, "Database Design," introduced how complex searches can be rapidly performed through the use of keys.  The m.o. record consists of a single 25-byte key field in which each element of the array represents a coded m.o. attribute.  </P>
+<P>The simplest approach is to scan through all of the <B>mo_data</B> keys, checking each one for a match, as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>char mo_key[25];      /* m.o. key is 25 byte array */
+char mo_search[25];   /* user entered search data */
+int status;
+
+   ...               /* user enters m.o. search data */
+
+for (status = d_keyfrst(MO_DATA, task, CURR_DB); 
+     status == S_OKAY;
+     status = d_keynext(MO_DATA, task, CURR_DB) ) 
+{
+   d_keyread(mo_key, task);
+   if (mo_match(mo_key, mo_search))
+      ...            /* report match */
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Function <B>mo_match</B> checks the m.o. key against the m.o. search data entered by the user, returning true (that is, non-zero) if they match and false (that is, zero) if they do not.  A zero value in an m.o. search data element means that attribute is not to be used in the search.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Check for matching m.o.s */
+mo_match(mo1, mo2)
+char *mo1;
+char *mo2;
+{
+   int x;
+
+   for ( x = 0; x &lt; 25; ++x )
+   {
+      if ((mo2[x] != 0) &amp;&amp; (mo1[x] != mo2[x]))
+         return (0);
+   }
+   return (1);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Since keys are sorted, the number of keys that need to be scanned can be reduced when the first element (and any subsequent elements) is non-zero.  For example, if the user has supplied m.o. values for the first three elements, a key scan of only the keys on file with those values can be performed, yielding great performance improvements.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>char mo_key[25];      /* m.o. key is 25 byte array */
+char mo_search[25];   /* user entered search data */
+int mo_prefix;      /* initial non-0 elements in mo_search */
+int lc;          /* loop control index */
+int status;
+
+   ...      /* user enters m.o. search data */
+
+/* compute mo_prefix */
+for (mo_prefix = 0; mo_search[mo_prefix] != 0; ++mo_prefix)
+   ;   /* count number of initial non-0 elements */
+
+/* initialize mo_key */
+for (lc = 0; lc &lt; 25; ++lc) 
+{
+   if ( lc &lt; mo_prefix )
+      mo_key[lc] = mo_search[lc];
+   else
+      mo_key[lc] = 0;
+}
+
+/* position to first key with matching prefix */
+if ((status=d_keyfind(MO_DATA, mo_key, task, CURR_DB)) == S_NOTFOUND)
+    status = d_keynext(MO_DATA, task, CURR_DB);
+
+/* scan all keys with matching prefix */
+while (status == S_OKAY)
+{
+   d_keyread(mo_key, task);
+
+   /* ensure prefix still matches */
+   for (lc = 0; (lc &lt; mo_prefix) &amp;&amp; (mo_key[lc] == mo_search[lc]); ++lc)
+      ;
+   if (i &lt; mo_prefix)
+      break;         /* prefix doesn't match - scan ends here */
+   
+   if (mo_match(mo_key, mo_search))
+      ...      /* report match */   
+   status = d_keynext(MO_DATA, task, CURR_DB);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Notice that this example is very similar to the example of retrieval by a range of values.  Also notice that if the first element of <B>mo_search</B> is zero, all <B>mo_data</B> keys will be checked.</P>
+<B><P><A name="Compound"></A>Using Compound Keys</P>
+</B><P>Suppose that the <B>tims</B> borrower record definition (presented in section 4.5.3, "Database Design") were modified such that the friend's name was not one field, but two (for the last and first name).  A compound key may be defined to make one key from the two fields:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>record borrower 
+{
+   key char   fr_last[16];
+   char      fr_first[16];
+   long      date_borrowed;
+   long      date_returned;
+   compound unique key friend 
+   {
+      fr_last;
+      fr_first;
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Note that the last name may be used as a key by itself.  A new key definition, named <B>friend</B>, is defined in the record.  (It must also be included in a key file list.)</P>
+<P>When <B>ddlp</B> encounters a compound key, it creates a special structure for the key in the header file it generates.  In this case, within <B>tims.h</B> will be the following structure definition:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>struct friend {
+   char  fr_last[16];
+   char  fr_first[16];
+};
+</PRE>
+</FONT><FONT SIZE="2"><P>The definition is intended to be used to perform searches for compound keys, as in the following code fragment:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include "tims.h"
+...
+struct friend fr;
+...
+printf("Last name:  ");
+gets(fr.fr_last);
+printf("First name: ");
+gets(fr.fr_first);
+
+if (d_keyfind(FRIEND, &amp;fr, task, CURR_DB) == S_NOTFOUND)
+   printf( "No one by that name found\n" );
+else {
+   /* use the borrower record */
+</PRE>
+</FONT><H3><A name="UsingSets"></A>5.4.2   Data Retrieval Using Sets</H3>
+<FONT SIZE="2"><P>The process of retrieving records from a database by moving through the various set relationships defined in the schema is called set navigation.  A general procedure for navigating sets follows:</P>
+<OL>
+
+<LI>Find the record that is the owner of the set whose 
+  members are to be read. Typically, this can be done using keys, by iteratively 
+  applying this procedure, or by a combination of both. 
+  
+<LI>Make the located owner record the current owner of the set to be traversed, using an appropriate currency manipulation function (such as <B>d_setor</B>). 
+  
+<LI>Find the members of the set, using the set navigation functions (for example, <B>d_findnm</B> will set the current record and current member of the set to the next member record).</LI></OL>
+
+<P>Each of the set member find functions (<B>d_findXm</B>) will set both the current member and the current record to point to the found record occurrence.  A reciprocal function, <B>d_findco</B>, will set the current owner of the specified set from a current record that is connected through the specified set.  The currency changes made by each <B><I>db.*</B></I> function are identified in the function descriptions in the <B><I>db.*</B> 
+Reference Manual</I><B>.</P></B><P>As an example of the above procedure, consider the transactions set from the checking account example in Chapter 4, "Database Design."  The budget record is the owner and the check record is the member.  The following code will display all of the checks written against budget category FOOD.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* locate the budget record for the FOOD budget */
+d_keyfind(CODE, "FOOD", task, CURR_DB);
+
+/* make the FOOD budget the current owner of set transactions */
+d_setor(TRANSACTIONS, task, CURR_DB);
+
+/* find each member of the set and read and print its contents */
+for (status = d_findfm(TRANSACTIONS, task, CURR_DB); 
+     status == S_OKAY;
+     status = d_findnm(TRANSACTIONS, task, CURR_DB))
+{
+   d_recread(&amp;chk, task, CURR_DB);
+   ... /* print check record */
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The set navigation procedure above describes a top-down navigation, wherein the owner is located and then the members.  <B><I>db.*</B></I> also provides the ability to first locate a member and then the owner by using function <B>d_findco</B>, which finds the owner of the current record for the specified set.  For example, the following code will locate a check record by check number, and then find and print its budget category.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>struct check chk;   /* check record variable */
+struct budget bud;      /* budget record variable */
+
+/* locate check numbered 3104 */
+chk.check_no = 3104;
+d_keyfind(CHECK_NO, &amp;chk.check_no, task, CURR_DB);
+
+/* read check record contents */
+d_recread(&amp;chk, task, CURR_DB);
+
+/* find its owner thru the transactions set */
+d_findco(TRANSACTIONS, task, CURR_DB);
+
+/* read budget record contents */
+d_recread(&amp;bud, task, CURR_DB);
+
+/* print results */
+printf("check          : %d\n", chk.check_no);
+printf("date          : %s\n", calendar(chk.check_date));
+printf("paid to      : %s\n", chk.paid_to);
+printf("amount      : $ %f.2\n", chk.amount);
+printf("budget      : %s\n", bud.code);
+</PRE>
+</FONT><FONT SIZE="2"><B><P><A name="Navigation"></A>Many-to-Many Navigation</P>
+</B><P>The navigation of the students to classes, many-to-many, set example in Chapter 4, "Database Design," is shown in the following code, which lists the students registered in class CS101.</P></FONT><FONT COLOR="#0000ff">
+<PRE>struct class crec;     /* class record variable */
+struct student srec;   /* student record variable */
+
+/* find CS101 class record */
+d_keyfind(CLASS_ID, "CS101", task, CURR_DB);
+
+/* read contents of class record */
+d_recread(&amp;crec, task, CURR_DB);
+
+/* make the class record owner of the my_students set */
+d_setor(MY_STUDENTS, task, CURR_DB);
+
+/* scan each member of my_students set */
+while (d_findnm(MY_STUDENTS, task, CURR_DB) == S_OKAY) 
+{
+   /* find student record which owns current intersect record */
+   d_findco(MY_CLASSES, task, CURR_DB);
+
+   /* read and print contents of student record */
+   d_recread(&amp;srec, task, CURR_DB);
+   printf("CS101: %s\n", srec.name);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Note that function <B>d_setor</B> actually sets both the current owner and the current member of set <B>my_students</B>.  The current owner is set to the CS101 record, and the current member is set to NULL_DBA.  This allows the initial call to <B>d_findnm</B> to return the first member of the set.  The output from execution of the above code might be:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>CS101: Carlson
+CS101: Jones
+CS101: Kelly
+CS101: Smith
+</PRE>
+</FONT><FONT SIZE="2"><P>From this example you should be able to produce the code for listing the classes in which a particular student is registered.</P>
+<B><P><A name="Variable"></A>Variable-length Text Retrieval</P>
+</B><P>Section 4.4.1, "Logical Design Considerations," included a description of the use of multiple-member sets in implementing text data.  The code needed to retrieve the text data in this example is quite simple, as shown below.  Here the customer note for customer id <B>IBMFL</B> is displayed.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>struct customer cust;   /* customer record variable */
+char text[80];      /* text data - size of largest line */
+
+/* find customer with id IBMFL */
+d_keyfind(CUST_ID, "IBMFL", task, CURR_DB);
+
+/* make customer current owner of cust_notes set */
+d_setor(CUST_NOTES, task, CURR_DB);
+
+/* fetch each member of set and display text */
+while (d_findnm(CUST_NOTES, task, CURR_DB) == S_OKAY) 
+{
+   d_recread(text, task, CURR_DB);
+   printf("%s\n", text);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Each member of the <B>cust_notes</B> set is an occurrence of either the <B>text30</B>, <B>text55</B>, or <B>text80</B> record types.  Here it does not matter which record type is read, since each contains only one string field. The character array <B>text</B> is used to store the contents of all.  The function <B>d_crtype</B>, however, could have been used to determine the type of the text records.</P>
+<B><P><A name="tims"></A>Database Examples from tims</P>
+</B><P>One of the requirements for the <B>tims</B> database examples was to list technical publications in the library by key word or phrase.  This involves traversing the many-to-many relationship between the <B>key_word</B> record and the <B>info</B> record twice (once to get the <B>info</B> record from the specified key word, and again to retrieve all of the key words associated with that located info record), and then scanning the <B>abstract</B> set to retrieve the text for the abstract.</P>
+<P>Function <B>by_key</B> lists all of the <B>info</B> records that have the user-entered key word or phrase.  For each <B>info</B> record selected, all of its key words and its abstract are printed.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>#include &lt;stdio.h&gt;
+#include "db.star.h"
+#include "tims.h"
+
+extern DB_TASK *task;
+
+/* Find publications by key word or phrase */
+ by_key()
+{
+   struct info irec;   /* info record variable */   
+   char name[SIZEOF_NAME];   /* author's name */
+   char key[SIZEOF_KWORD];      /* key word */
+
+   /* find key word record */
+   printf("key word: ");
+   gets(key);
+   if (d_keyfind(KWORD, key, task, CURR_DB) == S_NOTFOUND)
+      printf("no records found\n");
+   else 
+   {
+      /* scan thru key_to_info set */
+      d_setor(KEY_TO_INFO, task, CURR_DB);
+      for (   status = d_findfm(KEY_TO_INFO, task, CURR_DB);
+         status == S_OKAY;
+         status = d_findnm(KEY_TO_INFO, task, CURR_DB))
+      {
+         /* find curr owner of curr intersect record and read it */
+         d_findco(INFO_TO_KEY, task, CURR_DB);      
+         d_recread(&amp;irec, task, CURR_DB); 
+         
+         /* find author of info record */
+         d_findco(HAS_PUBLISHED, task, CURR_DB);
+         d_crread(NAME, name, task, CURR_DB);
+         
+         /* print results */
+         printf("id_code   : %s\n", irec.id_code);
+         printf("author        : %s\n", name);
+         printf("title      : %s\n", irec.info_title);
+         printf("publ.        : %s, %s\n", irec.publisher, irec.pub_date);
+         pr_keywords();
+         pr_abstract();
+      }
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Figure 5-2 illustrates the operation of function <B>by_key</B> up to the point where function <B>pr_keywords</B> is called.  The <B>d_keyfind</B> locates the <B>key_word</B> record occurrence, which is then made the current owner of set <B>key_to_info</B>.  As each intersect record that is a member of the <B>info_to_key</B> set is found (using<B> d_findnm</B>(KEY_TO_INFO, CURR_DB)), its owner through the <B>info_to_key</B> set is found (using<B> d_</B>findco(INFO_TO_KEY, CURR_DB)), and the <B>info</B> record contents are read.  The <B>author</B> is found (and made current) through the <B>has_published</B> set (using<B> d_findco</B>(HAS_PUBLISHED, CURR_DB)) and the name is read using function <B>d_crread</B> to read a field of the current record.</P>
+<B><P ALIGN="center"></P>
+<P ALIGN="center"><IMG alt="dbstar_5-2.gif - 5385 Bytes" border="0" height="292" src="dbstar_5-2.gif" width="401">     </P>
+<P align="center">Fig. 5-2. Function by_key Operation</P>
+</B><P>Function <B>pr_keywords</B> is called to print all of the key words and phrases associated with an <B>info</B> record (note that at least one key word will appear in each list, the one chosen in the call to <B>by_key</B>).  Function <B>d_members</B> returns, in variable <B>count</B>, the number of members in set <B>info_to_key</B>.  If there are any members, then the owner of each intersect member record is found through the <B>key_to_info</B> set, and from this owner record the key word is read and displayed.  This function (<B>pr_keywords</B>) will change the currency associated with set <B>key_to_info</B>, which is used by function <B>by_key</B> in its scanning of that set.  Thus, it is necessary for the current member of <B>key_to_info</B> to be saved (by<B> d_csmget</B>) before the key words are retrieved, and then restored (by<B> d_csmset</B>, which sets both current member and current owner) after they have been retrieved.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Print key words */
+pr_keywords()
+{
+   long count;               /* number of info_to_key members */
+   char key[SIZEOF_KWORD]      /* key word or phrase */
+   DB_ADDR dba;               /* db addr of key_to_info member */
+
+   /*   the current member of the has_published set is the
+      info record whose key words are to be listed */
+   d_setom(INFO_TO_KEY, HAS_PUBLISHED, task, CURR_DB);
+
+   /* fetch number of members of info_to_key */
+   d_members(INFO_TO_KEY, &amp;count, task, CURR_DB);
+
+   /* list the key words, if any */
+   if (count &gt; 0L) 
+   {
+      /* save current member of key_to_info because it's
+         going to change and we may be currently scanning
+         though that set */
+      d_csmget(KEY_TO_INFO, &amp;dba, task, CURR_DB);
+      printf("key words:\n----------\n");
+
+      /* find each intersect member record */
+      while (d_findnm(INFO_TO_KEY, task, CURR_DB) == S_OKAY) 
+      {
+         /* find, read and print corresponding key_word */
+         d_findco(KEY_TO_INFO, task, CURR_DB);
+         d_crread(KWORD, key, task, CURR_DB);
+         printf("   %s\n", key);
+      }
+      printf("\n");
+      
+      /* reset key_to_info current member and owner */
+      if (dba != NULL_DBA) 
+         d_csmset(KEY_TO_INFO, &amp;dba, task, CURR_DB); 
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The abstract is printed by function <B>pr_abstract</B>, which simply scans through the abstract set owned by the current <B>info</B> record to read and display each line of abstract text.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Print abstract */
+pr_abstract()
+{
+   long count;               /* number of abstract members */
+   char txt[SIZEOF_LINE];      /* line of abstract text */
+
+   /*   the current member of has_published 
+      is the info record whose abstract is to be printed */
+   d_setom(ABSTRACT, HAS_PUBLISHED, task, CURR_DB);
+
+   /* fetch number of lines in abstract */
+   d_members(ABSTRACT, &amp;count, task, CURR_DB);
+
+   /* print abstract, if one exists */
+   if ( count &gt; 0L ) 
+   {
+      printf("abstract:\n---------\n");
+
+      /* find, read and print each abstract text line */
+      while (d_findnm(ABSTRACT, task, CURR_DB) == S_OKAY) 
+      {
+          d_csmread(ABSTRACT, LINE, txt, task, CURR_DB);
+         printf("  %s\n", txt);
+      }
+   }
+   printf("\n");
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The other retrieval requirement is to be able to list all of the publications in the <B>tims</B> database that are by a particular author.  This is accomplished with function <B>by_author</B>.  The author is located by scanning through the (system-owned) <B>author_list</B> set, and comparing a user-specified name with the author name.  When a match is found, each <B>info</B> record owned by the located author is read and displayed, along with its associated key words and abstract.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* Find publication by author */
+by_author()
+{
+   int status;
+   struct info irec;         /* info rec variable */
+   char search[SIZEOF_NAME];   /* author to search for */
+   char name[SIZEOF_NAME];
+      
+   /* find author record */
+   printf("author: ");
+   gets(search);
+   for (status = d_findfm(AUTHOR_LIST, task, CURR_DB);
+        status == S_OKAY;
+        status = d_findnm(AUTHOR_LIST, task, CURR_DB)) 
+   {
+      d_crread(NAME, name, task, CURR_DB);
+      if (strcmp(search, name) == 0)
+         break;
+      else if (strcmp(search, name) &lt; 0)
+      {
+         status = S_NOTFOUND;
+         break;   /* sorted alphabetically */
+      }
+   }
+   if (status == S_OKAY ) 
+   {
+      d_setor(HAS_PUBLISHED, task, CURR_DB);
+      for (status = d_findfm(HAS_PUBLISHED, task, CURR_DB);
+           status == S_OKAY; 
+           status = d_findnm(HAS_PUBLISHED, task, CURR_DB)) 
+      {
+         /* read and print info record */
+         d_recread(&amp;irec, task, CURR_DB);
+         printf("id_code  : %s\n", irec.id_code);
+         printf("author   : %s\n", name);
+         printf("title    : %s\n", irec.info_title);
+         printf("publ.    : %s, %s\n", irec.publisher, irec.pub_date);
+         pr_keywords();
+         pr_abstract();
+      }
+   }
+   else
+      printf("author record not found\n");
+}
+</PRE>
+</FONT><H3><A name="Direct"></A>5.4.3   Direct Access Retrieval</H3>
+<FONT SIZE="2"><P>Direct access retrieval is used to locate sequentially all occurrences of a particular record type and to directly read the contents of a record that has first been located by a key, set, or sequential retrieval.  Sequential retrieval is performed using these functions:</P></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="17%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recfrst</B></FONT></P></TD>
+<TD WIDTH="83%" VALIGN="top">
+<FONT SIZE="2"><P>Locates the first occurrence on the data file of the specified record type.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="17%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_reclast</B></FONT></P></TD>
+<TD WIDTH="83%" VALIGN="top">
+<FONT SIZE="2"><P>Locates the last occurrence on the data file of the specified record type.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="17%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recnext</B></FONT></P></TD>
+<TD WIDTH="83%" VALIGN="top">
+<FONT SIZE="2"><P>Finds the next occurrence of a record of the same type.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="17%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_recprev</B></FONT></P></TD>
+<TD WIDTH="83%" VALIGN="top">
+<FONT SIZE="2"><P>Finds the next previous occurrence of a record of the same type.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>When the retrieval order is not important (the physical order of records on a file may seem random), the sequential functions are the quickest way to scan records.  The <B>id_list</B> function is an example of such a scan.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* produce a quick sequential listing of all id_code's */
+id_list()
+{
+   int status;
+   char id_code[SIZEOF_ID_CODE];
+
+   for (   status = d_recfrst(INFO, task, CURR_DB);
+         status == S_OKAY; 
+         status = d_recnext(task, CURR_DB)) 
+   {
+      d_crread( ID_CODE, id_code, task, CURR_DB);
+      printf("%s\n", id_code);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>These functions maintain their own currency by record type.  In a loop, these four functions will maintain their own positional information, even if there are other functions in the loop that change currency table settings.  To establish or restore a position from which to continue scanning, the function <B>d_recset</B> can be used.  This function will set the current position of a sequential scan from the current record.  Thus if a <B>d_recfrst/d_recnext</B> loop needs to contain an inner loop for a different record type, the position can be saved and restored around the inner loop, as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>DB_ADDR t1dba;
+int status1, status2;
+
+for (   status1 = d_recfrst(TYPE1, task, CURR_DB); 
+      status1 == S_OKAY; 
+      status1 = d_recnext(task, CURR_DB)) 
+{
+   d_crget(&amp;t1dba, CURR_DB);
+   ...
+   for (   status2 = d_reclast(TYPE2, task, CURR_DB);
+         status2 == S_OKAY;
+         status2 = d_recprev(task, CURR_DB)) 
+   {
+      ...
+   }
+   d_crset(&amp;t1dba, task, CURR_DB);
+   d_recset(TYPE1, task, CURR_DB);
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>The function <B>page_full</B> begins with the current record (which is assumed to be a <B>key_word</B> type), and creates a list of the next twenty key word occurrences, as shown below:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>/* create a list of key words for display */
+page_full( char **pglist, int dir )
+ {
+   int i, status;
+
+   for (   status = d_recset(KEY_WORD, task, CURR_DB), i = 0; 
+         (status == S_OKAY) &amp;&amp; (i &lt; 20);
+         status = (dir ?   d_recnext(task, CURR_DB) :
+                        d_recprev(task, CURR_DB)), i++ ) 
+   {
+      d_crread(KWORD, pglist[i], task, CURR_DB);
+   }
+}
+</PRE>
+</FONT><FONT SIZE="2"><P>Functions <B>d_recread</B>, <B>d_crread</B>, <B>d_csoread</B>, and <B>d_csmread</B> read part or all of the contents of the current record, owner, or member, copying the data to an application program defined buffer.  A pointer to this buffer is an argument to each of these functions.</P>
+<P>Functions <B>d_decode_dba</B> and <B>d_encode_dba</B> are used to decode and encode a database address with its file number and slot number.  It can be used in conjunction with functions <B>d_crget</B> and <B>d_crset</B> to utilize a record's database address as a primary key, which can be displayed and referenced by a user in order to directly access individual record occurrences.  For example, a database address for the record at slot number 17112 on file number 11 could be displayed as a primary key field called id number that, to the user, could look like the following:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>id number:  11-17112
+</PRE>
+</FONT><FONT SIZE="2"><P>By always displaying this number (actually the database address) when a record is displayed, and by requiring this field to be entered whenever the record is modified, the record can be located in a single disk read.  The code to display the field follows.</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>DB_ADDR dba;         /* database address of current record */
+short file;         /* file number */
+unsigned long slot;   /* slot number */
+...
+/* record to be displayed is current record */
+d_crget(&amp;dba, task, CURR_DB);
+d_decode_dba(dba, &amp;file, &amp;slot);
+printf("id number: %d-%ld\n", file, slot);
+</PRE>
+</FONT><FONT SIZE="2"><P>When the user has entered an id number, the record can be read as follows:</P>
+</FONT><FONT COLOR="#0000ff">
+<PRE>DB_ADDR dba;         /* database address */
+int file;            /* file number */
+unsigned long slot;   /* slot number */
+struct record rec;   /* db.* record buffer */
+...
+/* extract file number of slot number from id number string */
+... (you supply the tedious stuff)
+
+/* form database address */
+d_encode_dba(file, slot, &amp;dba);
+
+/* set current record and read record contents */
+d_crset(&amp;dba, task, CURR_DB);
+d_recread(&amp;rec, task, CURR_DB);
+
+/* display record */
+...
+</PRE>
+</FONT>
+</BODY>
+</HTML>

@@ -1,0 +1,132 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 1</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Introduction"></A>Chapter 1<BR>
+Introduction</H1>
+<H2><A name="Overview"></A>1.1   Overview</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> database management system (DBMS) is designed to provide powerful, flexible, high-performance capabilities for developing C language database applications.  By combining the network and relational model technologies in a single system, <B><I>db.*</B></I> lets you organize and access information efficiently, regardless of the complexity of your data.  This combined technology provides tremendous speed advantages, and minimizes data redundancy.</P>
+<P>The <B><I>db.*</B></I> DBMS is written in C, so the applications you create with it are easily ported to a variety of operating systems, including Linux, UNIX, and Windows.  The potential market for your applications spans from one-user microcomputers and LANs, to minis and mainframes.  Since you have complete source code you have full control over any application you create.</P>
+<P>The major features of <B><I>db.*</B></I> include:</P>
+
+<UL>
+<LI>Multi-user support for local-area networks (LANs) and 
+  multi-user computers. 
+  
+<LI>Transaction processing and logging. 
+  
+<LI>Automatic database recovery. 
+  
+<LI>Access methods based on the network and relational 
+  database models. 
+  
+<LI>A Database Definition Language patterned after C, for defining the content and structure of a <B><I>db.*</B></I> database. 
+  
+<LI>Multiple database access. More than one database can 
+  be opened and accessed at a time from an application program. 
+  
+<LI>Incremental opens and closes of multiple databases. 
+  
+<LI>Interactive and batch database access utilities, for easy manipulation of the information in a <B><I>db.*</B></I> database. 
+  
+<LI>File transfer utilities for importing and exporting data between ASCII text files and a <B><I>db.*</B></I> database. 
+  
+<LI>Ability to use multiple volumes for data storage. 
+  
+<LI>A database consistency check utility for reporting 
+  any problems with database integrity. 
+  
+<LI>Virtual memory disk caching, for fast database 
+  access. 
+  
+<LI>A runtime library of over 150 functions, for complete 
+  database control. 
+  
+<LI>Royalty-free runtime distribution.<BR>
+</LI></UL>
+
+</FONT><H2><A name="Documentation"></A>1.2   <I>db.*</I> Documentation</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> documentation is a three-manual set and includes this <I>User's Guide</I>, the <B><I>db.*</B> Reference Manual</I> and the <B><I>db.*</B></I> <I>Multi-User Guide</I>.  The full set is provided in HTML format together with the source code, and on the community host web site.  This volume, the <B><I>db.*</B> User's 
+Guide</I>, contains general information and examples on the use of the system.  </P>
+</FONT><H3><A name="About"></A>1.2.1   About This Manual</H3>
+<FONT SIZE="2"><P>The <I>User's Guide</I> is organized as described below.  </P>
+<P>Chapter 1 is introductory.</P>
+<P>Chapter 2, "Database Concepts," should be read by everyone, regardless of the extent of their database background.  It presents basic <B><I>db.*</B></I> database concepts, such as definitions of the database terminology used in this manual, a description of the network database model and the differences between it and the relational model, and an explanation of the elements of a <B><I>db.*</B></I> database.  </P>
+<P>Chapter 3, "Operational Overview," gives an overview of each of the components of a <B><I>db.*</B></I> DBMS.  It describes the general operational flow for creating a <B><I>db.*</B></I> application program, and provides a simple (but complete) introductory example.</P>
+<P>Chapter 4, "Database Design," describes in detail <B><I>db.*</B></I>'s Database Definition Language (DDL) and the operation of the DDL processor.  It also explains how to design a <B><I>db.*</B></I> database, and includes an example of database design that illustrates some of the more commonly used structures.</P>
+<P>Chapter 5, "Database Manipulation," explains the use of <B><I>db.*</B></I> runtime functions for controlling, accessing, and manipulating a database from a C application program.</P>
+<P>Chapter 6, "Transaction Processing," describes transaction processing functions and tells you how to use transactions in a single- or multi-user environment.  This chapter will help you design transactions that meet the needs of your application.</P>
+<P>Chapter 7, "Multi-User Database Control," describes the use of <B><I>db.*</B></I> in multi-user, shared database applications.  Basic multi-user concepts are presented, as is a detailed description of <B><I>db.*</B></I>'s multi-user implementation.  Chapter 7 also explains how to use the runtime multi-user control functions to efficiently synchronize shared database access.</P>
+<P>Chapter 8, "Unicode and <B><I>db.*</B></I>" explains the use of the Unicode feature and how <B><I>db.*</B></I> incorporates this character encoding standard. </P>
+<P>Chapter 9, "Interactive Database Access Utility (<B>ida</B>)," provides complete information on the use of the command line <B>ida</B> utility for UNIX users </P>
+<P>Chapter 10, "File Transfer Utilities (<B>dbimp</B> and <B>dbexp</B>)," describes the utilities used for transferring data between a <B><I>db.*</B></I> database and ASCII text.</P>
+<P>Chapter 11, "Database Access Language (<B>dal</B>)," describes a tool for accessing a database interactively or in batch mode.  dal uses the <B><I>db.*</B></I> runtime library functions, plus a few information and control commands.  It is an excellent educational tool.</P>
+<P>Chapter 12, "Database Editor (<B>dbedit</B>)," contains a description of the low-level database editing utility, which allows viewing and changing a database at the "bits and bytes" level.  The database editor is the ultimate database repair program.</P>
+<P>Chapter 13, "Maintenance Utilities," provides information on the use of the following utilities: database initialization utility (<B>initdb</B>), database consistency check utility (<B>dbcheck</B>), delete chain sort utility (<B>dchain</B>), key file build utility (<B>keybuild</B>), dictionary print utility (<B>prdbd</B>), formatted data file dump utility (<B>datdump</B>), key file packing utility (<B>keypack</B>), formatted key file dump utility (<B>keydump</B>), and the clear lock bit utility (<B>dbclrlb</B>).</P>
+<P>Chapter 14, "File Formats and Dictionary Tables," provides detailed information on <B><I>db.*</B></I> data and key files, and on the structure and organization of the <B><I>db.*</B></I> dictionary.</P>
+<P>The Glossary defines a number of database terms used in this manual and the other books of the <B><I>db.*</B></I> set.  </P>
+</FONT><H3><A name="Documents"></A>1.2.2   Related <I>db.*</I> Documents</H3>
+<FONT SIZE="2"><P>The <B><I>db.*</B> Reference Manual</I> contains detailed descriptions of <B><I>db.*</B></I> API functions, function prototypes, utilities, and return codes and error messages.</P>
+<P>The <B><I>db.*</B> Multi-User Guide </I>describes operation of the lock manager (a centralized file lock and recovery manager) and provides details about the various operating environments supported by this release.</P>
+</FONT><H3><A name="Conventions"></A>1.2.3   Document Conventions</H3>
+<FONT SIZE="2"><P>Table 1-1 describes the notational conventions used in this guide.</P>
+<B><P ALIGN="center">Table 1-1.  Document Notational Conventions</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="535">
+<TR><TD WIDTH="37%" VALIGN="top">
+<B><FONT SIZE="2"><P>Convention</B></FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<B><FONT SIZE="2"><P>Description</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<B><FONT SIZE="2"><P>Bold Text</B></FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates the names of functions, commands, data structures, statements, databases, utilities, files, etc.  Note that the case distinctions used in the names are not significant for all operating systems.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<I><FONT SIZE="2"><P>Italic Text</I></FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Represents the names of variables, such as parameters and command options.  The <I>db.*</I> documents also use italics for the names of books.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<FONT FACE="Courier" SIZE="2" COLOR="#0000ff"><P>Courier, Colored Text</FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates a programming example, a command line entry, or a utility menu.  </FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<FONT SIZE="2"><P>Brackets ([ ])</FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Indicate optional fields or parameters in command lines and syntax statements.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<FONT SIZE="2"><P>Bar Symbol (|)</FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Separates alternative selections.  You should enter one of the items separated by the bar.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<FONT SIZE="2"><P>Ellipsis (...)</FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Indicates that you can repeat the preceding item.  Both horizontal and vertical ellipses are used in programming examples to indicate omitted code.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="37%" VALIGN="top">
+<FONT SIZE="2"><P>Arrow Symbols (&lt; &gt;)</FONT></P></TD>
+<TD WIDTH="63%" VALIGN="top">
+<FONT SIZE="2"><P>Indicate information that you must supply.  For example, &lt;filename&gt;.h represents a header file that you name.  Arrow symbols are also used in text to set off keyboard key names, as in &lt;Ctrl&gt;.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H2><A name="Resources"></A>1.3   Other Helpful Resources</H2>
+<FONT SIZE="2"><P>Centura offers various options for additional information on <B><I>db.*</B></I>.</P>
+<B><P>Centura Books Online</B><BR>
+The Centura <B><I>db.*</B></I> document set is available online.  After downloading, the HTML book set can be accessed with your browser by first opening the <B>dbstar.htm</B> file and 
+navigating from there to the book of your choice.</P>
+<B><P>Worldwide Web</B><BR>
+The Centura 
+Worldwide Web home page is located at http://www.centurasoft.com. The Centura 
+web server provides access to a wealth of information about Centura products and 
+services.</P>
+</FONT></BODY>
+</HTML>

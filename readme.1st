@@ -1,0 +1,61 @@
+/***************************************************************************
+ *                                                                         *
+ * db.*                                                                    *
+ * open source database kernel                                             *
+ *                                                                         *
+ * Copyright (c) 2000 Centura Software Corporation. All rights reserved.   *
+ *                                                                         *
+ * Use of this software, whether in source code format, or in executable,  *
+ * binary object code form, is governed by the CENTURA OPEN SOURCE LICENSE *
+ * which is fully described in the LICENSE.TXT file, included within this  *
+ * distribution of source code files.                                      * 
+ *                                                                         *
+ **************************************************************************/
+
+This project is hosted on OpenAvenue:
+    http://www.openave.com/db.linux/
+
+To build db.linux, you must have the source code tree installed
+in a home directory, such as ~username/db.linux.  Then issue
+the following steps to build:
+	cd ~username/db.linux
+	. ./db.star.sh (or "source ./db.star.csh" for CShell users)
+	make
+
+You may test your build by running the tims example:
+	cd ~username/db.linux/examples/tims/lnx
+	tims
+
+The db.linux utilities will be available in the bin directory:
+	console
+	dal
+	datdump
+	dbcheck
+	dbclrlb
+	dbedit
+	dbexp
+	dbimp
+	dchain
+	ddlp
+	ida
+	initdb
+	keybuild
+	keydump
+	keypack
+	lm
+	lmclear
+	prdbd
+
+The db.linux shared libraries will be in the lib directory:
+	libdbstar.so
+	libpsp.so
+
+We have included an automatic verification script called filecheck.pl.
+
+Before you build, you may run:
+	perl filecheck.pl packinglist.txt
+to verify that a complete set of sources exists.  
+
+After you build, you may run:
+	perl filecheck.pl buildlist.txt
+to verify that everything has been correctly built.

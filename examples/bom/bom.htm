@@ -1,0 +1,26 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db</TITLE>
+<META NAME="Template" CONTENT="C:\Program Files\Microsoft Office\Office\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080">
+
+<B><FONT FACE="Arial" SIZE=4><P>db.* Bill-Of-Materials Benchmark</P>
+<P>Centura Software Corporation</P>
+<P>Summary</P>
+</B></FONT><FONT SIZE=2><P>The Bill-of-Materials Benchmark was written to demonstrate the superiority of the network database model over the relational model, in a common business application. The benchmark compares db.* network and relational solutions to the same problem and shows that the network version of the test program is much faster than the relational version.</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P>Problem</P>
+</B></FONT><FONT SIZE=2><P>Many manufacturing firms build products assembled from components and subassemblies. These products range from something as simple as a ball point pen with half a dozen parts to a Boeing 747 aircraft with over four million parts.</P>
+<P>This example benchmark builds a simplified Bill-of-Materials database on disk, simulating an actual manufacturer's specification of the multi-level parts interrelationship for some mechanical product. The benchmark then executes a Cost Rollup in order to calculate the cost of the finished product from the current costs of all the component parts.</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P>Bill of Materials Structure</P>
+</B></FONT><FONT SIZE=2><P>Consider the example of a power lawnmower. A lawnmower consists of a hierarchical part structure, containing assemblies and subassemblies with discrete components at the bottom. Sometimes there are multiple instances of a component item (wheels, for example) connected to a parent item. Also, the same component (a screw, for example) could be used in several subassemblies, and there could be several finished-goods items (different lawnmower models) using common subassemblies.</P>
+<P>How can we model the bill of materials with a database structure? Consider first the relational model. We need two tables, one for item records and the other for the connection records we call bill records. We use one item record for each unique part, subassembly and finished-goods product, and one bill record for each connection between a parent item and component item. We need an item-ID index for the item table, and we need a parent-ID/sequence-number index for the bill table. Given the item ID, we can find the item record and all the bill records with the specified item as a parent. For each bill record we can get the component ID, and so on. The schema for a relational model database is in the file rbom.ddl.</P>
+<P>The network model can be used to represent the same data structure. See the file bom.ddl for the equivalent database schema using the network model. Here the item and bill records are connected by two sets, called bill-of-materials (BOM) and where-used. Note that a parent item owns several bill records (BOM set), each of which is owned by one component item (where-used set). The components can be parents also, each owning more bills, etc. </P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P>Building and Running the Benchmark</P>
+</B></FONT><FONT SIZE=2><P>The makefile provided with this example will create empty database files for both the relational and network model databases, and will build two programs, rbom and bom, which use the relational and network databases respectively. The two programs otherwise have the same structure, and the same user interface (see rbom.c and bom.c for the source code).</P>
+<P>When either benchmark program is executed, it asks the user for the number of levels and the number of components per level. Item records are then generated with random 15-character alpha IDs. You may wish to experiment with different input values – entering 6 for both values should result in an execution time of about a minute for the network model program, and a much slower time for the relational model.</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P>db.* Benchmark Results</P>
+</B></FONT><FONT SIZE=2><P>Why is the network model program so much faster? It's faster because it avoids index processing. With input values of 6 and 4 for the relational program, for example, about 7000 key find and 3000 key next operations are required to roll up the cost. The network model program requires only one key find. The network-model set connections afford direct connections between items and bills. The relational benchmark time-per-record increases with file size because the depth of the index nodes increases. The network performance plot is flat, however.</P></FONT></BODY>
+</HTML>

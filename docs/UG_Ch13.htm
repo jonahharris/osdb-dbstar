@@ -1,0 +1,128 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 13</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="Maintenance"></A>Chapter 13<BR>
+Maintenance Utilities</H1>
+<H2><A NAME="Introduction"></A>13.1  Introduction</H2>
+<FONT SIZE=2><P>This chapter describes the use of additional utility programs that are part of the basic <B><I>db.*</B></I> system.  These utilities support database maintenance and administration tasks.  They are listed in Table 13-1 below.</P>
+<B><P ALIGN="CENTER">Table 13-1.  <I>db.*</I> Utilities</P></B></FONT>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=487>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>Utility</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<B><FONT SIZE=2><P>Definition</B></FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>datdump</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Formatted Data File Dump Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>dbcheck</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Database Consistency Check Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>dchain</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Delete Chain Sort Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>initdb</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Database Initialization Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>keybuild</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Key File Build Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>keydump</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Formatted Key File Dump Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>keypack</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Key File Packing Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>prdbd</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Database Dictionary Print Utility</FONT></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="TOP">
+<B><FONT SIZE=2><P>dbclrlb</B></FONT></TD>
+<TD WIDTH="76%" VALIGN="TOP">
+<FONT SIZE=2><P>Clear Lock Bit Utility</FONT></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=2><P>&nbsp;</P>
+</FONT><H2><A NAME="datdump"></A>13.2  Formatted Data File Dump Utility (datdump)</H2>
+<FONT SIZE=2><P>The <B>datdump</B> utility displays a formatted dump of the contents of a <B><I>db.*</B></I> data file.  In addition to the data field contents, <B>datdump</B> displays all of the information in the record header, including the record id, database address, record lock bit setting, stored optional keys, timestamp values, set pointers, and member pointers.  </P>
+<P>This utility is particularly useful in gaining an understanding of the structure of a <B><I>db.*</B></I> data file as described in section 14.2.2, "Data File Organization."  The <B>datdump</B> utility is executed as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>datdump [-h] [-x] [-f] [-<I>rslotno</I>]<B> </B><I>dbname</I><B> </B><I>datfile</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>datfile</I> is the name of the data file in database <I>dbname</I> whose contents will be displayed.  If the <B>-h</B> option is specified, only the record header information is printed.  If the <B>-x</B> option is specified, the report produces a hex dump but no formatted dump of each record.  If the <B>-f</B> option is specified, a formatted dump is printed but no hex dump is printed.  If none of these options are specified then the result is a full dump including header, data fields, and hex record dump.  The <B>-r</B> option can be used to instruct <B>datdump</B> to dump only the contents of the record at the specified slot number, <I>slotno</I>, in <I>datfile</I>.  The report is written to file <B>stdout</B> and can be redirected as needed.</P>
+</FONT><H2><A NAME="dbcheck"></A>13.3  Database Consistency Check Utility (dbcheck)</H2>
+<FONT SIZE=2><P>The <B>dbcheck</B> utility checks the consistency of a database by validating the location and key values associated with each record and key in the data and key files.  The position of each record in a data file is verified, and each key field is checked to ensure that it exists.  For each key in a key file, the key field contents in the associated record are checked to ensure that they match the data stored in the key file.  (The consistency of optional key fields can only be guaranteed for optional keys that exist; missing optional keys cannot be reported.)  All locked record occurrences (that is, set Record Lock Bits) will also be reported by <B>dbcheck</B>.</P>
+<P>The <B>dbcheck</B> utility can (optionally) perform set consistency checking.  Set membership consistency verifies that:</P>
+<P>1.&#9;The member and owner record types are valid<BR>
+2.&#9;The membership count is correct<BR>
+3.&#9;The doubly linked lists are properly formed  </P>
+<P>Key file structure consistency checks performed (optionally) verify that:</P>
+<P>1.&#9;All B-tree pages are either in the B-tree or are deleted<BR>
+2.&#9;All B-tree null child pointers are at the same tree level<BR>
+3.&#9;B-tree key order is correct<BR>
+4.&#9;Duplicate keys are correct</P>
+<P>In addition, <B>dbcheck</B> can also verify the consistency of timestamps.</P>
+<P>The <B>dbcheck</B> utility has several parameters (see Chapter 2, "Utility Descriptions," of the <B><I>db.*</B> Reference Manual</I> for the full definition), but the most common method to invoke it is shown below:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbcheck {[-s] [-k] [-dk] [-kd] [-a][-ts] [-r#] [-p#] [-f#] [-t] [-c] } dbname [dbfile...]</PRE>
+</FONT><FONT SIZE=2><P>The name of the database to be checked is <I>dbname</I>, and <I>dbfile</I> is the name of one or more files within <I>dbname</I> to be checked.  If no files are specified, the consistency of the entire database is checked.  The <B>-s</B> option enables the checking of set consistency.  The <B>-k</B> option performs key file structure checking.  The <B>-dk</B> option checks that the key file contains the key for each key field in each data file.  The <B>-kd</B> option checks that a record exists for each key in each key file.  The <B>-ts</B> option performs timestamp consistency checks.  All of these options are turned on by the <B>-a</B> option.</P>
+<P>The <B>-r#</B> option reports every #  percentage completed to file <B>stderr</B>.  The <B>-p#</B>  option sets to <B>#</B> the number of pages in the cache for use by <B>dbcheck</B>.  The <B>-f#</B>  option sets to <B>#</B> the number of open files for <B>dbcheck</B>.  The <B>-t</B> option prints a traceback of the B-tree when a key file inconsistency is detected.  The <B>-c</B> option prints a count of the objects scanned in the check.</P>
+<P>Database inconsistencies will be reported with a message describing the nature of the error and the database address of the record involved in the inconsistency.  </P>
+</FONT><H2><A NAME="dchain"></A>13.4  Delete Chain Sort Utility (dchain)</H2>
+<FONT SIZE=2><P>The <B>dchain</B> utility sorts the deleted record slots on the delete chain into database address order.  The purpose is to increase the probability that newly created records in the same file will be placed close together.  The extent of any performance improvement, however, will depend upon the application.  Its most likely use would be after a periodic purge of particular record types that tend to be entered together, as they would leave many contiguous record slots on the delete chain.  This utility is invoked as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dchain <I>dbname</I> [<I>dbfile</I>]</PRE>
+</FONT><FONT SIZE=2><P>where <I>dbname</I> is the name of the database and <I>dbfile</I> is the name of one or more data files in <I>dbname</I> whose delete chain is to be sorted.  If no files are listed then all data files in <I>dbname</I> will be processed. </P>
+</FONT><H2><A NAME="initdb"></A>13.5  Database Initialization Utility (initdb)</H2>
+<FONT SIZE=2><P>A database must be initialized before any data can be stored in it.  This initialization can be done dynamically through function calls, through use of <B>ida</B>, or by using utility <B>initdb</B>.  Execute <B>initdb</B> as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>initdb <I>[</I>-y<I>] dbname</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>dbname</I> is the name by which the database to be initialized is defined in the <B>database</B> statement in DDL specification.  The program will display the names of the database files and prompt you for confirmation.  If you reply with a <B>y</B>, then the files are reinitialized; otherwise the program terminates.  If the <B>-y</B> option is specified, then initialization will proceed without displaying the file names and confirmation prompt.  </P>
+</FONT><H2><A NAME="keybuild"></A>13.6  Key File Build Utility (keybuild)</H2>
+<FONT SIZE=2><P>Utility <B>keybuild</B> will rebuild all key files for a database.  It rebuilds the key files by first reinitializing the file, and then sequentially reading all records from each data file and re-creating each key field from the contents of the record.</P>
+<P>The<B> keybuild</B> utility can be used to re-create the key files when there is a key file inconsistency (for example, as reported by <B>dbcheck</B>).  It can also construct new key files after you have added or removed key attributes from fields in your DDL specification.  For example, if you make an existing key field a non-key, or change a non-key to a key field in your DDL, you can run <B>keybuild</B> to rebuild the key files for the new schema.  You can also use <B>keybuild</B> to reassign key fields to different key files.</P>
+<P>Optional keys are re-created by keybuild from the optional key stored bit flags contained in the record header.  To run keybuild, enter the following command line:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>keybuild <I>dbname</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>dbname</I> is the name of the database whose key files are to be rebuilt.</P>
+</FONT><H2><A NAME="keydump"></A>13.7  Formatted Key File Dump Utility (keydump)</H2>
+<FONT SIZE=2><P>Utility <B>keydump</B> will display a formatted dump of a database key file.  The B-tree organization of a <B><I>db.*</B></I> key file dump is described in section 14.2.3, "Key File Organization."  <B>keydump</B> can assist you in learning how these files are structured.  It is invoked as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>keydump [-h] <I>dbname</I> <I>keyfile</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>keyfile</I> is the name of the key file in database <I>dbname</I> whose contents will be displayed.  If the <B>-h</B> option is specified, the key values are printed in hexadecimal; otherwise the contents are displayed as formatted for the data type of the key field.  The report is written to standard output and can be redirected as needed.</P>
+</FONT><H2><A NAME="keypack"></A>13.8  Key File Pack Utility (keypack)</H2>
+<FONT SIZE=2><P>B-tree sorting algorithms allow for dynamic insertion and deletion of keys in B-tree nodes (see section 14.2.3, "Key File Organization").  It is the nature of these algorithms to leave approximately 20 to 30 percent of the file unused.  For applications that have frequent key updates, this is required overhead.  Other applications may build their key files first, then use them primarily for lookups.  In such applications, where the keys will not be changing, it is possible to run <B>keypack</B> to fill each node in the B-tree, thereby reducing the number of nodes required in the key file.  This results in significant savings in disk space and lookup times in large databases.</P>
+<P>The <B>keypack</B> utility has several parameters (see Chapter 2, "Utility Descriptions," of the <B><I>db.*</B> Reference Manual</I> for the full definitions).  The utility is invoked as follows:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>keypack <I>[</I>-u<I>num] [</I>-o<I>|</I>-x<I>] [</I>-t <I>path] [</I>-b <I>path] [</I>-k <I>path] [</I>-p<I>num] dbname [keyfile]</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>dbname</I> is the name of the database whose key files are to be packed.  All key files will be packed unless a specific key file, <I>keyfile</I>, is specified.  The <B>-u</B> option specifies the number of key slots per node to be left unfilled.  If the key file is to be modifiable, <I>num </I>must be 1 or greater (default is 1).  If <I>num</I> is 0, the key fields contained in the key file must all be declared in static records (see section 4.2.5, "Record Declarations").</P>
+<P>Option <B>-o</B> opens the database in one-user mode; option <B>-x</B> opens the database in exclusive access mode.  Option <B>-t </B>specifies the location (<I>path</I>) of the temporary packed key file.  When finished, the original key file is deleted and the temporary packed key file is renamed to the original key file name.  </P>
+<P>Option <B>-b </B>specifies the <I>path</I> where a backup of the original key files will be copied.  Option <B>-k </B>specifies the <I>path</I> where the packed key files will be placed.  Option <B>-p </B>sets pages in the <B><I>db.*</B></I> cache to <I>num</I>.</P>
+</FONT><H2><A NAME="prdbd"></A>13.9  Database Dictionary Print Utility (prdbd)</H2>
+<FONT SIZE=2><P>The <B>prdbd</B> utility displays the contents of the database dictionary file (<B>dbname.dbd</B>).  <B>prdbd</B> will report the default database page size and each entry in the file table, record table, field table, set table, member table, sort field table, and key table.</P>
+<P>Section 14.3, "Database Dictionary Table Structure," describes in detail the organization of a <B><I>db.*</B></I> dictionary.  This utility can be used to help you understand and make use of the dictionary in your own applications.</P>
+<P>To run <B>prdbd</B>, enter the following command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>prdbd <I>[</I>-c<I>] dbname</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>dbname</I> is the name of the database whose dictionary will be displayed.  Option <B>-c</B> specifies that symbolic names be omitted from the report.  The report will be written to standard output and can be redirected as desired.  </P>
+</FONT><H2><A NAME="dbclrlb"></A>13.10  Clear Lock Bit Utility (dbclrlb)</H2>
+<FONT SIZE=2><P>The <B>dbclrlb</B> utility clears any set lock bits in the specified data files.  If no data files are specified, all lock bits in the database are cleared, including those on deleted and undeleted records.  </P>
+<P>To run <B>dbclrlb</B>, enter the following command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbclrlb <I>dbname [data_files]</PRE>
+</I></FONT><FONT SIZE=2><P>where <I>dbname</I> is the name of the database whose lock bits will be cleared.  All files will be cleared unless files are specified with<I> data_files</I>. </P>
+
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

@@ -1,0 +1,352 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="Function"></A>Chapter  3<BR>
+Function Descriptions</H1>
+<H2><A name="Introduction"></A>3.1  Introduction</H2>
+<FONT SIZE="2"><P>This chapter contains descriptions of the application program interface (API) of all <B><I>db.*</B></I> runtime library functions.  The page headers for each description contain the function name and title.  The Prototypes section gives a synopsis of the actual function declaration (not how it is called).  The Parameters section describes all parameters.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>The parameters for file, record, field, and set identifiers appear in uppercase.  This indicates that normally the corresponding C constant created by <B>ddlp</B> in &lt;<B>dbname</B>&gt;<B>.h</B> is passed to the function.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The Description explains all of the function's operational details.  Any Currency Changes are listed using assignment statements in the order in which the changes occur.  The notation "curr_own[<I>SET</I>]," is read "current owner of <I>SET</I>".  For time-stamped records and sets, the timestamps in the currency table are also updated by the navigation functions when the database addresses are updated unless otherwise noted.  In the event of a user or system error, the changes to the currency table are not made.</P>
+<P>When the multi-user library runs in shared mode, many functions have Locking Requirements.  The lowest level is no locking, or "None."  The next level is "None, but may be old or deleted data," (see section 7.3.2, "Read Locks," in the <B><I>db.*</B></I> <I>User's Guide</I>).  The third level is "Read lock required."  The highest level is "Write lock required."  These requirements may be ignored in the single-user library, or in the multi-user library opened in exclusive or one-user mode.  Any files with exclusive locks are at the highest locking level.</P>
+<P>In the Return Codes section, the most common status and error codes are listed, often with a possible explanation for their occurrences.  We do not list all possible codes, but only those that tend to occur most often.</P>
+<P>Related functions are identified in the See Also section.</P>
+<P>An Example section is provided for each function.  The example is intended to illustrate how the function is called, not necessarily how to best use the function.  In some cases, the example is brief.  However, it should be sufficient to show how the call is made.  Chapter 5, "Database Manipulation," Chapter 6, "Transaction Processing," and Chapter 7, "Multi-User Database Control," of the <B><I>db.*</B></I> <I>User's Guide </I>provide many more examples of <B><I>db.*</B></I> functions.</P>
+</FONT><H2><A name="Unicode"></A>3.2  Unicode Prototypes</H2>
+<FONT SIZE="2"><P>The <B><I>db.*</B></I> product supports Unicode.  The effect on the <B>d_</B> API is that the prototypes for some of those functions are different in the Unicode version than in the standard version.  These are all functions with (char *) arguments.  In the majority of these, (char *) becomes (wchar_t *).  When this change is necessary, it is noted in the Prototypes section for the individual function.  Those requiring a Unicode change are summarized in Table 3-1.  Note, however, that several functions that take the (char *) arguments do <I>not</I> change in the Unicode version.  These are listed in Table 3-2.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I>  Unicode and non-Unicode function prototypes may not be mixed (for those functions that change).  Only (char *) is available in an ASCII <B><I>db.*</B></I> runtime, and only (wchar_t *) is available in a Unicode <B><I>db.*</B></I> 
+  runtime.</BLOCKQUOTE>
+<B><FONT SIZE="2"><P ALIGN="center">Table 3-1.  Functions Requiring a Data Type Change for Unicode</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_checkid<BR>
+d_ctbpath<BR>
+d_dbdpath<BR>
+d_dbfpath<BR>
+d_dbini<BR>
+d_dblog<BR>
+d_dbnum<BR>
+d_dbtaf<BR>
+d_dbtmp<BR>
+d_dbuserid</B></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_dbver<BR>
+d_destroy<BR>
+d_iopen<BR>
+d_lmclear<BR>
+d_lmstat<BR>
+d_lockmgr<BR>
+d_open*<BR>
+d_renfile<BR>
+d_trbegin</B></FONT></P></TD>
+</TR>
+</TABLE>
+<DIR>
+<DIR>
+
+<FONT SIZE="2"><P>*The <B>d_open</B> function has two character string arguments.  For the Unicode version, only one of those two arguments changes from (char *) to (wchar_t *).  The argument for that function's database open mode remains (char *), because arguments for locking modes and database access modes usually have that data type.</P></DIR>
+</DIR>
+
+<B><P ALIGN="center">Table 3-2.  Functions (Using char) that Need No Change for Unicode</P></B></FONT>
+<TABLE CELLSPACING="0" BORDER="0" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_keylock<BR>
+d_keylstat<BR>
+d_mapchar<BR>
+d_reclock</B></FONT></P></TD>
+<TD WIDTH="50%" VALIGN="top">
+<B><FONT SIZE="2"><P>d_reclstat<BR>
+d_setlock<BR>
+d_setlstat</B></FONT></P></TD>
+</TR>
+</TABLE>
+
+<H2><A name="Summary"></A>3.3  Summary Listing of d_ Functions</H2>
+<FONT SIZE="2"><P>The following table lists alphabetically all the <B>d_</B>  functions and their prototypes, along with brief descriptions.  All functions have <B>int</B> as their return types.</P>
+<B><P ALIGN="center">Table 3-3.  Alphabetical Listing of the d_  Functions</P>
+<P>Function Prototype/<BR>
+Description</P>
+</B><P>int <B>d_checkid</B>(char *<I>id</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Check a DBUSERID for validity</P>
+<P>int <B>d_close</B>(DB_TASK *<I>task</I>)<BR>
+Close all databases</P>
+<P>int <B>d_closeall</B>(DB_TASK *<I>task</I>)<BR>
+Close all open files</P>
+<P>int <B>d_closetask</B>(DB_TASK * <I>task</I>)<BR>
+Close a database task</P>
+<P>int <B>d_cmstat</B>(int <I>SET</I>, DB_TASK *<I>task</I>)<BR>
+Test timestamp status of current member</P>
+<P>int <B>d_cmtype</B>(int <I>SET</I>, int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get record type of current member</P>
+<P>int <B>d_connect</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Connect current record to set</P>
+<P>int <B>d_costat</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Test timestamp status of current owner</P>
+<P>int <B>d_cotype</B>(int <I>SET</I>, int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get record type of current owner</P>
+<P>int <B>d_crget</B>(DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get database address of current record</P>
+<P>int <B>d_crread</B>(long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Read data from field of current record</P>
+<P>int <B>d_crset</B>(DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set database address of current record</P>
+<P>int <B>d_crstat</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Test timestamp status of current record</P>
+<P>int <B>d_crtype</B>(int *<I>rectype</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get record type of current record</P>
+<P>int <B>d_crwrite</B>(long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Write to field in current member</P>
+<P>int <B>d_csmget</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get database address of current member</P>
+<P>int <B>d_csmread</B>(int <I>SET</I>, long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Read data from field of current member</P>
+<P>int <B>d_csmset</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set database address of current member</P>
+<P>int <B>d_csmwrite</B>(int <I>SET</I>, long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Write to field in current member</P>
+<P>int <B>d_csoget</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get database address of current owner</P>
+<P>int <B>d_csoread</B>(int <I>SET</I>, long <I>FIELD</I>, void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Read data from field of current owner</P>
+<P>int <B>d_csoset</B>(int <I>SET</I>, DB_ADDR *<I>dba</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set database address of current owner</P>
+<P>int <B>d_csowrite</B>(int <I>SET</I>, long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Write to field in current owner</P>
+<P>int <B>d_csstat</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Test timestamp status of current set</P>
+<P>int <B>d_ctbpath</B>(const char *<I>path</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the country table path variable</P>
+<P>int <B>d_curkey</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set key positions for keys in current record</P>
+<P>int <B>d_dbdpath</B>(const char *<I>path</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set database dictionary path variable</P>
+<P>int <B>d_dbfpath</B>(const char *<I>path</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set database files path variable</P>
+<P>int <B>d_dbini</B>(const char *<I>dir_name</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the directory in which to find the <B><I>db.*</B></I> initialization file</P>
+<P>int <B>d_dblog</B>(const char *<I>log</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the path to the database log file</P>
+<P>int <B>d_dbnum</B>(const char *<I>dbname</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Get the database number from the database name</P>
+<P>int <B>d_dbtaf</B>(const char *<I>taf</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the TAF path variable</P>
+<P>int <B>d_dbtmp</B>(const char *<I>tmp</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the DBTMP path variable</P>
+<P>int <B>d_dbuserid</B>(const char *<I>id</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the database user ID</P>
+<P>int <B>d_dbver</B>(char *<I>fmt</I>, char *<I>buf</I>, int <I>len</I>)<B><BR>
+</B>Unicode version:  (char *) changes to (wchar_t *)<BR>
+Return runtime version information</P>
+<P>int <B>d_decode_dba</B>(DB_ADDR <I>dba</I>, short *<I>file</I>, unsigned long *<I>slot</I>)<BR>
+Decode database address</P>
+<P>int <B>d_delete</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Delete current record</P>
+<P>int <B>d_destroy</B>(const char *<I>dbname</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Destroy database files</P>
+<P>int <B>d_discon</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Disconnect current member from set</P>
+<P>int <B>d_disdel</B>(int <I>dbn</I>, DB_TASK *<I>task</I>)<BR>
+Disconnect and delete current record</P>
+<P>int <B>d_encode_dba</B>(short <I>file</I>, unsigned long <I>slot</I>, DB_ADDR *<I>dba</I>)<BR>
+Encode database address</P>
+<P>int <B>d_fillnew</B>(int <I>REC</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Create and fill new record</P>
+<P>int <B>d_findco</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find current owner of current record</P>
+<P>int <B>d_findfm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find first member of set</P>
+<P>int <B>d_findlm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find last member of set</P>
+<P>int <B>d_findnm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find next member of set</P>
+<P>int <B>d_findpm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find previous member of set</P>
+<P>int <B>d_fldnum</B>(int *<I>index_num</I>, long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Convert the field's <B>ddlp</B> <B>#define</B> into the field table index</P>
+<P>int <B>d_freeall</B>(DB_TASK *<I>task</I>)<BR>
+Free all read-locked files</P>
+<P>int <B>d_gtscm</B>(int <I>SET</I>, unsigned long *<I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get last access timestamp of current member</P>
+<P>int <B>d_gtsco</B>(int <I>SET</I>, unsigned long *<I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get last access timestamp of current owner</P>
+<P>int <B>d_gtscr</B>(unsigned long *<I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get last access timestamp of current record</P>
+<P>int <B>d_gtscs</B>(int <I>SET</I>, unsigned long *<I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get last access timestamp for set</P>
+<P>int <B>d_iclose</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Close database incrementally</P>
+<P>int <B>d_initfile</B>(int <I>FILEID</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Initialize database file</P>
+<P>int <B>d_initialize</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Initialize database</P>
+<P>int <B>d_internals</B>(DB_TASK *<I>task</I>, int <I>topic</I>, int <I>id</I>, int <I>elem</I>, void *<I>ptr</I>, unsigned <I>size</I>)<BR>
+Access internal <B><I>db.*</B></I> data</P>
+<P>int <B>d_iopen</B>(const char *<I>dbnames</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Open one or more databases incrementally</P>
+<P>int <B>d_ismember</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Determine whether the current record is a member of a set</P>
+<P>int <B>d_isowner</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Determine whether the current record is the owner of a set</P>
+<P>int <B>d_keybuild</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Rebuild the key files from the data in the data files</P>
+<P>int <B>d_keydel</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Delete optional key</P>
+<P>int <B>d_keyexist</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Determine whether an optional key exists</P>
+<P>int <B>d_keyfind</B>(long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find record by key</P>
+<P>int <B>d_keyfree</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Free key type read-lock</P>
+<P>int <B>d_keyfrst</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find record with first key</P>
+<P>int <B>d_keylast</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find record with last key</P>
+<P>int <B>d_keylock</B>(long <I>FIELD</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Lock key files associated with key type</P>
+<P>int <B>d_keylstat</B>(long <I>FIELD</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get lock status of key type</P>
+<P>int <B>d_keynext</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find record with next key</P>
+<P>int <B>d_keyprev</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find record with previous key</P>
+<P>int <B>d_keyread</B>(void *<I>value</I>, DB_TASK *<I>task</I>)<BR>
+Read value of last found key</P>
+<P>int <B>d_keystore</B>(long <I>FIELD</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Store optional key</P>
+<P>int <B>d_lmclear</B>(const char *<I>username</I>, const char <I>*lockmgr</I>, int&nbsp;<I>lockcomm</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Clear a user from the lock manager's user table</P>
+<P>int <B>d_lmstat</B>(char *<I>username</I>, int *<I>status</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Return the Lock Manager's status of the given user</P>
+<P>int <B>d_lock</B>(int <I>count</I>, LOCK_REQUEST *<I>lrpkt</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Lock group of record or set types</P>
+<P>int <B>d_lockcomm</B>(int <I>type</I>, DB_TASK *<I>task</I>)<BR>
+Set the protocol type to use to communicate with the lock manager</P>
+<P>int <B>d_lockmgr</B>(const char *<I>lockmgrname</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Set the name of the lock manager</P>
+<P>int <B>d_makenew</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Make a new (empty) record</P>
+<P>int <B>d_mapchar</B>(unsigned char <I>inchar</I>, unsigned char <I>outchar</I>, const char *<I>sort_as</I>, unsigned&nbsp;char <I>subsort</I>, DB_TASK *<I>task</I>)<BR>
+Map character for sorting and output</P>
+<P>int <B>d_members</B>(int <I>SET</I>, long *<I>count</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get count of current set members</P>
+<P>int <B>d_off_opt</B>(unsigned long <I>optflag</I>, DB_TASK *<I>task</I>)<BR>
+Turn off runtime options</P>
+<P>int <B>d_on_opt</B>(unsigned long <I>optflag</I>, DB_TASK *<I>task</I>)<BR>
+Turn on runtime options</P>
+<P>int <B>d_open</B>(const char *<I>dbnames</I>, const char *<I>type</I>, DB_TASK *<I>task</I>)<B><BR>
+</B>Unicode version:  <B>d_open</B>(const wchar_t *<I>dbnames</I>, const char *<I>type</I>, DB_TASK *<I>task</I>)<BR>
+Open database(s)</P>
+<P>int <B>d_opentask</B>(DB_TASK ** task)<BR>
+Allocate memory for a new database task</P>
+<P>int <B>d_rdcurr</B>(DB_ADDR **<I>currbuff</I>, int *<I>currsize</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Read currency tables</P>
+<P>int <B>d_recfree</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Free record type read-lock</P>
+<P>int <B>d_recfrst</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find first occurrence of record type</P>
+<P>int <B>d_reclast</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find last occurrence of record type</P>
+<P>int <B>d_reclock</B>(int <I>REC</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Lock files associated with record type</P>
+<P>int <B>d_reclstat</B>(int <I>REC</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get lock status of record type</P>
+<P>int <B>d_recnext</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find next occurrence of current record type</P>
+<P>int <B>d_recnum</B>(int *<I>index</I>, int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Convert the record's <B>ddlp</B> <B>#define</B> into the record table index</P>
+<P>int <B>d_recprev</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Find previous occurrence of current record</P>
+<P>int <B>d_recread</B>(void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Read contents of current record</P>
+<P>int <B>d_recset</B>(int <I>REC</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set occurrence of current record type</P>
+<P>int <B>d_recstat</B>(DB_ADDR <I>dba</I>, unsigned long <I>rts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Test timestamp status of record</P>
+<P>int <B>d_recwrite</B>(const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Write contents of current record</P>
+<P>int <B>d_renclean</B>(DB_TASK *<I>task</I>)<BR>
+Reset any renamed files back to the original</P>
+<P>int <B>d_renfile</B>(const char *<I>dbname</I>, int <I>FILEID</I>, const char *<I>filenm</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Rename database files</P>
+<P>int <B>d_rerdcurr</B>(DB_ADDR **<I>currbuff</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Reread currency tables</P>
+<P>int <B>d_rlbclr</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Clear record lock bit</P>
+<P>int <B>d_rlbset</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set record lock bit</P>
+<P>int <B>d_rlbtst</B>(DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Test record lock bit</P>
+<P>int <B>d_set_dberr</B>(ERRORPROC <I>errfunc</I>, DB_TASK *<I>task</I>)<BR>
+Replace default error handling with function</P>
+<P>int <B>d_setdb</B>(int <I>dbn</I>, DB_TASK *<I>task</I>)<BR>
+Set current database</P>
+<P>int <B>d_setfiles</B>(int <I>num</I>, DB_TASK *<I>task</I>)<BR>
+Set maximum number of open files</P>
+<P>int <B>d_setfree</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Free set type read-lock</P>
+<P>int <B>d_setkey</B>(long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set value of key field for <B>d_makenew</P></B><P>int <B>d_setlock</B>(int <I>SET</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Lock data files associated with set type</P>
+<P>int <B>d_setlstat</B>(int <I>SET</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Get lock status of set type</P>
+<P>int <B>d_setmm</B>(int <I>TO_SET</I>, int <I>FR_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current member from current member</P>
+<P>int <B>d_setmo</B>(int <I>M_SET</I>, int <I>O_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current member from current owner</P>
+<P>int <B>d_setmr</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current member from current record</P>
+<P>int <B>d_setnum</B>(int *<I>index</I>, int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Convert the set's <B>ddlp</B> <B>#define</B> into the set table index</P>
+<P>int <B>d_setom</B>(int <I>O_SET</I>, int <I>M_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current owner from current member</P>
+<P>int <B>d_setoo</B>(int <I>TO_SET</I>, int <I>FR_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current owner from current owner</P>
+<P>int <B>d_setor</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current owner from current record</P>
+<P>int <B>d_setpages</B>(int <I>dbpages</I>, int <I>ovpages</I>, DB_TASK *<I>task</I>)<BR>
+Set the number of virtual memory pages</P>
+<P>int <B>d_setrm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current record from current member</P>
+<P>int <B>d_setro</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set current record from current owner</P>
+<P>int <B>d_stscm</B>(int <I>SET</I>, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set last access timestamp of current member</P>
+<P>int <B>d_stsco</B>(int <I>SET</I>, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set last access timestamp of current owner</P>
+<P>int <B>d_stscr</B>(unsigne long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set last access timestamp of current record</P>
+<P>int <B>d_stscs</B>(int <I>SET</I>, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Set last access timestamp for set</P>
+<P>int <B>d_timeout</B>(int <I>secs</I>, DB_TASK *<I>task</I>)<BR>
+Set the lock request timeout value</P>
+<P>int <B>d_trabort</B>(DB_TASK *<I>task</I>)<BR>
+Abort transaction</P>
+<P>int <B>d_trbegin</B>(const char *<I>tid</I>, DB_TASK *<I>task</I>)<BR>
+Unicode version:  (char *) changes to (wchar_t *)<BR>
+Begin transaction</P>
+<P>int <B>d_trend</B>(DB_TASK *<I>task</I>)<BR>
+End transaction</P>
+<P>int <B>d_wrcurr</B>(DB_ADDR *<I>currbuff</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)<BR>
+Write currency tables</P>
+</FONT></BODY>
+</HTML>

@@ -1,0 +1,14 @@
+open("sales","o");
+def_fld(sale_id, s1);
+def_fld(sale_id, s2);
+whileok 
+{
+   input("salemgrs.asc") s1, s2;
+   keyfind(sale_id, s2);
+   setor(manages);
+   keyfind(sale_id, s1);
+   connect(manages);
+}
+close();
+exit;
+

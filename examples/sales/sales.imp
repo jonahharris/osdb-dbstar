@@ -1,0 +1,64 @@
+database sales;
+foreach "salesper.asc" 
+{
+   record salesperson 
+   {
+      create on 1;
+      field sale_id = 1;
+      field sale_name = 2;
+      field commission = 3;
+      field region = 4;
+      field office = 5;
+   }
+}
+foreach "customer.asc" 
+{
+   record salesperson 
+   {
+      find on 1;
+   }
+   record customer 
+   {
+      create on 2;
+      field cust_id = 2;
+      field company = 3;
+      field contact = 4;
+      field street = 5;
+      field city = 6;
+      field state = 7;
+      field zip = 8;
+      field phone = 9;
+   }
+   connect accounts;
+}
+foreach "orders.asc" 
+{
+   record customer 
+   {
+      find on 1;
+   }
+   record sales_order 
+   {
+      create on 2;
+      field ord_num = 2;
+      field ord_date = 3;
+      field amount = 4;
+      field tax = 5;
+   }
+   connect purchases;
+}
+foreach "items.asc" 
+{
+   record sales_order 
+   {
+      find on 1;
+   }
+   record item 
+   {
+      field prod_id = 2;
+      field quantity = 3;
+   }
+   connect line_items;
+}
+end;
+

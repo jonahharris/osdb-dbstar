@@ -1,0 +1,316 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 12</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A NAME="dbedit"></A>Chapter 12<BR>
+Database Editor  (dbedit)</H1>
+<H2><A NAME="Introduction"></A>12.1 Introduction</H2>
+<FONT SIZE="2"><P>The low-level database editor (called <B>dbedit</B>) allows any <B><I>db.*</B></I> database to be changed and repaired by an operator who is trained in its use.  It does not use the runtime library and is not multi-user.  Anyone who uses <B>dbedit</B> must be familiar with the binary format of <B><I>db.*</B></I> data files as described in Chapter 14, "File Formats and Dictionary Tables."  </P>
+</FONT><BLOCKQUOTE>Caution: <B> </B>Improper use of <B>dbedit</B> can cause severe damage to a database.</BLOCKQUOTE>
+<FONT SIZE="2"><P>The<B> dbedit </B>utility, together with <B>dbcheck</B>, is most useful for finding and correcting errors in set pointers and other overhead fields.  Also, if any corruption exists in page zero of a data file, <B>dbedit</B> can correct it.  All other areas of database update or repair should be handled through the runtime library, or through <B>ida</B>, <B>dchain</B>, or <B>keybuild</B>.  For example, <B>dbedit</B> can alter the value of a data field, but it is best to use <B>ida</B> for such a task because <B>ida</B> will maintain database consistency (for example, by changing a key value to match the changed field).</P>
+<P>With<B> dbedit</B> you can perform updates to a data file regardless of its internal consistency.  While the runtime library and <B>ida</B> must be able to successfully open a full database, <B>dbedit</B> can operate on a file-by-file basis, and will not assume that any fields in the data file are valid.</P>
+<P>The<B> dbedit</B> program is line-oriented, instead of full screen-oriented.  It is driven by a set of commands that are read from standard input, and will print all information to standard output.</P>
+</FONT><H2><A NAME="Usage"></A>12.2 Usage of dbedit</H2>
+<FONT SIZE="2"><P>To edit a database, the database must reside in the current directory.  The following command will invoke <B>dbedit</B>:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbedit <I>dbname</PRE></I></FONT><FONT SIZE="2"><P>If <B>dbedit</B> finds a file named <B><I>dbname</I>.dbd</B>, it will read the dictionary into memory and respond with the prompt:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbedit&gt; </PRE>
+</FONT><FONT SIZE="2"><P>If a system record exists, it will become the initial current record.  If no system record exists, the initial current record will be database address [0:1].  If no records exist in file 0, there will be no initial current record.</P>
+<P>Because of the low-level nature of <B>dbedit</B>, it will not use the <B><I>db.*</B></I> environment variables, such as DBDPATH.  Nor will it use the <B>db.star.ini</B> file. </P>
+<P>The<B> dbedit</B> utility operates in one of two modes: interpreted or non-interpreted modes.  In the interpreted mode, <B>dbedit</B> will display a record's contents according to its type.  It displays set and member pointers in our standard database address representation.  It indicates whether optional keys are set, and displays field values in the format used by <B>ida</B>.  Navigation with <B>dbedit</B> means moving from one record to another.  There will almost always be a "current record."  Edits made to a record will be written to the file when the editor moves to a new current record.</P>
+<P>The non-interpreted mode is entered by typing:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbedit&gt; edit hex</PRE>
+</FONT><FONT SIZE="2"><P>which responds with the prompt:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>hex&gt; </PRE>
+</FONT><FONT SIZE="2"><P>In this mode, no notion exists of current record.  All data is displayed and edited as hexadecimal bytes.  All edits are written to the data file when the hex edit mode is ended.</P>
+</FONT><H2><A NAME="Display"></A>12.3 Information Display</H2>
+<FONT SIZE="2"><P>Three commands are available to print <B>dbedit</B> or database information:</P>
+<P>help<BR>
+display<BR>
+show</P>
+<P>The <B>help</B> command prints a short list of <B>dbedit</B> commands.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>help | ?</PRE>
+</FONT><FONT SIZE="2"><P>This command lists the current file name and current record's database address.  It does not list the hex edit commands unless in hex edit mode.</P>
+<P>The <B>display </B>command displays the current record.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>display [type | dba | ts | opt | set [setname] | mem [setname] | fld [fldname]]</PRE>
+</FONT><FONT SIZE="2"><P>The current record is displayed in a format that shows both the hexadecimal and textual representation of the record.  The textual display is similar to that used by <B>ida</B> or <B>datdump</B>.  An example is shown in Figure 12-1.  </P>
+<P>The scope of the display may be restricted by adding a second keyword to the command.  Each keyword represents one section of the full record display, and will cause only that section to be displayed.  These subsections are:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="451">
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>type</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The record type</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>dba</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The record database address</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>ts</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The record creation and update timestamp</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>opt</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The optional key bit map</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>set</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The set owner pointers</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>mem</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The set member pointers</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="24%" VALIGN="top">
+<B><FONT SIZE="2"><P>fld</B></FONT></P></TD>
+<TD WIDTH="76%" VALIGN="top">
+<FONT SIZE="2"><P>The data fields</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#0000ff"><PRE>                                             Record Type
+005344: 01 00                                INFO (1)
+<BR>
+                                             Database Address
+005346: 12 00 00 01                          [1:18]
+<BR>
+                                             Set Owner Pointers (C/F/L)
+005350: 00 00 00 00 00 00 00 00 00 00 00 00  0 [0:0] [0:0]
+                                             ARTICLE_LIST
+005362: 00 00 00 00 00 00 00 00 00 00 00 00  0 [0:0] [0:0]
+                                             LOANED_BOOKS
+005374: 01 00 00 00 29 00 00 01 29 00 00 01  1 [1:41] [1:41]
+                                             ABSTRACT
+005386: 02 00 00 00 1d 00 00 00 1e 00 00 00  2 [0:29] [0:30]
+                                             INFO_TO_KEY
+<BR>
+                                             Set Member Pointers (O/P/N)
+005398: 01 00 00 01 28 00 00 01 13 00 00 01  [1:1] [1:40] [1:19]
+                                             HAS_PUBLISHED
+005410: 00 00 00 00 00 00 00 00 00 00 00 00  [0:0] [0:0] [0:0]
+                                             ARTICLE_LIST<BR>
+                                             Field ID_CODE
+005422: 64 62 30 30 31 00 00 00 00 00 00 00  db001
+        00 00 00 00                          
+                                             Field INFO_TITLE
+005438: 46 6f 75 72 74 68 2d 47 65 6e 65 72  Fourth-Generation Language
+        61 74 69 6f 6e 20 4c 61 6e 67 75 61  s Vol 1 - Principles
+        67 65 73 20 56 6f 6c 20 31 20 2d 20  
+        50 72 69 6e 63 69 70 6c 65 73 00 00  
+        00 00 00 00 00 00 00 00 00 00 00 00  
+        00 00 00 00 00 00 00 00 00 00 00 00  
+        00 00 00 00 00 00 00 00              
+                                             Field PUBLISHER
+005518: 50 72 65 6e 74 69 63 65 2d 48 61 6c  Prentice-Hall
+        6c 00 00 00 00 00 00 00 00 00 00 00  
+        00 00 00 00 00 00 00 00              
+                                             Field PUB_DATE
+005550: 31 39 38 35 00 00 00 00 00 00 00 00  1985
+                                             Field INFO_TYPE
+005562: 00 00                                0</PRE>
+</FONT><FONT SIZE="2"><P ALIGN="center"><B >Fig. 12-1.  Display of Current Record</B></P>
+
+<P >In addition, the <B>set</B>, <B>mem</B>, and <B>fld</B> keywords may be further restricted with the name of one owner set, member set, or field.</P>
+<P>The <B>show </B>command displays schema information, such as lists of sets, records, or keys.  </P></FONT><FONT COLOR="#0000ff"><PRE>show {fld [<I>fldname</I>] | file [<I>filename</I>] | key [<I>keyname</I>] | record [<I>recname</I>] | set [<I>setname</I>]}</PRE>
+</FONT><FONT SIZE="2"><P>The <B>show fld</B> command lists all fields in the database, or, if <I>fldname</I> is given, shows that field only.</P>
+<P>The <B>show file</B> command lists the names of all files in the database, or, if <I>filename</I> is given, shows the record types or key types contained in the file.</P>
+<P>The <B>show key </B>command lists all keys in the database, or, if <I>keyname</I> is given, shows that key only.  Each key will be displayed as a field.  </P>
+<P>The <B>show record</B> command lists the names of all record types in the database, or, if <I>recname</I> is given, shows that record type in the format shown in Figure 12-2.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>Record Type: INFO (1)
+Contained in file: tims.d02
+Record Length: 220
+Offset to Data: 78
+Flags: 
+Fields:
+        unique key char ID_CODE[16]
+        char INFO_TITLE[80]
+            Flags: SORTFLD
+        char PUBLISHER[32]
+        char PUB_DATE[12]
+        int INFO_TYPE</PRE>
+</FONT><FONT SIZE="2"><P ALIGN="center"><B>Fig. 12-2.  Show Record Info</B></P>
+<P>The<B> show set </B>command lists the names of all set types in the database, or, if <I>setname</I> is given, shows that set type in the format shown in Figure 12-3.</P></FONT><FONT COLOR="#0000ff"><PRE>Set Type: HAS_PUBLISHED (1)
+Order: Ascending        
+        By Field(s): INFO_TITLE
+Owner: AUTHOR (0)
+Member(s): INFO (1)
+Flags:</PRE>
+</FONT><FONT SIZE="2"><P ALIGN="center"><B >Fig. 12-3.  Show Set Has_published</B></P>
+</FONT><H2><A NAME="Navigation"></A>12.4 Navigation</H2>
+<FONT SIZE="2"><P>Movement through the database is accomplished with the <B>goto</B> command.  This command is used to set the current record and has several forms.  </P>
+</FONT><FONT COLOR="#0000ff"><PRE>goto<I> {dba</I> | nextrec | prevrec <I>}</I>
+goto<I> {</I>first | last<I>} setname</I>
+goto<I> {</I>own | prev | next<I>} setname</I>
+goto <I>{</I>file<I> {filenum</I> | <I>filename}}</PRE></I></FONT><FONT SIZE="2"><P>The most basic <B>goto</B> command allows you to set the current to a specified database address as shown in the following example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>goto 2:345</PRE>
+</FONT><FONT SIZE="2"><P>The <B>goto nextrec </B>and <B>goto prevrec </B>commands allow you to move sequentially through the current data file one record slot at a time.  If the current record is the first record in a file, then <B>goto prevrec</B> will produce an error message, and the current record will remain unchanged.  If the current record is the last record in a file, then <B>goto nextrec </B>will also produce an error message, and the current record will remain unchanged. </P>
+<P>Set pointers contained in the current record may be referenced to set the current record to the first or last member using the <B>goto first</B> and <B>goto last</B> commands.  The specified <I>setname</I> must be a set for which the current record is an owner.</P>
+<P>Set member pointers contained in the current record may be referenced to set the current record to the owner (<B>goto own</B>), next (<B>goto next</B>), or previous (<B>goto prev</B>) member of the specified <I>setname</I>.  </P>
+<P>If an invalid slot is formed by any of the above forms of the <B>goto</B>, an error is printed, and no action is taken.  It is legal to go to a database address that is beyond the current size of a data file.  Such a record is initially filled with zeroes unless the file already has readable contents at the selected location.  A warning message is printed if a selected slot is more than two pages beyond the current end of the database (as indicated in page zero).</P>
+<P>A data file may be selected with the <B>goto</B> <B>file</B> command.  It may be selected by specifying either a file number or file name.  When a new file is selected, there will be no current record.  A <B>goto nextrec</B> will select the first record, and <B>goto prevrec</B> will select the last record.  Until there is a current record, only the page zero of the file may be edited.</P>
+</FONT><H2><A NAME="Editing"></A>12.5 Editing</H2>
+<FONT SIZE="2"><P>The <B>edit</B> command is used to specify that a portion of the current record slot or page zero is to be modified.  All edits are performed in memory and are reflected in subsequent display commands.  An edited record is written to the database on execution of a following<B> goto</B> or <B>exit</B> command.  Unwanted edits on the current record may be discarded by issuing a <B>reread</B> command.  The complete syntax of the <B>edit </B>command is shown below.</P>
+</FONT><FONT COLOR="#0000ff"><PRE>edit type
+edit <I>{</I>first | last | count<I>}</I> <I>setname</I>
+edit <I>{</I>own | prev | next<I>}</I> <I>setname</I>
+edit dba
+edit opt
+edit <I>{</I>dchain | nextslot<I>}</I>
+edit hex</PRE>
+</FONT><H3><A NAME="RecordTypes"></A>12.5.1 Editing Record Types</H3>
+<FONT SIZE="2"><P>The <B>edit type</B> command allows you to alter the record type identification number.  The current type is printed (both numerically and symbolically).  The new record type may be entered as a number or name.  All subsequent displays and interpretations of the current record are based on the new type.  The record type must be one that is included in the current file, or the display command is unable to display the record.</P>
+<P>The record type may contain an embedded record lock bit (RLB).  The bit will show in the numeric display as a 40 in the high-order byte of the record type.  Textually, the notation "<B>- RLB</B>" will appear following the name of the record type.  The RLB may be cleared by entering a new (or the same) record type.  It may be set by entering 40 as the high-order byte of the type.</P>
+</FONT><H3><A NAME="Pointers"></A>12.5.2 Editing Set and Member Pointers</H3>
+<FONT SIZE="2"><P>Individual parts of the set and member pointers may be edited by naming the part (for example, <B>count </B>or <B>next</B>) and set name, <I>setname</I>.</P>
+<P>The current value is displayed.  The new value may be entered in the standard database address format as shown in the following example:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbedit&gt; edit first author_list
+Current value is [1:15]
+New value? 1:18
+dbedit&gt; </PRE>
+</FONT><FONT SIZE="2"><P>If no change is desired, simply press &lt;Enter&gt;.</P>
+</FONT><H3><A NAME="Address"></A>12.5.3 Editing the Database Address</H3>
+<FONT SIZE="2"><P>The database address portion of a record (bytes 2-5) may be edited using the <B>edit dba </B>command.  The existing database address value is printed.  The new value may be entered in standard database address format.  </P>
+<P>If the current record slot is a deleted record, the database address portion contains the slot number of the next slot on the delete chain.  Because this is not a database address but a slot number, edits to delete chain entries should be specified with file number 0 (for example, <B>0:25</B>).</P>
+</FONT><H3><A NAME="Optional"></A>12.5.4 Editing the Optional Key Bits</H3>
+<FONT SIZE="2"><P>When an optional key is stored, a bit is set in the data record to represent its presence in the key file.  These bits may be changed using the <B>edit opt</B> edit command.  The bit map (in hexadecimal) is displayed together with the names of all optional keys in the record type.  Beside each key name is a notation indicating whether the key is stored <BR>
+(- STORED) or not (- NOT STORED):</P>
+</FONT><FONT COLOR="#0000ff"><PRE>dbedit&gt; edit opt
+40			
+PUBLISHER - NOT STORED
+INFO_TYPE - STORED
+New value?publisher,info_type</PRE>
+</FONT><FONT SIZE="2"><P>The new value may be entered as a bit map (in hexadecimal), or as a list of the key names (comma separated) that are to be set.  Note that any changes performed here will require the use of <B>keybuild</B> in order to make the data files consistent with the key files.  In the above example, both the <B>publisher</B> and <B>info_type</B> optional key flags will be set.</P>
+</FONT><H3><A NAME="PageZero"></A>12.5.5 Editing Page Zero</H3>
+<FONT SIZE="2"><P>The first two long integers in page zero of the current file (the file containing the current record) may be edited using the <B>edit dchain</B> and <B>edit nextslot</B> commands.  Both of these commands display the current value and prompt for the new one.  They are written to the file immediately.  Note that the values are slot numbers, not database addresses, and do not take file numbers.</P>
+</FONT><H3><A NAME="Hexadecimal"></A>12.5.6 General Hexadecimal Editing</H3>
+<FONT SIZE="2"><P>To allow the operator to make changes to the database not covered in other commands, <B>dbedit</B> provides the ability to edit a file as a stream of hexadecimal bytes.  In this mode you can:</P>
+</FONT><FONT FACE="Symbol" SIZE="2"><P>·</FONT><FONT SIZE="2"> Display any 
+number of lines in both hexadecimal and ASCII<BR>
+</FONT><FONT FACE="Symbol" SIZE="2">·</FONT><FONT SIZE="2"> Move to any byte 
+position in the file<BR>
+</FONT><FONT FACE="Symbol" SIZE="2">·</FONT><FONT SIZE="2"> Search forward 
+and backward for a pattern<BR>
+</FONT><FONT FACE="Symbol" SIZE="2">·</FONT><FONT SIZE="2"> Replace 
+characters on a byte-for-byte basis in either hexadecimal or ASCII</P>
+<P>The hexadecimal editing mode is initiated by entering the <B>edit hex </B>command.  When in this mode, the prompt is changed to:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>hex&gt; </PRE>
+</FONT><FONT SIZE="2"><P>To exit the hexadecimal edit mode, enter the command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>hex&gt; end
+dbedit&gt; </PRE>
+</FONT><FONT SIZE="2"><P>When hexadecimal edit mode is entered, changes that were made to the current record are written to the database, and the current position in the file becomes the file address of the current record.  The changes made in hexadecimal edit mode are written to the database by the <B>end</B> command.  To cancel the changes and return to <B>dbedit</B> mode, enter <B>cancel</B>.</P>
+<P>After ending hexadecimal edit mode, the current record is returned to its original slot, unless the current file position lies within a different record, in which case <B>dbedit</B> will prompt you to see if your current record should be changed to this new position, or if you want to return to the original current record.</P>
+<P>Table 12-1 describes the commands that can be used in hex edit mode.</P>
+<P ALIGN="center"><B >Table 12-1.  Hex Mode Commands</B></P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="542">
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>Command</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<B><FONT SIZE="2"><P>Definition</B></FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>print <I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Print <B><I>N</B></I> lines (both hexadecimal and ASCII representation).  If <B><I>N</B></I> is absent, print one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>+<I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Move forward <B><I>N</B></I> characters. If <B><I>N</B></I> is absent, move one character.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>-<I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Move backward <B><I>N</B></I> characters.  If <B><I>N</B></I> is absent, move one character.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>=<I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Move to address <B><I>N</B></I>, where <B><I>N</B></I> is a hexadecimal number between 0 and FFFFFFFF.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>&gt;<I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Move forward <B><I>N</B></I> lines.  If <B><I>N</B></I> is absent, move one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>&lt;<I>N</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Move backward <B><I>N</B></I> lines.  If <B><I>N</B></I> is absent, move one line.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>&gt;&gt;<I>STRING</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Search forward for <B><I>STRING</B></I>.  <B><I>STRING</B></I> may be either an ASCII string within quotes ("string"), or hexadecimal bytes (73 74 72 69 6E 67).</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>&lt;&lt;<I>STRING</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Search backward for <B><I>STRING</B></I>.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>write <I>STRING</B></I></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Write <B><I>STRING</B></I> into current position.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>cancel</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Erase all edits since entering hex edit mode.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>end</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>End hex edit mode.</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="21%" VALIGN="top">
+<B><FONT SIZE="2"><P>help</B></FONT></P></TD>
+<TD WIDTH="79%" VALIGN="top">
+<FONT SIZE="2"><P>Print a short list of these commands.  Alias is <B>?</B>.</FONT></P></TD>
+</TR>
+</TABLE>
+
+<H2><A NAME="Diagnostics"></A>12.6 Diagnostics</H2>
+<FONT SIZE="2"><P>Illegal changes to a database will be screened, whenever possible, before they are made.  For example, if a record type is changed to a type not contained in the current file, the change will not be allowed (except in hexadecimal edit mode).</P>
+<P>Since <B>dbedit</B> allows updates to set instances, it will be important to know if a change has corrected a problem in the chain of database addresses forming the set instance.  For this purpose, the <B>verify</B> command can be used to traverse an entire set instance to check owner, previous, next, first, and last pointer consistency.  It will perform a check similar to that done by the <B>dbcheck</B> utility.  The name of the set must be identified with the follopwing command:</P>
+</FONT><FONT COLOR="#0000ff"><PRE>verify <I>setname</PRE></I></FONT><H2><A NAME="Miscellaneous"></A>12.7 Miscellaneous</H2>
+<FONT SIZE="2"><P>The <B>exit </B>command will end your <B>dbedit</B> session.  If the current record was modified, it is written to the database before exiting.</P>
+<P>The <B>reread</B> command causes the current record to be read from the database.  This has the effect of canceling any updates made to the record in the buffer.</P>
+<P>To eliminate the titles in the <B>display</B> output, the <B>notitles</B> command can be issued.  The resulting output is shorter, but readable to the experienced operator.  By default, titles will be printed.  The <B>titles</B> command can be used to cancel the <B>notitles</B> command.</P>
+<P>To eliminate the data fields in the <B>display</B> output, the <B>nofields</B> command can be issued.  The resulting output will only contain the overhead information (record type, <B>DB_ADDR</B>, set pointers, etc.).  This can be useful when the data in the record is correct, but there are problems with the overhead information.  By default, fields will be printed.  The <B>fields</B> command may be used to cancel the <B>nofields</B> command.</P>
+<P>All database addresses and counts will be displayed in decimal format unless otherwise requested.  To change the display format, the <B>base</B> command may be issued.  </P>
+</FONT><FONT COLOR="#0000ff"><PRE>base<I> {</I>10 | 16<I>}</PRE></I></FONT><FONT SIZE="2"><P>Only base 10 (decimal) and base 16 (hexadecimal) are recognized.</P>
+<P>Any editor command or keyword may be abbreviated to a non-ambiguous set of characters.  If more than the required number of characters is entered as a command, they must correctly spell the intended command.  If an ambiguous set of characters is entered, an error message is displayed stating that more characters must be entered.</P>
+</FONT><H2><A NAME="Summary"></A>12.8 Command Summary</H2>
+<FONT SIZE="2"><P>A syntax summary for each of the <B>dbedit</B> commands is shown in the table below.  </P>
+</FONT><FONT COLOR="#0000ff"><PRE>base <I>{</I>10 | 16<I>}</I>
+display <I>[</I>type | dba | ts | opt<I>]</I>
+display <I>{</I>set<I> [setname]</I> | mem<I> [setname]</I> | fld<I> [fldname]}</I>
+edit type
+edit <I>{</I>first | last | count<I>}</I> <I>setname</I>
+edit <I>{</I>own | prev | next<I>}</I> <I>setname</I>
+edit <I>{</I>dba | opt | dchain | nextslot<I>}</I>
+edit hex
+exit
+goto<I> {dba</I> | nextrec | prevrec <I>}</I>
+goto<I> {</I>first | last |<I> </I>own | prev | next<I>} setname</I>
+goto <I>{</I>file<I> {filenum</I> | <I>filename}}</I>
+help | ?  
+nofields
+notitles
+reread
+show<I> {</I>field<I> [fieldname]</I> | file<I> [filename]</I> | key <I>[keyname]}</I>
+show<I> {</I>record <I>[recordname]</I> | set <I>[setname]}</I>
+fields
+titles
+verify <I>setname</PRE></I></FONT><FONT SIZE="2">
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>

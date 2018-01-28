@@ -1,0 +1,53 @@
+database tims;
+
+foreach "author.txt" {
+    record author {
+        create on 1;
+        field name = 2;
+    }
+    connect author_list;
+}
+foreach "info.txt" {
+    record info {
+        create on 1;
+        field id_code = 4;
+        field info_title = 5;
+        field publisher = 6;
+        field pub_date = 7;
+        field info_type = 8;
+    }
+    record author {
+        find on 2;
+    }
+    connect has_published;
+}
+foreach "text.txt" {
+    record infotext {
+        field line = 2;
+    }
+    record info {
+        find on 1;
+    }
+    connect abstract;
+}
+foreach "key_word.txt" {
+    record key_word {
+        create on 1;
+        field kword = 2;
+    }
+}
+foreach "intersec.txt" {
+    record intersect {
+        field int_type = 3;
+    }
+    record info {
+        find on 2;
+    }
+    record key_word {
+        find on 1;
+    }
+    connect info_to_key;
+    connect key_to_info;
+}
+end;
+

@@ -1,0 +1,1076 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* Reference Manual Chapter 3</TITLE>
+</HEAD>
+<BODY>
+
+<H3 ><A name="d_set_dberr"></A>d_set_dberr</H3>
+<FONT SIZE="2"><P>Replace default error reporting with user's function</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_set_dberr</B>(ERRORPROC <I>errfunc</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>errorfunc<BR>
+A function pointer to a user-defined error reporter.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function accepts a pointer to a function that will be called when <B><I>db.*</B></I> detects an error.  The provided function supersedes any message <B><I>db.*</B></I> might display about the error.  The error reporter must be a void function that accepts an integer and a character pointer as parameters.  The integer is the error number as defined in <B>db.star.h</B>, and the character pointer points to the error message.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVTASK<BR>
+An invalid DB_TASK was referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>#define "db.star.h"
+
+void EXTERNAL_FIXED my_dberr(int, char *);
+...
+main()
+{
+   ...
+   d_set_dberr(my_dberr, task);
+   d_open("tims", "s", task);
+   ...
+}
+
+void EXTERNAL_FIXED my_dberr(err_no, err_msg)
+int err_no;
+char *err_msg;
+{
+   /* Special REPORTING of some error codes here */
+   if ( err_no &lt;= -900 )
+   {
+      /* take care in calling any d_ function, because it 
+         may call dberr() again */
+      exit(err_no);   /* probably will need to run LMCLEAR later */
+   }
+   else
+   {
+   /* You may choose to ignore some codes */
+      if ( err_no == S_NOCM )
+         return;
+   }
+   /* Report errors */
+   ...
+   return;
+}</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_setdb"></A>d_setdb</H3>
+<FONT SIZE="2"><P>Set current database</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setdb</B>(int <I>dbn</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dbn<BR>
+The database number.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the number of the current database to <I>dbn</I>.  All subsequent calls to <B><I>db.*</B></I> functions that have a <I>dbn</I> of -1 (or CURR_DB) are applied to the specified database up until the next <B>d_setdb</B> call is executed.  The number of the database is defined by the position of the database name in the database name list passed to the <B>d_open</B> and <B>d_iopen</B> functions.  The first name has database number 0, the second has 1, and so on.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B></I> Be sure to note the database 
+  number before the task parameter for this function. This is different from the 
+  standard order.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_db = <I>dbn</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVDB<BR>
+Invalid database number.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>if ( d_open("genledg;acctsrec;acctspay", "s", task) != S_OKAY )
+{
+   if ( db_status == S_UNAVAIL )
+      printf("database(s) not currently available\n");
+   exit(0);
+}
+d_setdb(1, task);
+...
+/* enter account receivable record using CURR_DB */
+...
+d_setdb(0, task);
+...
+/* update general ledger using CURR_DB */
+...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_open</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setfiles"></A>d_setfiles</H3>
+<FONT SIZE="2"><P>Set maximum number of open files</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setfiles</B>(int <I>num</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>num<BR>
+The maximum number of open files.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the maximum number of data and key files that the <B><I>db.*</B></I> runtime can have open at one time.  Most operating systems place limits on the number of open files a user and process can have.  The <B>d_setfiles </B>function allows the application to ensure that the <B><I>db.*</B></I> and non-<B><I>db.*</B></I> portions of the application have the necessary file handles available.  Once <B><I>db.*</B></I> has reached the maximum limit, it will recycle its file handles through a "least-recently-used" algorithm.  This count does not apply to log files, TAF files, dictionaries, etc.  The application also needs to account for such files as the automatic files of "standard in" and "standard out".</P>
+<P>Function<B> d_setfiles</B> should be called before <B>d_open</B>.  The default value is initially set to 8.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>If <I>num</I> is set too high, then once the operating system limit has been reached and <B><I>db.*</B></I> attempts to open another file, error code S_NOFILE may be returned by any <B><I>db.*</B></I> function that accesses information in the 
+  database.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBCLOSE<BR>
+Database needs to be closed.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>   ...
+d_setfiles(14, task);
+d_open("tims", "x", task);
+   ...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setpages</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setfree"></A>d_setfree</H3>
+<FONT SIZE="2"><P>Free set type read-lock</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setfree</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the read or exclusive lock is to be freed.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_setfree</B> frees the read or exclusively locked data files associated with set type <I>SET</I>.  This function can only be executed outside of a transaction.  Inside transactions, locks are freed only by functions <B>d_trend</B> and <B>d_trabort</B>.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Read lock on <I>SET</I>.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOTLOCKED<BR>
+Set type is not locked.</P>
+<P>S_TRFREE<BR>
+Attempt to free a read lock inside a transaction.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name */
+   ...
+/* Print list of authors */
+d_setlock(AUTHOR_LIST, "r", task, 2);
+for ( d_findfm(AUTHOR_LIST, task, 2);
+   db_status == S_OKAY; 
+   d_findnm(AUTHOR_LIST, task, 2) ) 
+{
+   d_crread(NAME, name, task, 2);
+   printf("author: %s\n", name);
+}
+d_setfree(AUTHOR_LIST, task, 2);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keyfree, d_keylock, d_keylstat, d_lock, d_recfree, d_reclock, d_reclstat, d_setlock, d_setlstat, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setkey"></A>d_setkey</H3>
+<FONT SIZE="2"><P>Set value of key field for <B>d_makenew</P></B></FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setkey</B>(long <I>FIELD</I>, const void *<I>value</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>FIELD<BR>
+The field type of the key field for which the value is to be stored.</P>
+<P>value<BR>
+A pointer to the value of the field to be stored.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function must be called for each key field in a record that will subsequently be created by a call to <B>d_makenew</B>.  This establishes the data content of all key fields defined in the record so that the system can create those keys when<B> d_makenew</B> is called.  Optional and compound key fields cannot be processed by <B>d_setkey</B>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVFLD<BR>
+Invalid field type.  Either you did not pass a field type or you passed a field type that is not in the current record.</P>
+<P>S_NOTKEY<BR>
+<I>FIELD</I> is not a key field.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* create a new info record */
+d_setkey(ID_CODE, "db022", task, 1);
+d_makenew(INFO, task, 1);
+   ...</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_fillnew, d_keystore, d_makenew</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setlock"></A>d_setlock</H3>
+<FONT SIZE="2"><P>Lock data files associated with set type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setlock</B>(int <I>SET</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the files are to be locked.</P>
+<P>type<BR>
+A pointer to a string containing the type of lock to be applied.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function places a lock on the data files associated with <I>SET</I>.  The type of lock to be applied is specified by <I>type</I> as follows:</P>
+
+<UL>
+<LI>"r" (read lock) 
+  
+<LI>"w" (write lock) 
+  
+<LI>"x" (exclusive lock) 
+  
+<LI>"k" (keep lock)</LI></UL>
+
+<P>Read locks allow other programs to read but not update the locked files.  Write locks prevent all other programs from accessing the locked files and can only be issued from within a transaction.  Exclusive locks also prevent all other programs from accessing the locked files but can be issued independent of transactions.  Keep locks can only be issued from within a transaction and will keep read- and write-locked files read-locked after a transaction ends.  (<B>d_trend</B> normally frees all read- and write-locked files.)  The set type must be locked to apply a keep lock.  Otherwise, status S_NOTLOCKED is returned.</P>
+<P>Within a transaction, a read-locked file can be upgraded to a write or exclusive lock by calling <B>d_setlock</B> with a write or exclusive lock where a read lock already exists.  If the upgrade lock request is denied, the read lock will remain in effect.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_BADTYPE<BR>
+Invalid lock type specified.  You may have passed a character (for example, 'r') instead of a string (for example, "r").</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOTFREE<BR>
+Set type already locked by your application.</P>
+<P>S_NOTRANS<BR>
+Requested a write lock outside of a transaction.</P>
+<P>S_UNAVAIL<BR>
+One of the requested files is not available (that is, you were on the queue waiting for a file longer than your current time out value).</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char name[32];   /* author name */
+   ...
+/* Print list of authors */
+d_setlock(AUTHOR_LIST, "r", task, 0);
+for ( d_findfm(AUTHOR_LIST, task, 0); 
+   db_status == S_OKAY; 
+   d_findnm(AUTHOR_LIST, task, 0) )
+{
+   d_crread(NAME, name, task, 0);
+   printf("author: %s\n", name);
+}
+d_setfree(AUTHOR_LIST, task, 0);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_freeall, d_keyfree, d_keylock, d_keylstat, d_lock, d_recfree, d_reclock, d_reclstat, d_setfree, d_setlstat, d_timeout, d_trabort, d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setlstat"></A>d_setlstat</H3>
+<FONT SIZE="2"><P>Get lock status of set type</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setlstat</B>(int <I>SET</I>, char *<I>type</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the lock status is to be checked.</P>
+<P>type<BR>
+A pointer to a character variable that contains the current lock type status.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This functions returns the calling process's current lock status for set type <I>SET</I> in the character variable pointed to by <I>type</I>.  The lock types that can be returned are as follows:</P>
+
+<UL>
+<LI>'r' (read lock) 
+  
+<LI>'w' (write lock) 
+  
+<LI>'x' (exclusive lock) 
+  
+<LI>'k' (keep lock) 
+  
+<LI>'s' (static record) 
+  
+<LI>'f' (free; one-user mode always returns an 'f' [free] status)</LI></UL>
+
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char lstat;
+   ...
+d_setlstat(HAS_PUBLISHED, &amp;lstat, task, CURR_DB);
+if ( lstat == 'f' )
+   d_setlock(HAS_PUBLISHED, "r", task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_keylstat, d_reclock, d_reclstat, d_setlock</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setmm"></A>d_setmm</H3>
+<FONT SIZE="2"><P>Set current member from current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setmm</B>(int <I>TO_SET</I>, int <I>FR_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>TO_SET<BR>
+The set type to which the current member will be assigned from the current member of <I>FR_SET</I>.</P>
+<P>FR_SET<BR>
+The set type from which the current member of <I>TO_SET</I> will be assigned.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns as current member of <I>TO_SET</I> the current member of <I>FR_SET</I>.  The current member of <I>FR_SET</I> must be a legal member of <I>TO_SET</I> that is also connected to a <I>TO_SET</I> occurrence.  The current owner of <I>TO_SET</I> becomes the new member's owner.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_mem[<I>TO_SET</I>] = curr_mem[<I>FR_SET</I>];</P>
+<P>curr_own[<I>TO_SET</I>] = owner of curr_mem[<I>FR_SET</I>] via <I>TO_SET</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but old or deleted data may be read.  Use a read lock on <I>FR_SET</I> to ensure that current data is read.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVMEM<BR>
+The current member of <I>FR_SET</I> is not a legal member of <I>TO_SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOTCON<BR>
+The current member of <I>FR_SET</I> is not connected to an occurrence of <I>TO_SET</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* print key words associated with tech. info */
+while ( d_findnm(INFO_TO_KEY, task, CURR_DB) == S_OKAY )
+{
+<I>   </I>d_setmm(KEY_TO_INFO, INFO_TO_KEY, task, CURR_DB);
+   d_csoread(INFO_TO_KEY, WORD, key_word, task, CURR_DB);
+   printf("%s\n", key_word);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmo, d_setmr, d_setom, d_setoo, d_setor, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setmo"></A>d_setmo</H3>
+<FONT SIZE="2"><P>Set current member from current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setmo</B>(int <I>M_SET</I>, int <I>O_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>M_SET<BR>
+The set type to which the current member will be assigned from the current owner of <I>O_SET</I>.</P>
+<P>O_SET<BR>
+The set type from which the current owner will be copied to the current member of <I>M_SET</I>.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns as the current member of <I>M_SET</I> the current owner of <I>O_SET</I>.  The current owner of <I>O_SET</I> must be a legal member of <I>M_SET</I> and must be connected to an <I>M_SET</I> occurrence.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_mem[<I>M_SET</I>] = curr_own[<I>O_SET</I>];</P>
+<P>curr_own[<I>M_SET</I>] = owner of curr_own[<I>O_SET</I>] via <I>M_SET</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>REC</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVMEM<BR>
+The current owner of <I>O_SET</I> is not a legal member of <I>M_SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+<P>S_NOTCON<BR>
+The current owner of <I>O_SET</I> is not connected to an occurrence of <I>M_SET</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>long count;
+...
+/* delete author, if he has no pubs. */
+d_members(HAS_PUBLISHED, &amp;count, task, CURR_DB);
+if ( count == 0L )
+{
+<I>   </I>d_setmo(AUTHOR_LIST, HAS_PUBLISHED, task, CURR_DB);
+   d_discon(AUTHOR_LIST, task, CURR_DB);
+   d_delete(task, CURR_DB);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmr, d_setom, d_setoo, d_setor, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setmr"></A>d_setmr</H3>
+<FONT SIZE="2"><P>Set current member from current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setmr</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current member will be assigned from the current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current member of <I>SET</I> from the current record.  The current record must be a legal member of <I>SET</I> and must be connected to a <I>SET</I> occurrence.  The new current owner of <I>SET</I> is obtained from the new current member of <I>SET</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_mem[<I>SET</I>] = curr_rec;</P>
+<P>curr_own[<I>SET</I>] = owner of curr_rec via <I>SET</I>;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on record type of current record to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVMEM<BR>
+The current record is not a legal member of <I>M_SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCR<BR>
+The current record is null.</P>
+<P>S_NOTCON<BR>
+The current record is not connected to an occurrence of <I>M_SET</I>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* disconnect and delete intersect and (possibly) key word */
+d_setom(INFO_TO_KEY, HAS_PUBLISHED, task, 0);
+while ( d_findnm(INFO_TO_KEY, task, 0) == S_OKAY )
+{
+   d_discon(INFO_TO_KEY, task, 0);
+<I>   </I>d_setmr(KEY_TO_INFO, task, 0);
+   d_discon(KEY_TO_INFO, task, 0);
+   d_delete(task, 0);
+   d_members(KEY_TO_INFO, &amp;count, task, 0);
+   if ( count == 0L )
+   {
+      /* delete key word */
+      d_setro(KEY_TO_INFO, task, 0);
+      d_delete(task, 0);
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setom, d_setoo, d_setor, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setnum"></A>d_setnum</H3>
+<FONT SIZE="2"><P>Returns set table index from #<B>define</B> and database number</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setnum</B>(int *<I>index</I>, int <I>SET</I>, DB_TASK *<I>task,</I> int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>index<BR>
+The index into the set table for <I>SET</I>.</P>
+<P>SET<BR>
+The set type for which to get the index.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function takes the <B>#define</B> for sets (from <B>ddlp</B>) and the database number and returns the set table index for that record.  The index number can then be used with functions like <B>d_internals</B>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.  (If an error occurs, the output buffer is not changed.)</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set referenced.</P>
+<P>S_INVTASK<BR>
+Invalid DB_TASK referenced.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>#include "db.star.h"
+#include "internal.h"
+
+{
+   SET_ENTRY      setEntry;
+   int            setIndex;
+   ...
+   d_open("tims", "s", task);
+   
+   /* get info about the set type */
+   d_setnum(&amp;setIndex, HAS_PUBLISHED, task, 0);
+   d_internals(task, TOPIC_SET_TABLE, 0, setIndex, 
+      &amp;setEntry, sizeof(SET_ENTRY));
+   ...
+}</PRE>
+</FONT><H4>See Also</H4>
+<FONT SIZE="2"><P>None.</P>
+<P>&nbsp;</P>
+</FONT><H3>
+<HR>
+<A name="d_setom"></A>d_setom</H3>
+<FONT SIZE="2"><P>Set current owner from current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setom</B>(int <I>O_SET</I>, int <I>M_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>O_SET<BR>
+The set type whose current owner will be assigned from the current member of <I>M_SET</I>.</P>
+<P>M_SET<BR>
+The set type whose current member will become the current owner of <I>O_SET</I>.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current owner of <I>O_SET</I> from the current member of <I>M_SET</I>.  The current member of <I>M_SET</I> must be a legal owner of <I>O_SET</I>.  The current member of O<I>_SET</I> will become NULL_DBA.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_own[<I>O_SET</I>] = curr_mem[<I>M_SET</I>];</P>
+<P>curr_mem[<I>O_SET</I>] =   NULL_DBA;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>M_SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVOWN<BR>
+Current member of <I>M_SET</I> is not a legal owner of <I>O_SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* disconnect and delete intersect and (possibly) key word */
+d_setom(INFO_TO_KEY, HAS_PUBLISHED, task, 1);
+while ( d_findnm(INFO_TO_KEY, task, 1) == S_OKAY )
+{
+   d_discon(INFO_TO_KEY, task, 1);
+   d_setmr(KEY_TO_INFO, task, 1);
+   d_discon(KEY_TO_INFO, task, 1);
+   d_delete(task, 1);
+   d_members(KEY_TO_INFO, &amp;count, task, 1)
+   if ( count == 0L )
+   {
+      /* delete key word */
+      d_setro(KEY_TO_INFO, task, 1);
+      d_delete(task, 1);
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setmr, d_setoo, d_setor, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setoo"></A>d_setoo</H3>
+<FONT SIZE="2"><P>Set current owner from current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setoo</B>(int <I>TO_SET</I>, int <I>FR_SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>TO_SET<BR>
+The set type whose current owner will be assigned from the current owner of <I>FR_SET</I>.</P>
+<P>FR_SET<BR>
+The set type whose current owner will be assigned as the current owner of <I>TO_SET</I>.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current owner of <I>TO_SET</I> from the current owner of <I>FR_SET</I>.  The current owner of <I>FR_SET</I> must be a legal owner of <I>TO_SET</I>.  The current member of <I>TO_SET</I> will become NULL_DBA.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_own[<I>TO_SET</I>] = curr_own[<I>FR_SET</I>];</P>
+<P>curr_mem[<I>TO_SET</I>] =   NULL_DBA;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>FR_SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVOWN<BR>
+Current owner of <I>FR_SET</I> is not a legal owner of <I>TO_SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* make curr_member of AUTHOR_LIST null */
+d_setoo(AUTHOR_LIST, AUTHOR_LIST, task, CURR_DB);
+
+/* print list of author names */
+while ( d_findnm(AUTHOR_LIST, task, CURR_DB) == S_OKAY)
+{
+   d_crread(NAME, name, task, CURR_DB);
+   printf("author: %s\n", name);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setmr, d_setom, d_setor, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setor"></A>d_setor</H3>
+<FONT SIZE="2"><P>Set current owner from current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setor</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the current record will be assigned as current owner.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current owner of <I>SET</I> from the current record.  The current record must be a legal owner of <I>SET</I>.  The current member of <I>SET</I> will become NULL_DBA.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_own[<I>SET</I>] = curr_rec;</P>
+<P>curr_mem[<I>SET</I>] =   NULL_DBA;</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVOWN<BR>
+Current record is not a legal owner of <I>SET</I>.</P>
+<P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* list "database technology" publications */
+my_dbn = d_dbnum("tims", task);
+if (d_keyfind(KEYWORD, "database technology", task, my_dbn)==S_OKAY)
+{
+   d_setor(KEY_TO_INFO, task, my_dbn);
+   while ( d_findnm(KEY_TO_INFO, task, my_dbn) == S_OKAY )
+   {
+      d_findco(INFO_TO_KEY, task, my_dbn);
+      d_recread(&amp;irec, task, my_dbn);
+      pr_info();
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setmr, d_setom, d_setoo, d_setrm, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setpages"></A>d_setpages</H3>
+<FONT SIZE="2"><P>Set the number of virtual memory pages</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setpages</B>(int <I>dbpages</I>, int <I>ovpages</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>dbpages<BR>
+The number of pages for the database cache.</P>
+<P>ovpages<BR>
+The number of pages for the transaction overflow cache.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_setpages</B> is used to specify to the <B><I>db.*</B></I> runtime system how many pages to allocate for the database and transaction overflow virtual memory caches.  The default values are 17 database pages and 5 overflow pages.  This function must be called prior to <B>d_open</B>.</P>
+<P>The best performance is achieved by using as high a <I>dbpages</I> value as you have memory to support.  The <B><I>db.*</B></I> runtime utilizes a hashing algorithm to determine if a page is in the cache.  </P>
+<P>The <I>ovpages</I> value should be kept low (at least 3 but generally less than 10) unless your application has many very long and complex transactions that will spill over into the transaction overflow file.</P>
+<P>If you do not have enough memory to support the specified number of pages, function <B>d_open</B> will return status S_NOMEMORY, in which case you should reduce the specified amount and try again.</P>
+<P>The minimum number for the cache pages is 5.  The minimum number for the overflow-index pages is 3.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVNUM<BR>
+The maximum allowed pages is 32749.</P>
+<P>S_SETPAGES<BR>
+<B>d_setpages</B> was called after the database was opened.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_setpages(256, 5, task);
+d_open("tims", "s", task);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_open</B>, <B>d_setfiles</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setrm"></A>d_setrm</H3>
+<FONT SIZE="2"><P>Set current record from current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setrm</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type whose current member will be assigned as the current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current record from the current member of <I>SET</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = curr_mem[<I>SET</I>];</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCM<BR>
+The current member is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>struct info info_rec;
+...
+d_findnm(HAS_PUBLISHED, task, CURR_DB);
+d_setrm(HAS PUBLISHED, task, CURR_DB);
+d_recread(&amp;info_rec, task, CURR_DB);
+pr_info(&amp;info_rec);   /* print info record */</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setmr, d_setom, d_setoo, d_setor, d_setro</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_setro"></A>d_setro</H3>
+<FONT SIZE="2"><P>Set current record from current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_setro</B>(int <I>SET</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type whose current owner will be assigned as current record.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the current record from the current owner of <I>SET</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>curr_rec = curr_own[<I>SET</I>];</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>Allowed with no locks, but may read old or deleted data.  Use a read lock on <I>SET</I> to ensure current data.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* disconnect and delete intersect and (possibly) key word */
+d_setom(INFO_TO_KEY, HAS_PUBLISHED, task, 2);
+while ( d_findnm(INFO_TO_KEY, task, 2) == S_OKAY )
+{
+   d_discon(INFO_TO_KEY, task, 2);
+   d_setmr(KEY_TO_INFO, task, 2);
+   d_discon(KEY_TO_INFO, task, 2);
+   d_delete(task, 2);
+   d_members(KEY_TO_INFO, &amp;count, task, 2);
+   if ( count == 0L )
+   {
+      /* delete key word */
+      d_setro(KEY_TO_INFO, task, 2);
+      d_delete(task, 2);
+   }
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_setmm, d_setmo, d_setmr, d_setom, d_setoo, d_setor, d_setrm</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_stscm"></A>d_stscm</H3>
+<FONT SIZE="2"><P>Set last access timestamp of current member</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_stscm</B>(int <I>SET</I>, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for whose current member the last access timestamp is to be set.</P>
+<P>ts<BR>
+An unsigned long variable containing the timestamp value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_stscm</B> assigns the last access timestamp in the currency table for the current member of <I>SET</I> from the unsigned long variable <I>ts</I>.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>This function should be used with function <B>d_csmset</B> to restore the current 
+  member's database address and last access timestamp for those record types 
+  that are timestamped.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCM<BR>
+There is no current member.</P>
+<P>S_TIMESTAMP<BR>
+The current member record type is not timestamped.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>/* print key words for (timestamped) info record */
+
+DB_ADDR        dba;
+unsigned long  ts;
+   ...
+/* save current member of key_to_info set in case info record 
+   was retrieved from a key word scan */
+d_csmget(KEY_TO_INFO, &amp;dba, task, 0);
+d_gtscm(KEY_TO_INFO, &amp;ts, task, 0);
+   ...   /* print key words thru info_to_key */
+/* restore current member */
+d_csmset(KEY_TO_INFO, &amp;dba, task, 0);
+d_stscm(KEY_TO_INFO, ts, task, 0);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_csmget, d_csmset, d_gtscm, d_gtsco, d_gtscr, d_stsco, d_stscr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_stsco"></A>d_stsco</H3>
+<FONT SIZE="2"><P>Set last access timestamp of current owner</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_stsco</B>(int <I>SET</I>, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for whose current owner the last access timestamp is to be set.</P>
+<P>ts<BR>
+An unsigned long variable containing the timestamp value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_stsco</B> assigns the last access timestamp in the currency table for the current owner of <I>SET</I> from the unsigned long variable <I>ts</I>.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>This function should be used with function <B>d_csoset</B> to restore the current 
+  owner's database address and last access timestamp, for those record types 
+  that are timestamped.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+<P>S_TIMESTAMP<BR>
+The current owner record type is not timestamped.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR        dba;
+unsigned long  ts;
+...
+/* save current (timestamped) author on stack for later processing */
+d_csoget(HAS_PUBLISHED, &amp;dba, task, 3);
+d_gtsco(HAS_PUBLISHED, &amp;ts, task, 3);
+...
+/* restore saved author as owner of has_published */
+d_csoset(HAS_PUBLISHED, &amp;dba, task, 3);
+<I>d_stsco</I>(HAS_PUBLISHED, ts, task, 3);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_csoget, d_csoset, d_gtscm, d_gtsco, d_gtscr, d_stscm, d_stscr</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_stscr"></A>d_stscr</H3>
+<FONT SIZE="2"><P>Set last access timestamp of current record</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_stscr</B>(unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>ts<BR>
+An unsigned long variable containing the timestamp value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_stscr</B> assigns the last access timestamp in the currency table for the current record from the unsigned long variable <I>ts</I>.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>This function should be used with function <B>d_crset</B> to restore the current 
+  record's database address and last access timestamp, for those record types 
+  that are timestamped.</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOCR<BR>
+There is no current record.</P>
+<P>S_TIMESTAMP<BR>
+The current record type is not timestamped.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR        save_dba;
+unsigned long  ts;
+   ...
+/* save current record for later retrieval */
+d_crget(&amp;save_dba, task, CURR_DB);
+d_gtscr(&amp;ts, task, CURR_DB);
+   ...
+/* later, retrieve saved record */
+d_crset(&amp;save_dba, task, CURR_DB);
+d_stscr(ts, task, CURR_DB);
+if ( d_crstat(task, CURR_DB) == S_OKAY )
+   d_recread(&amp;irec, task, CURR_DB);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_crget, d_crset, d_gtscm, d_gtsco, d_gtscr, d_stscm, d_stsco</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_stscs"></A>d_stscs</H3>
+<FONT SIZE="2"><P>Set last access timestamp for set</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_stscs</B>(int SET, unsigned long <I>ts</I>, DB_TASK *<I>task</I>, int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>SET<BR>
+The set type for which the last access timestamp is to be set.</P>
+<P>ts<BR>
+An unsigned long variable to contain the timestamp value.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function assigns the last access timestamp in the currency table for <I>SET</I> from the unsigned long variable <I>ts</I>.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_INVSET<BR>
+Invalid set type.  Probably passed a record or field type instead of a set type.</P>
+<P>S_NOCO<BR>
+The current owner is null.</P>
+<P>S_TIMESTAMP<BR>
+The set type is not timestamped.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR dba;
+unsigned long ots, sts;
+...
+/* save current (timestamped) author on stack for later processing */
+d_csoget(HAS_PUBLISHED, &amp;dba, task, 2);
+d_gtsco(HAS_PUBLISHED, &amp;ots, task, 2);
+d_gtscs(HAS_PUBLISHED, &amp;sts, task, 2);
+...
+/* restore saved author as owner of has_published */
+d_csoset(HAS_PUBLISHED, &amp;dba, task, 2);
+d_stsco(HAS_PUBLISHED, ots, task, 2);
+d_stscs(HAS_PUBLISHED, sts, task, 2);</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_gtscs</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_timeout"></A>d_timeout</H3>
+<FONT SIZE="2"><P>Set the lock request timeout value</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_timeout</B>(int <I>secs</I>, DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>secs<BR>
+The number of seconds to wait before timing out.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function sets the amount of time the lock manager allows an unsatisfied lock request to wait on the lock request queue for the user making the <B>d_timeout</B> call.  The number of seconds to wait is specified by <I>secs</I>.  A negative value indicates that no lock requests are set to timeout (that is, they wait forever).  A value of 0 causes lock requests to time out if they cannot be granted immediately.  </P>
+<P>Since timeouts are the only means of detecting potential deadlock situations, be very cautious about turning off timeouts.  The default timeout value is 10 seconds and is reset whenever the database is opened.  Thus, <B>d_timeout</B> must be called after <B>d_open</B>.  Status S_UNAVAIL is returned by the lock request functions <B>d_lock</B>, <B>d_reclock</B>, and <B>d_setlock</B> when a timeout occurs.</P>
+<P>In one-user mode, this function returns the status code S_OKAY.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_DBOPEN<BR>
+Database is not open.  Function called before <B>d_open</B>.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_open("tims", "s", task);
+d_timeout(30, task);        /* set a 30 second timeout value */</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_lock, d_keylock, d_reclock, d_setlock</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_trabort"></A>d_trabort</H3>
+<FONT SIZE="2"><P>Abort transaction</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_trabort</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function aborts a database transaction.  All database changes made between the call to <B>d_trbegin</B> and the call to <B>d_trabort</B> are discarded and not written to the database.  All read and write locks for all open databases are freed.  Moreover, no keep locks are processed.  Only exclusive-locked files remain locked after a <B>d_trabort</B> call.</P>
+<P>Function <B>d_trabort</B> is used in situations where, during a transaction and after some changes have been made, a user error, application-dependent condition (for example, not enough inventory items), or a <B><I>db.*</B></I> error requires that the update be aborted.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_TRNOTACT<BR>
+Transaction not active.  There is no active transaction to abort.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_trbegin("orderentry", task);
+   ...   /* enter customer info */
+   ...   /* enter order info */
+   ...   /* check inventory */
+if ( items_requested &gt; items_available )
+{
+   d_trabort(task);
+   ...   /* inform user */
+}
+else
+{
+   ...   /* complete update */
+   d_trend(task);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_trbegin, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_trbegin"></A>d_trbegin</H3>
+<FONT SIZE="2"><P>Begin transaction</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_trbegin</B>(const char *<I>tid</I>, DB_TASK *<I>task</I>)</P>
+<P>Unicode version:  (char *) changes to (wchar_t *)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>tid<BR>
+Transaction identification string.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_trbegin</B> is called to mark the beginning of a new database transaction.  All database changes made between the call to <B>d_trbegin</B> and a subsequent call to<B> d_trend</B> are grouped as a transaction and written to the database as a unit by function <B>d_trend</B>.  Any read locks that were active before the call to <B>d_trbegin</B> remain active after the call.</P>
+<P>The transaction ID, <I>tid</I>, is a string that identifies or names the transaction.  The contents of this string are arbitrary.  It is used to uniquely identify each transaction and is to be generated by the program.  It is passed to the archive logging functions by <B>d_trend</B> to mark specific transactions.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_TRACTIVE<BR>
+Transaction already active.  Transactions cannot be nested.</P>
+<P>S_TRANSID<BR>
+Transaction ID not specified or NULL.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>char tr_id[25];   /* transaction id string */
+int  tr_tot = 0;  /* total number of transactions */
+   ...
+sprintf(tr_id, "tr# %d: order entry", ++tr_tot);
+d_trbegin(tr_id, task);
+   ...   /* enter customer info */
+   ...   /* enter order info */
+   ...   /* check inventory */
+if ( items_requested &gt; items_available )
+{
+   d_trabort(task);
+   ...   /* inform user */
+}
+else
+{
+   ...   /* complete update */
+   d_trend(task);
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_trabort, d_trend</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_trend"></A>d_trend</H3>
+<FONT SIZE="2"><P>End transaction</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_trend</B>(DB_TASK *<I>task</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>task<BR>
+A pointer to a DB_TASK structure.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>This function ends a database transaction by writing to the database all changes made since the most recent call to <B>d_trbegin</B>.  The changes are first written to the user log file to support auto-recovery and are then written to the database.  The process of writing changes to the database is called a transaction.</P>
+<P>Except for exclusive-locked files and keep-locked files, <B>d_trend</B> frees all locked files for all databases opened by an application program.  After a <B>d_trend</B> call, exclusive-locked files remain exclusive locked, and keep-locked files remain read-locked.</P>
+</FONT><B><I><BLOCKQUOTE>Note:</B> </I>A useful technique in dealing with status S_NOSPACE is to store on the disk a "threshold" file of some reasonable size (the contents are immaterial).  Then, when<B> d_trend</B> returns S_NOSPACE, simply delete (unlink) the threshold file and reissue the call to<B> d_trend</B>.  The <B><I>db.*</B></I> program will 
+  reprocess and complete the transaction, assuming, of course, there is now 
+  enough disk space available (see the example below).</BLOCKQUOTE>
+<H4>Currency Changes</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>S_NOSPACE<BR>
+No more space on disk.</P>
+<P>S_TRNOTACT<BR>
+Transaction not active.  There is no active transaction to end.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>d_trbegin("orderentry", task);
+   ...   /* enter order info */
+if ( d_trend(task) == S_NOSPACE )
+{
+   unlink("thrshold.sav");
+   d_trend(task);
+   ...   /* inform user that disk space is low */
+}</PRE>
+</FONT><H4>See Also</H4>
+<B><FONT SIZE="2"><P>d_trabort, d_trbegin</P>
+</B><P>&nbsp;</P></FONT><H3>
+<HR>
+<A name="d_wrcurr"></A>d_wrcurr</H3>
+<FONT SIZE="2"><P>Write currency tables</P>
+</FONT><H4>Prototypes</H4>
+<FONT SIZE="2"><P>int <B>d_wrcurr</B>(DB_ADDR *<I>currbuff</I>, DB_TASK *<I>task,</I> int <I>dbn</I>)</P>
+</FONT><H4>Parameters</H4>
+<FONT SIZE="2"><P>currbuff<BR>
+A pointer to a <B>d_rdcurr</B>-allocated buffer that contains the currency table.</P>
+<P>task<BR>
+A pointer to a DB_TASK structure.</P>
+<P>dbn<BR>
+The database number.</P>
+</FONT><H4>Description</H4>
+<FONT SIZE="2"><P>Function <B>d_wrcurr</B> restores the currency tables (and timestamps, if used) from <I>currbuff</I> and then frees its allocated memory.</P>
+<P>This function can be used with <B>d_rdcurr</B> to save and restore the state of a database routine.  These functions are used before or after calling other routines that may have changed the currency in unknown ways.</P>
+</FONT><H4>Currency Changes</H4>
+<FONT SIZE="2"><P>All currency.</P>
+</FONT><H4>Locking Requirements</H4>
+<FONT SIZE="2"><P>None.</P>
+</FONT><H4>Return Codes</H4>
+<FONT SIZE="2"><P>No special codes.</P>
+</FONT><H4>Example</H4>
+<FONT COLOR="#0000ff"><PRE>DB_ADDR *ctab;   /* save currency table */
+int csize;       /* size of saved currency table */
+   ...
+/* save currency tables */
+d_rdcurr(&amp;ctab, &amp;csize, task, CURR_DB);
+   ...   /* do some other processing */
+/* restore currency tables */
+if ( need_to_restore )
+   d_wrcurr(ctab, task, CURR_DB);
+else
+   free( ctab );</PRE>
+</FONT><FONT SIZE="2"></FONT></BODY>
+</HTML>

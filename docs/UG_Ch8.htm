@@ -1,0 +1,1810 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset="windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>db.* User's Guide Chapter 8</TITLE>
+</HEAD>
+<BODY>
+
+<H1><A name="ida"></A>Chapter 8<BR>
+Interactive Database Access Utility (ida)</H1>
+<H2><A name="Utility"></A>8.1   The ida Utility </H2>
+<FONT SIZE="2"><P>The Interactive Database Access utility (<B>ida</B>) is a tool for manipulating <B><I>db.*</B></I> databases.  It is an easy-to-use, menu-driven utility that allows you to:</P>
+
+<UL>
+<LI>Maintain an existing database 
+  
+<LI>Access data stored in the database 
+  
+<LI>Test a database design 
+  
+<LI>Create and modify data 
+  
+<LI>Learn to use <B><I>db.*</LI></UL></B></I><P>The <B>ida</B> utility has been designed for application developers and database administrators and therefore is not suitable for most non-technical users.  </P>
+</FONT><H3><A name="Accessing"></A>8.1.1   Accessing ida</H3>
+<FONT SIZE="2"><P>To access the <B>ida</B> utility:</P>
+<OL>
+
+<LI>Log in to your user account. 
+  
+<LI>Use the <B>cd</B> command to change to the directory that contains the database dictionary file (<B><I><U>dbname</I></U>.dbd</B>) and the data and key files. (For 
+  further information, see the note that follows this procedure.) 
+  
+<LI>To access <B>ida</B>, enter the following:</LI></OL>
+<DIR>
+<DIR>
+
+</FONT><FONT COLOR="#0000ff"><PRE>ida &lt;Enter&gt;</PRE></DIR></DIR>
+
+<OL START="4">
+
+</FONT><FONT SIZE="2"><LI>When the <B>ida</B> title page appears, press any key to bring up the <B>ida</B> main menu.</LI></OL>
+
+</FONT><BLOCKQUOTE>Note:  Usually, <B>ida</B> should be executed from within the file directory that contains the database dictionary file (<B>dbname.dbd</B>) and the data and key files.  However, the <B>Parameters Dictionary_path</B> and <B>Parameters Files_path</B> commands can be used from the <B>Parameters</B> command menu to locate the database files before opening the database. Alternatively, you can use the environment variables DBDPATH and DBFPATH to tell <B>ida</B> where the database files are located, or you can check the <B>db.star.ini</B> file.  See section 5.2.2, "Operational Environment," for a complete discussion of <B><I>db.*</B></I> path environment variables.</BLOCKQUOTE>
+<H3><A name="Main"></A>8.1.2   The ida Main Menu</H3>
+<FONT SIZE="2"><P>Figure 8-1 shows the first <B>ida</B> menu, referred to as the main menu.  This menu provides access to all other <B>ida</B> menus.</P>
+<HR><DIR>
+<DIR>
+<DIR>
+
+</FONT><FONT COLOR="#0000ff"><PRE>IDA - db.* Interactive Database Access Utility
+<B>Open</B>  Access  Initialize  Close  Parameters  Quit
+Open a db.* database</PRE></DIR></DIR></DIR>
+<HR >
+</FONT><FONT SIZE="2"><B><P ALIGN="center">Fig. 8-1.  ida Main Menu</P>
+</B><P >All <B>ida</B> menus use the top three lines of each screen.  Each menu includes the following:</P></FONT>
+<TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="541">
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>1st line</FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>Menu title</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>2nd line</FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>A list of available commands, one of which is highlighted</FONT></P></TD>
+</TR>
+<TR><TD WIDTH="18%" VALIGN="top">
+<FONT SIZE="2"><P>3rd line</FONT></P></TD>
+<TD WIDTH="82%" VALIGN="top">
+<FONT SIZE="2"><P>A description of the highlighted command</FONT></P></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE="2"><P>You can see what a command does by moving the highlight to that command.  When a command is highlighted, the description of that command appears on the 3rd line.</P>
+</FONT><H4><A name="Highlight"></A>Moving the Highlight on a Menu</H4>
+<FONT SIZE="2"><P>To move the highlight on a menu:</P>
+
+<UL>
+<LI>To the right, press either the &lt;Space&gt; or the 
+  &lt;Tab&gt; key. 
+  
+<LI>To the left, press the &lt;Backspace&gt; key.</LI></UL>
+
+<P>To leave the <B>ida</B> utility, you use the <B>Quit</B> command from the main menu.  For more information about using the commands on the <B>ida</B> main menu, including the <B>Quit</B> command, see section 8.2.</P>
+</FONT><H3><A name="Concepts"></A>8.1.3   Using ida: Concepts and Procedures</H3>
+<FONT SIZE="2"><P>This section describes the concepts and procedures you will need in order to use the <B>ida</B> utility.  These concepts and techniques include messages from <B>ida</B>, executing a command from an <B>ida</B> menu (from the 2nd line of the screen), choosing an option from a numbered list (displayed below the top three lines), moving the highlight on a numbered list, opening a database, accessing a submenu, exiting a submenu, and selecting a record to modify.  </P>
+</FONT><H4><A name="Messages"></A>Messages from ida</H4>
+<FONT SIZE="2"><P>The last two lines of an <B>ida</B> screen may display a message from <B>ida. </B> A message may tell you that a command has been completed or that there has been an input error or database error.  Messages are displayed in reverse video and require pressing a key to return to the menu.</P>
+</FONT><H4><A name="Command"></A>Executing a Command from a Menu</H4>
+<FONT SIZE="2"><P>To execute a command from a menu:</P>
+
+<UL>
+<LI>Highlight the command and press &lt;Enter&gt;.<BR>or
+  
+<LI>Type the first letter of the command.</LI></UL>
+
+<P>Executing a command from an <B>ida</B> menu invokes a submenu, a numbered list, an <B>ida</B>/<B><I>db.*</B></I> function, or displays information.</P>
+</FONT><H4><A name="Option"></A>Choosing an Option from a Numbered List</H4>
+<FONT SIZE="2"><P>Following the execution of commands such as <B>Open</B>, <B>Scan</B>, and <B>Find</B>, a numbered list of available databases, key fields, records, or sets will be displayed.  The entry that was last selected will be highlighted or, initially, the first entry will be highlighted.</P>
+<P>Figure 8-2 shows an example of a submenu that offers a numbered option list.</P>
+<HR><DIR>
+<DIR>
+<DIR>
+
+</FONT><FONT COLOR="#0000ff"><PRE>Scan and view records based on database address
+<B>Scan</B>  First  Last  Next  Previous  X_exit
+Scan and view records based on database address
+<BR>
+SELECT RECORD TYPE:
+   0.   AUTHOR
+   1.   INFO
+   2.   BORROWER
+   3.   INFOTEXT 
+   4.   KEY_WORD
+   5.   INTERSECT
+   6.   SYSTEM </PRE></DIR></DIR></DIR>
+
+</FONT><HR><FONT SIZE="2">
+<B><P ALIGN="center">Fig. 8-2.  Example Selection List</P>
+</B><P>To choose an option from a numbered list do one of the following: </P>
+
+<UL>
+<LI>Type the number of the option and press 
+  &lt;Enter&gt;.<BR>or
+  
+<LI>Using the procedure for moving the highlight on a 
+  numbered list (described below), highlight the option and press &lt;Enter&gt;.</LI></UL></FONT><H4><A name="MovingHighlight"></A>Moving the Highlight on a Numbered List</H4>
+<FONT SIZE="2"><P>When moving the highlight on a numbered list, you use a different procedure than you do when you move the highlight on a menu.</P>
+<P>To move the highlight on a numbered list:</P>
+
+<UL>
+<LI>Down the list, type the &lt;d&gt; key. 
+  
+<LI>Up the list, type the &lt;u&gt; key.</LI></UL>
+
+<P>Selection lists that extend beyond a single screen will either scroll or redisplay, depending on the position of the highlighted selection.</P>
+</FONT><H4><A name="Opening"></A>Opening a Database</H4>
+<FONT SIZE="2"><P>Although you can access <B>ida</B> and view the main menu, there is little you can do until you open a database.  (You can execute the <B>Parameters</B> and <B>Quit</B> commands, but the <B>Access</B>, <B>Initialize</B>, and <B>Close</B> commands will not work without an open database.)  If you are new to <B>ida</B>, you can use the sample <B>tims</B> database (provided with <B><I>db.*</B></I>) to learn any of the procedures described in this chapter.</P>
+<P>To open a database:</P>
+<OL>
+
+<LI>From the <B>ida</B> main menu, highlight and execute the <B>Open</B> command. 
+  
+<LI>On the <B>Open a <I>db.*</I> database</B> submenu, execute the command for the type of user access you want.  (If you are just learning to use <B>ida</B>, use the One_User command.) 
+  
+<LI>From the <B>Select Database</B> list, choose the database you want to open.  When you choose a database, the list disappears.</LI></OL>
+
+</FONT><H4><A name="Submenu"></A>Accessing a Submenu</H4>
+<FONT SIZE="2"><P>To perform most database operations you will use the <B>Access</B> command on the main menu.  Selecting the Access command displays the <B>Database Access Commands</B> submenu shown in Figure 8-3.  </P>
+<HR>
+</FONT><B><FONT COLOR="#0000ff"><PRE>Database Access Commands</B>
+Record  Set  Currency  Transaction  Lock  Free  Miscellaneous  X_exit</PRE></FONT><B><FONT SIZE="2">
+<HR><P ALIGN="center">Fig. 8-3.  Database Access Commands Menu</P>
+</B></FONT><H4><A name="Exiting"></A>Exiting a Submenu</H4>
+<FONT SIZE="2"><P>When you exit a submenu, you go back to the previous menu.  There are two ways to exit a submenu:</P>
+
+<UL>
+<LI>On the 2nd line of the submenu, highlight the <B>X_exit</B> command and press &lt;Enter&gt;.<BR>or
+  
+<LI>Press the &lt;Esc&gt; key.</LI></UL>
+
+</FONT><H4><A name="Selecting"></A>Selecting a Record</H4>
+<FONT SIZE="2"><P>Using <B>ida</B>, you can find a record by using the <B>Keyscan</B> command to find a keyword or you can use the <B>Recscan</B> command to find a record by using a database address.  The following procedure uses the <B>Recscan</B> command.</P><P> </P>
+<P>To select a record using <B>Recscan</B>:</P>
+<OL>
+  <LI>Access the <B>Database Access 
+  Commands</B> submenu (shown in Figure 8-3). 
+  <LI>From that menu, highlight and execute the <B >Record</B> command. </LI></OL>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px">      
+  <P>The <B>Record Manipulation 
+Functions</B> submenu displays (shown in Figure 8-4). </P></BLOCKQUOTE>
+<HR>
+<DIR>
+<DIR>
+</FONT><B><FONT color="#0000ff"><PRE>Record Manipulation Functions
+</B>Keyscan Get  Enter  Modify  Delete  Recscan      X_exit
+Scan and view records based on key</PRE></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B><P align="center">Fig. 8-4. Record Manipulation Functions 
+Menu</P>
+<OL start="3"></B>
+  <LI>From the <B>Record Manipulation 
+  Functions</B> submenu, highlight and execute the <B >Recscan</B> command.</LI></OL>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px">
+  <P>The Scan and view records based on database address 
+  submenu appears (shown in Figure 8-2).</P></BLOCKQUOTE>
+<DIR>
+<DIR>
+<P>         
+     &nbsp;</P></DIR></DIR>
+<OL start="4">
+  <LI>From the <B>Scan and view 
+  records based on database address</B> submenu, highlight and execute the <B >Scan</B> command. 
+  <LI>A numbered list titled <B>SELECT 
+  RECORD TYPE </B>displays. Type the number of the record type you want to 
+  select.</LI></OL>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px">  
+  <P>The <B>Scan and View Records</B>  submenu appears and displays a record (shown in Figure 
+  8-5).</P></BLOCKQUOTE>
+<HR>
+<DIR>
+<DIR>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Scan and View Records</B>
+Next  First  Select  X_exit
+Display next page of records
+<BR>
+RECORD:  AUTHOR                               Page:  1
+<BR>
+RECORD CONTENTS:
+   1.   {"Martin, James"}
+   2.   {"Myers, G."} 
+   3.   {"Teorey T. &amp; Fry, J."} </PRE></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B><P align="center">Fig. 8-5. Scan and View Records Menu</P>
+<OL start="6"></B>
+  <LI>Highlight and enter the <B >Select</B> command. The highlight will move to the 
+  numbered list. 
+  <LI>Choose an option from the numbered list. The record 
+  will be displayed in the <B>ida</B> 
+screen</LI></OL></FONT><B><FONT face="Helvetica" size="4">
+<P><A name="UsingMain"></A>8.2 Using the Main Menu Commands</P></B></FONT><FONT size="2">
+<P>This section describes the commands on the <B>ida</B> main menu, shown in Figure 8-1. For instructions on 
+using the main menu to execute commands and access submenus, see section 
+8.1.2.</P></FONT>
+<H4>Open command</H4><FONT size="2">
+<P>The <B>Open</B> command opens a 
+database. If another database is currently open, it will first be closed. After 
+selecting the <B>Open</B> command, you must choose the 
+One_User, Shared, or Exclusive access option from the displayed submenu. A list 
+of the databases contained in the current (or DBDPATH) directory is then 
+displayed. From this list you can select the database to be opened.</P></FONT>
+<H4>Access command</H4><FONT size="2">
+<P>The <B>Access</B> command brings up 
+the <B>Database Access Commands</B> submenu, which provides 
+a set of functions and submenus for manipulating a particular database. This 
+menu, described in section 8.4 includes record functions, set functions, 
+currency functions, transaction functions, and lock functions. The <B>Access</B> command may only be called after a database has 
+been opened.</P></FONT>
+<H4>Initialize command</H4><FONT size="2">
+<P>This command, which corresponds to the <B>d_initialize</B> function, initializes the opened <B><I>db.*</B></I> database. This command 
+should only be used after a database has been opened for exclusive access. It 
+will destroy the contents of the database.</P></FONT>
+<H4>Close command</H4><FONT size="2">
+<P>The <B>Close</B> command closes an 
+opened database immediately.</P></FONT>
+<H4>Parameters command</H4><FONT size="2">
+<P>Executing the <B>Parameters</B> 
+command accesses the <B>Set db.* Operational Parameters 
+</B>submenu. It also displays the current <B>ida</B> 
+operational settings. </P>
+<P>The <B>Set db.* Operational 
+Parameters </B>submenu is shown in Figure 8-6, followed by a description of each 
+of its commands. These commands are used to change the <B><I>db.*</B></I> settings and cannot be 
+used when a database is open. </P>
+<HR></FONT><B><FONT color="#0000ff"><PRE>Set db.* Operational Parameters</B>
+Dictionary_path  Files_path  Userid  Pages  Max_files  Logging  Chain  X_exit</PRE></FONT><FONT size="2">
+<HR>
+<B><P align="center">Fig. 8-6. Set <I>db.*</I> Operational Parameters Submenu</P></B>
+<P>Dictionary_path<BR>Sets the DBDPATH 
+environment variable, which identifies the full directory path to the <B>.dbd</B> file for the database to be accessed.</P>
+<P>Files_path<BR>Sets the DBFPATH 
+environment variable, which identifies the full directory path to the data and 
+key files for the databases to be accessed.</P>
+<P>Userid<BR>Sets the user ID. If you 
+do not have the DBUSERID environment variable defined, you must use this command 
+before opening the database in shared mode through <B>ida</B>.</P>
+<P>Pages<BR>Sets the number of <B>ida</B>/<B><I>db.*</B></I> virtual memory database pages.</P>
+<P>Max_files<BR>Sets the maximum 
+number of database files that <B>ida</B>/<B><I>db.*</B></I> can have open at one 
+time. This number should not be greater than the operating system limit, less 
+three. </P>
+<P>Logging<BR>Toggles the transaction 
+logging option. The screen will indicate whether transaction logging is on 
+(enabled) or off (disabled).</P>
+<P>Chain<BR>Controls the use of the 
+delete chain for storing newly created records. The display will show whether 
+delete chain usage is on (enabled) or off (disabled).</P></FONT>
+<H4>Quit command</H4><FONT size="2">
+<P>Closes any opened database and ends the <B>ida</B> session. The environment variables DBDPATH and 
+DBFPATH are restored to their initial values.</P></FONT>
+<H2><A name="Entering"></A>8.3 Entering and Modifying Records</H2><FONT size="2">
+<P>To edit or modify a database record, you use the <B>Display/Edit</B> <B>Record</B> 
+submenu. Section 8.3.1 provides information about the commands on the <B>Display/Edit Record</B> submenu. Section 8.3.2 gives 
+instructions for editing a data field and section 8.3.3 provides information 
+about <B>ida</B>'s editing modes and describes <B>ida</B>'s field editing commands.</P></FONT>
+<H3><A name="AccessingDisplay"></A>8.3.1 Accessing the Display/Edit Record 
+Submenu</H3><FONT size="2">
+<P>To access an existing record with the <B>Display/Edit</B> submenu:</P>
+<UL>
+  <LI>Open the database you want. 
+  <LI>Access the <B>Database Access 
+  Commands</B> and <B>Record</B> submenus. 
+  <LI>Select a record from the database. You may use the <B >Keyscan</B>, <B>Get</B>, or <B >Recscan</B> options to select a record. The record will be 
+  made the <I>current record</I>. 
+  <LI>From the <B>Record Manipulation 
+  Functions</B> submenu (Figure 8-4), select <B>Modify</B> 
+  to display the <B>Display/Edit Record</B> submenu.</LI></UL>
+<P>When the <B>Display/Edit Record</B> 
+submenu is accessed, the current record is displayed. Header information 
+identifies the name of the record, its length in bytes, the total number of data 
+fields that can be edited, the current page number, and total pages of data 
+fields for the record. </P>
+<P>Following the header is the first page of fields. The 
+name of the data field appears on the left, its contents appear on the right. An 
+example display is shown in Figure 8-7 below.</P>
+<HR>
+<PRE></FONT><FONT color="#0000ff"><B>Display/Edit Record</B>
+Edit Init Next Prev Write Store_key Delete_key Owner Connect X_Exit
+Edit record
+<BR>
+RECORD: INFO       SIZE: 220   TOTAL FIELDS: 5            PAGE 1 OF 1
+<BR>
+ID_CODE            &gt;sw001&lt;
+INFO_TITLE         &gt;Software Reliability Principles &amp; Practices&lt;
+PUBLISHER          &gt;Wiley-Interscience&lt;
+PUB_DATE           &gt;1976&lt;
+INFO_TYPE          &gt;0&lt;</FONT><FONT size="2">
+</PRE>
+<HR>
+<B>
+<P align="center">Fig. 8-7. An Example Display/Edit Record 
+Screen</P></B>
+<P>To create a new record with the <B>Display/Edit</B> submenu:</P>
+<UL>
+  <LI>Open the database you want. 
+  <LI>Access the <B>Database Access 
+  Commands</B> and <B>Record</B> submenus. 
+  <LI>Select the <B>Enter</B> submenu 
+  and select a record type from the list. 
+  <LI>The <B>Display/Edit</B> submenu 
+  will show the record information (as in Figure 8-7) with empty field 
+  contents.</LI></UL>
+<P>A field can be edited if it is not the sub-field of a <B>struct</B>. Select the <B>Edit</B> 
+submenu command to change individual field contents.</P></FONT>
+<H3><A name="UsingDisplay"></A>8.3.2 Using the Display/Edit 
+Record Submenu Commands</H3><FONT size="2">
+<P>Figure 8-8 shows the <B>Display/Edit 
+Record</B> submenu commands. </P>
+<HR>
+</FONT><B><FONT color="#0000ff"><PRE>Display/Edit Record</B>
+Edit Init Next Prev Write Store_key Delete_key Owner Connect X_exit</PRE></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-8. The Display/Edit Record 
+Submenu</P></B>
+<P>The first line is the menu title, and the second line 
+lists the menu commands. This section describes each of these 
+commands.</P></FONT>
+<H4>Edit command </H4><FONT size="2">
+<P>Selecting this command invokes field-level editing of the 
+displayed record. The field edit commands are listed in Table 8-2. The first 
+field is highlighted and displayed in the data field edit area. Field editing is 
+initially entered in Command mode. For information about <B>ida</B> editing modes, see section 8.3.4.</P></FONT>
+<H4>Init command </H4><FONT size="2">
+<P>Use this command to initialize a new record. Selecting 
+this command clears the displayed record and enters field editing (see section 
+8.3.4) in Insert mode.</P></FONT>
+<H4>Next command </H4><FONT size="2">
+<P>If the displayed record type consists of more data fields 
+than can be shown on one screen, this command can be used to display the next 
+page of fields. Note that when entering data, each page of data fields must be 
+entered before the record is stored. Use the <B>Next</B> 
+command to access each page.</P></FONT>
+<H4>Prev command </H4><FONT size="2">
+<P>Selecting this command displays the previous page of data 
+fields. Each page of data fields must be entered before the record is 
+stored.</P></FONT>
+<H4>Write command </H4><FONT size="2">
+<P>Selecting this command writes the entered or modified 
+record to the database. If the automatic set connection feature is enabled, then 
+the record will also be connected to each set of which it is a member and for 
+which a current owner has previously been set.</P></FONT>
+<H4>Store_key command </H4><FONT size="2">
+<P>This command is used to store optional keys in the key 
+file. A selection list of optional keys will be displayed. Select the one to be 
+stored for the current record.</P></FONT>
+<H4>Delete_key command </H4><FONT size="2">
+<P>This command is used to delete optional keys from the key 
+file. A selection list of optional keys will be displayed. Select the one to be 
+deleted from the current record.</P></FONT>
+<H4>Owner command </H4><FONT size="2">
+<P>This command is used to assign, from the current record, 
+the current owner of the selected set. It is provided here to facilitate data 
+entry. Note that all sets are listed, but not all sets will allow the current 
+record to be the owner record.</P></FONT>
+<H4>Connect command </H4><FONT size="2">
+<P>Selecting this command connects the current record to the 
+set selected from the displayed list of sets. It is provided here to facilitate 
+data entry. Note that all sets are listed, but not all sets will allow the 
+current record to be a member record. To succeed, the current record must be of 
+the correct type, must not already be connected to the set, and a current owner 
+for the set instance must already be established.</P></FONT>
+<H3><A name="DataField"></A>8.3.3 Editing a Data 
+Field</H3><FONT size="2">
+<P>In the <B>Display/Edit Record</B> 
+submenu, selecting the <B>Edit</B> or the <B>Init</B> command allows you to edit a record one data field 
+at a time. <B>ida</B> editing incorporates many of the VI 
+editor commands (see Table 8-2).</P>
+<P>All editing is performed in the editing field. Just above 
+the editing field, the name of the field being edited is displayed. If this 
+field already contains data, the data will be displayed in the editing field. 
+Arrows on either end of the editing field point inward if all the data in the 
+field fits on the screen, or outward in the direction where more data can be 
+found. The entire contents of the field are accessed by horizontally scrolling 
+or repositioning through the field, using cursor-positioning field edit 
+commands.</P>
+<P>You can move to different data fields by using the up and 
+down arrow keys, or by pressing &lt;Enter&gt; or &lt;Tab&gt; to move to the next 
+field. Pressing &lt;Enter&gt; or &lt;Tab&gt; on the last field, or pressing 
+&lt;Esc&gt; at any point, will return you to the <B>Display/Edit Record </B>submenu.</P>
+<P>The format of the displayed data is similar to the format 
+that would be used if the data were statically initialized in a C variable 
+declaration. Each item of an arrayed (non- string) data field is separated by 
+commas and specified in its natural sequence. Structure fields must be enclosed 
+by braces ({ }). Character strings do not need to be delimited by quotation 
+marks except when included as part of a <B>struct</B> field. 
+Sub-fields of <B>struct</B> fields cannot be edited 
+independently and, in fact, they are displayed only in the <B>struct</B> field. All C escape codes (for example, <B>\n, \f, \r, \ddd</B>) can be entered into character 
+fields.</P>
+<P>One-dimensional character arrays are always treated as 
+strings, terminated by a null byte (<B>\</B>0). 
+Multi-dimensional character arrays will display the entire length of the 
+field.</P>
+<P>Fields of type <B>DB_ADDR</B> are 
+displayed and entered as <B>[f :r]</B>, where <B><I>f</B></I> is the file number and <B><I>r</B></I> is the record number. As an 
+example, <B>[3:11717]</B> is the database address of the 
+record located at slot number 11717 in file number 3.</P>
+<P>Repeating data items in arrayed data fields are indicated 
+with a <B>d*</B> prefix where <B>d</B> 
+is the decimal number of repetitions and "<B>*</B>" 
+indicates a repeating field. </P>
+<P>The following table lists some examples of the above 
+requirements.</P><B>
+<P align="center">Table 8-1. Example Data Field 
+Contents</B></FONT> 
+<TABLE border="0" cellPadding="7" cellSpacing="0" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="28%"><B ><FONT size="2"><FONT face="Default" >
+      <P>Field Spec</B></FONT></FONT></P></TD>
+    <TD vAlign="top" width="72%"><B ><FONT size="2"><FONT face="Default" >
+      <P>Display</B></FONT></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>char str[255];</FONT></P></TD>
+    <TD vAlign="top" width="72%"><FONT face="Courier" size="1" >
+      <P>This needs to be scrolled to see 
+    th&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>int array[10];</FONT></P></TD>
+    <TD vAlign="top" width="72%"><FONT face="Courier" size="1" >
+      <P>&gt;12,15,312,74,5,5*0&lt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>struct {</FONT></P></TD>
+    <TD vAlign="top" width="72%"><FONT face="Courier" size="1" >
+      <P>&gt;{"Joelle",6},{"Rebecca",4},{"Scott",2},{"K&amp; 
+      &gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>char name[15];<BR>int age;<BR >} children[7];</FONT></P></TD>
+    <TD vAlign="top" width="72%">&nbsp;</TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>DB_ADDR tree[2];</FONT></P></TD>
+    <TD vAlign="top" width="72%"><FONT face="Courier" size="1" >
+      <P>&gt;[2:1377],[2:1381]&lt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="28%"><FONT face="Courier" size="1" >
+      <P>char lines[10][10]</FONT></P></TD>
+    <TD vAlign="top" width="72%"><FONT face="Courier" size="1" >
+      <P>&gt;line 1\n\0\0\0line 
+      2\n\0\0\0line3\n\&gt;</FONT></P></TD></TR></TABLE></P>
+<H3><A name="EditCommands"></A>8.3.4 Using Edit Modes and 
+Field Edit Commands</H3><FONT size="2">
+<P>The current editing mode is shown in the upper right 
+corner of the screen. There are three modes:</P>
+<DIR>
+<DIR>
+<P>Command mode indicates that the field edit commands are 
+enabled. Table 8-2 lists the edit commands available in Command mode.</P>
+<P>Insert mode is initiated by the<B> 
+i</B>, <B>a</B>, and <B>A</B> commands, 
+allowing data to be inserted into the field. Pressing &lt;Esc&gt; returns to 
+Command mode.</P>
+<P>Replace mode (<B>R</B> command) 
+allows a type-over capability, where characters under the cursor are replaced by 
+those typed at the keyboard. Pressing &lt;Esc&gt; returns to Command 
+mode.</P></DIR></DIR><B>
+<P align="center">Table 8-2. ida Field Edit Commands and 
+Descriptions</P></B></FONT>
+<P align="center">
+<CENTER>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="537">
+  <TBODY>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>Command</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><B ><FONT size="2">
+      <P>Description</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>i</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Insert characters before the 
+  cursor.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>a</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Append characters after the 
+cursor.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>A</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Append characters to the end of the 
+      field.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>r</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Replace one character.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>R</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Replace (types over) existing 
+    characters.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>h</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move the cursor one character to the 
+      left.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>l</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move the cursor one character to the 
+      right.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>w</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move the cursor forward one "small" word, delimited 
+      by anything other than letters, digits, or underscores.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>W</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move cursor forward one "big" word, delimited by 
+      spaces.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>b</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move the cursor back one small 
+  word.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>B</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Move the cursor back one big word.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>^</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Position the cursor at the beginning of the 
+      field.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>$</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Position the cursor at the end of the 
+      field.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>x</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Delete the character beneath the 
+    cursor.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>u</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Undo the last change. </FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>f&lt;<I >c</I>&gt;</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Find the next occurrence of character &lt;<B ><I>c</B></I>&gt; to the 
+      right.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>F&lt;<I >c</I>&gt;</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Find the next occurrence of character &lt;<B ><I>c</B></I>&gt; to the 
+      left.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>;</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Repeat the last <B >f</B></FONT><FONT face="Courier" size="2" > </FONT><FONT size="2">or <B >F</B> command.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>/&lt;<I >s</I>&gt;</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Search for the first occurrence of the string 
+      &lt;<B><I >s</B></I>&gt;.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>n</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Repeat the last "/" command.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="21%"><B ><FONT size="2">
+      <P>d</B></FONT></P></TD>
+    <TD vAlign="top" width="79%"><FONT size="2" >
+      <P>Delete between cursor position and the position 
+      determined from the cursor position command that immediately follows. For 
+      example, "<B>df.</B>" will delete from the next 
+      occurrence of character &lt;<B><I >c</B></I>&gt; to the right from the cursor through the 
+      next "<B>.</B>".</FONT></P></TD></TR></TBODY></TABLE></CENTER>
+<P></P><FONT size="2">
+<P>Additionally, some field edit commands can be preceded by 
+a command repetition number. These commands are: <B>h, l, w, 
+W, b, B, x, f,</B> and <B>F</B>. For example typing <B>30h </B>moves the cursor 30 characters to the left.</P>
+<P>Table 8-3 lists the function keys (if available on your 
+keyboard), that have been assigned the above edit commands.</P><B>
+<P align="center">Table 8-3. Function Key Table</P></B></FONT>
+<P align="left">
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="337">
+  <TBODY>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>Edit Command</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><B ><FONT size="2">
+      <P>Function Key</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>h</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;Left Arrow&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>l</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;Right Arrow&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>^</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;Home&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>$</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;End&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>i</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;Ins&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>x</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;Del&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>u</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F1&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>;</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F2&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>W</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F3&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>w</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F4&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>B</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F5&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>b</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F6&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>R</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F7&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>r</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F8&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>A</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F9&gt;</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="44%"><B ><FONT size="2">
+      <P>a</B></FONT></P></TD>
+    <TD vAlign="top" width="56%"><FONT size="2" >
+      <P>&lt;F10&gt;</FONT></P></TD></TR></TBODY></TABLE></P><B><FONT face="Helvetica" size="4">
+<P><A name="AccessMenu"></A>8.4 Using the Access Menu Commands 
+</P></B></FONT><FONT size="2">
+<P>This section describes all of the database access 
+commands that are available when you select the <B>Access</B> command from the <B>ida 
+</B>main menu, shown in Figure 8-1. Selecting the <B>Access</B> command from the <B>ida</B> 
+main menu accesses the <B>Database Access Commands</B> 
+submenu, shown earlier in Figure 8-3.</P>
+<P>The commands on <B>Database Access 
+Commands</B> submenu are described in the following sections of this 
+chapter:</P></FONT>
+<P align="left">
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="396">
+  <TBODY>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.1</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Record</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.2</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Set</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.3</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Currency</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.4</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Transaction</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.5</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Lock</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.6</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Free</B> command</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="39%"><FONT size="2" >
+      <P>Section 8.4.7</FONT></P></TD>
+    <TD vAlign="top" width="61%"><B ><FONT size="2">
+      <P>Miscellaneous</B> 
+command</FONT></P></TD></TR></TBODY></TABLE></P>
+<H3>8.4.1 Using the Access Record Commands</H3><FONT size="2">
+<P>The <B>Record</B> command, selected 
+from the <B>Database Access Commands</B> submenu, accesses 
+the <B>Record Manipulation Functions</B> submenu, from which 
+you can select a set of additional commands and submenus for managing records. 
+This submenu is shown in Figure 8-9, followed by a description of each of its 
+commands and their submenus.</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Record Manipulation Functions</B>
+Keyscan  Get  Enter  Modify  Delete  Recscan  X_exit</PRE></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-9. Record Manipulation Functions 
+Submenu</P></B></FONT>
+<H4>Keyscan command</H4>
+<OL><FONT size="2">
+  <P>Selecting the <B>Keyscan</B> 
+  command accesses the <B>Scan and View Record Based on 
+  Key</B> submenu, from which you can choose how to locate a record based on a 
+  key. This submenu is shown in Figure 8-10, followed by a description of its 
+  commands.</P>
+  <P>&nbsp;</P>
+  <P>&nbsp;</P></OL><B><FONT size="2">
+<HR>
+</FONT></B></FONT><FONT size="2">
+<DIR>
+<P></P>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Scan and View Record Based on Key</B>
+Scan  Keyfind  First  Last  Next  Previous  X_exit</PRE></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-10. Scan and View Record Based on Key 
+Submenu</P>
+<DIR>
+<DIR></FONT><FONT face="Helvetica" size="2">
+<P>Scan<BR></B></FONT><FONT size="2">Scans records based on a key field. A list of all key field 
+names will be displayed, from which you should select the field to be scanned. 
+You will then be prompted to enter the value of the key where the scan will 
+begin. If you press "Enter" instead of a key value, the scanning will begin from 
+the first key.</P>
+<P>The records located by the scan will be paged and 
+displayed in a horizontal packed format. This is similar to the format that 
+would result if the <B>struct</B> variable corresponding to 
+the record were statically initialized in a C program. That is, it would be 
+enclosed in braces, { }, with each sub-field grouping separated by commas. For 
+more information about the display of various <B><I>db.*</B></I> data types, see section 8.3.3.</P></DIR></DIR>
+<BLOCKQUOTE style="MARGIN-RIGHT: 0px">
+  <BLOCKQUOTE style="MARGIN-RIGHT: 0px">
+    <P>Figure 8-11 shows a sample record scan 
+  display.</P></BLOCKQUOTE></BLOCKQUOTE>
+<HR>
+
+<DIR>
+<DIR>
+<DIR></FONT><FONT color="#0000ff"><PRE>Record: EMPLOYEE      Key: EMP_ID      Page: 1
+<BR>
+ENTRY RECORD CONTENTS
+   1.   {"7901",{"Pfeil","Carl","L."},"MGR1"}
+   2.   {"7902",{"Rogers","Jim",""}, "MGR1"}
+   3.   {"7903",{"Fleagle","Jenifer","C."},"MGR2"}
+   4.   {"7904",{"Smith","Stephen","P."},"MGR1"}
+   5.   {"7906",{"Warren","Wayne","L."},"MGR1"}
+   6.   {"7907",{"Merilatt","Randall","L."},"MGR1"}
+   7.   {"8001",{"Bryant","John","W."},"MGR2"}
+   8.   {"8002",{"Willis","Kirt","L."},"MGR2"}
+   9.   {"8003",{"Mureen","Chris",""}, "ENGR"}
+  10.   {"8101",{"Temple","Anita","J."}, "ADMN"}
+  11.   {"8102",{"Rodovsky","Eliska",""}, "ENGR"}
+  12.   {"8102",{"Marsh","Kyle","G."}, "ENGR"}
+  13.   {"8103",{"Carlson","Bob","C."}, "MGR1"}
+  14.   {"8104",{"Bustamante","Tina","L."}, "ENGR"}</PRE></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-11. A Sample Keyscan/Scan 
+Display</P></B>
+<P>Keyfind<BR>Quickly finds and displays 
+one record. When you select a key field from the displayed list and enter a 
+value, this command displays either the record associated with the specified key 
+value, or if the key is not found, the record associated with the next key. 
+Compound key and <B>struct</B> fields must be enclosed by 
+braces ({ }). Character strings do not need to be delimited by quotation marks 
+except when included as part of a <B>struct</B> field. </P>
+<P>First<BR>Finds and displays the 
+record associated with the first key in the key file.</P>
+<P>Last<BR>Finds and displays the record 
+associated with the last key in the key file.</P>
+<P>Next<BR>Finds and displays the record 
+associated with the next key in the key file. If a <B>Next</B> command causes a "no more keys" message at the end 
+of a file, a subsequent <B>Next</B> command will return the 
+first key.</P>
+<P>Previous<BR>Finds and displays the 
+record associated with the previous key in the key file. If a <B>Previous</B> command causes a "no more keys" message at the 
+end of a file, the next <B>Previous</B> command will return 
+the last key.</P></FONT>
+<H4>Get command</H4>
+<DIR><FONT size="2">
+<P>Displays the record located at a specified database 
+address. When prompted for the database address, enter it as:</P></FONT><FONT color="#0000ff"><PRE>enter database address: [<B><I>f</B></I> :<B><I>r</B></I>] </PRE></FONT><FONT size="2">
+<P>where <B><I>f</B></I> is the file number and <B><I>r</I> </B>is the record number. Refer to section 14.2.2, 
+"Data File Organization," for a description of database 
+addresses.</P></DIR></FONT>
+<H4>Enter command</H4>
+<DIR><FONT size="2">
+<P>Enters new records into the database. From the displayed 
+list, select the record type to be entered. The <B>Display/Edit Record</B> submenu is then invoked. Section 
+8.4.1, shows the <B>Display/Edit Record</B> submenu and 
+describes its functions in detail.</P></DIR></FONT>
+<H4>Modify command</H4>
+<DIR><FONT size="2">
+<P>Invokes the <B>Display/Edit 
+Record</B> submenu, which provides a set of tools for modifying the current 
+record, which may be selected in a variety of ways. For detailed information, 
+about the <B>Display/Edit Record</B> submenu, see section 
+8.3.2.</P></DIR></FONT>
+<H4>Delete command</H4>
+<DIR><FONT size="2">
+<P>Deletes the current record from the database. The record 
+must have been previously disconnected from all sets of which it was an owner or 
+a member.</P></DIR></FONT>
+<H4>Recscan command</H4>
+<OL><FONT size="2">
+  <P>Invokes the<B> Scan and View Record 
+  Based on Database Address</B> command submenu. The commands in this submenu 
+  use the <B>d_recfrst</B>, <B >d_recnext</B>, <B>d_reclast</B> and <B >d_recprev</B> functions to locate the records, instead of 
+  the key traversal functions.</P></OL>
+<HR>
+
+<OL>
+  <DIR></FONT><FONT color="#0000ff"><PRE>Scan and View Record Based on Database Address
+Scan  First  Last  Next  Previous  X_exit</PRE></DIR></OL></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-12. Scan and View Record Based on 
+Database Address Submenu</P>
+<DIR>
+<DIR></B>
+<P>Scan<BR>Scans records based on their 
+database address (their order is determined by their physical appearance in a 
+data file). A list of all record type names will be displayed, from which you 
+should select the type to be scanned.</P>
+<P>The records located by the scan will be paged and 
+displayed in the same horizontal packed format as the <B>Keyscan</B> command. For more information about the display 
+of various <B><I>db.*</B></I> data 
+types, see section 8.3.3.</P>
+<P>First<BR>Finds and displays the first 
+record of the selected type in the data file.</P>
+<P>Last<BR>Finds and displays the last 
+record of the selected type in the data file.</P>
+<P>Next<BR>Finds and displays the next 
+record in the data file. When it reaches the end of the file, it displays a "no 
+more records" message. A subsequent <B>Next</B> command will 
+begin with the first record.</P>
+<P>Previous<BR>Finds and displays the 
+previous record in the data file. When it reaches the top of the file, it 
+displays a "no more records" message. A subsequent <B>Previous</B> command will begin with the last 
+record.</P></DIR></DIR></FONT>
+<H3>8.4.2 Using the Access Set Commands</H3><FONT size="2">
+<P>Selecting the <B>Set</B> command from 
+the <B>Database Access Commands</B> submenu, accesses the <B>Set Manipulation Functions</B> submenu, which provides a set 
+of tools for managing sets. This submenu is shown in Figure 8-13, followed by a 
+description of its functions.</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Set Manipulation Functions</B>
+Scan Owner First Next Last Previous Connect Disconnect Total X_exit</PRE></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-13. Set Manipulation Functions 
+Submenu</P></B></FONT>
+<H4>Scan command</H4>
+<DIR><FONT size="2">
+<P>Scans and displays all member records connected to the 
+current owner of a set. The set to be scanned is selected from the displayed 
+list of set names. </P>
+<P>The records located by the scan will be paged and 
+displayed in a horizontal packed format. This is similar to the format that 
+would result if the <B>struct</B> variable corresponding to 
+the record were statically initialized in a C program. That is, it would be 
+enclosed in braces, { }, with each sub-field grouping separated by commas. For 
+more information about the display of various <B><I>db.*</B></I> data types, see section 8.3.3. 
+</P></DIR></FONT>
+<H4>Owner command</H4>
+<DIR><FONT size="2">
+<P>Finds the owner of the current record, through the set 
+selected from the displayed list of set names. Note that this function serves a 
+different purpose than the Owner function under the Display/Edit Record 
+submenu.</P></DIR></FONT>
+<H4>First command</H4>
+<DIR><FONT size="2">
+<P>Finds the first member connected to the current owner of 
+the set selected from the displayed list of set names.</P></DIR></FONT>
+<H4>Next command</H4>
+<DIR><FONT size="2">
+<P>Finds the next member of a set. The first time (or after 
+a "no more records" message), <B>Next</B> displays the first 
+member of the set. </P></DIR></FONT>
+<H4>Last command</H4>
+<DIR><FONT size="2">
+<P>Finds the last member connected to the current owner of 
+the set selected from the displayed list of set names.</P></DIR></FONT>
+<H4>Prev command</H4>
+<DIR><FONT size="2">
+<P>Finds the previous member of a set. The first time (or 
+after a "no more records" message), <B>Prev </B>displays the 
+last member of the set. A <B>Last</B> or <B>Next</B> command must have preceded the call to <B>Prev</B>.</P></DIR></FONT>
+<H4>Connect command</H4>
+<DIR><FONT size="2">
+<P>Connects the current record to the current owner of the 
+set selected from the displayed list of set names.</P></DIR></FONT>
+<H4>Disconnect command</H4>
+<DIR><FONT size="2">
+<P>Disconnects the current record from the set selected from 
+the displayed list of set names. </P></DIR></FONT>
+<H4>Total command</H4>
+<DIR><FONT size="2">
+<P>Displays a count of the members connected to the current 
+owner of the set selected from the displayed list of set names.</P></DIR></FONT>
+<H3>8.4.3 Using the Access Currency Commands</H3><FONT size="2">
+<P>The <B>Currency</B> command, selected 
+from the <B>Database Access Commands</B> submenu, accesses 
+the <B>Currency Table Manipulation Functions</B> submenu 
+(shown in Figure 8-14 and followed by a description of its functions).</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Currency Table Manipulation Functions</B>
+Owner  Member  Record  Auto_set  Display  Timestamp  X_exit</PRE></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-14. Currency Table Manipulation 
+Functions Submenu</P></B></FONT>
+<H4>Owner command</H4>
+<OL><FONT size="2">
+  <P>Sets the current owner of the set selected from the 
+  displayed list of set names. This function then invokes the <B >Change Current Owner of Set </B>submenu, from which you 
+  select the record you wish to be made current. The submenu is shown in Figure 
+  8-15, followed by a description of its functions.</P></OL>
+<HR>
+
+<OL>
+  <DIR>
+  <DIR>
+  <DIR></FONT><B><FONT color="#0000ff" ><PRE>Change Current Owner of Set</B>
+Record  Owner  Member  Change  X_exit</PRE></DIR></DIR></DIR></OL></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-15. Change Current Owner of Set 
+Submenu</P>
+<DIR>
+<DIR></B>
+<P>Record<BR>Changes the current owner 
+of the selected set to the current record.</P>
+<P>Owner<BR>Changes the current owner of 
+the previously selected set to the current owner of the set selected from the 
+displayed list of sets.</P>
+<P>Member<BR>Changes the current owner 
+of the previously selected set to the current member of the set selected from 
+the displayed list of sets.</P>
+<P>Change<BR>Changes the current owner 
+of the selected set to the database address entered in response to the 
+prompt:</P></FONT><FONT color="#0000ff"><PRE>enter database address: [</FONT><B><I><FONT color="#0000ff" size="1">f </B></I></FONT><FONT color="#0000ff">:</FONT><B><I><FONT color="#0000ff" size="1">r</B></I></FONT><FONT color="#0000ff">]</PRE></FONT><FONT size="2">
+<P>where <B><I>f</B></I> is the file number and <B><I>r</B></I> is the record number. Refer to section 14.2.2, 
+"Data File Organization," for a description of database 
+addresses.</P></DIR></DIR></FONT>
+<H4>Member command</H4>
+<OL><FONT size="2">
+  <P>Sets the current member of the set selected from the 
+  displayed list of set names. It then invokes the <B>Change 
+  Current Member of Set</B> submenu, shown in Figure 8-16, to determine the 
+  record to be made current.</P></OL>
+<HR>
+
+<OL>
+  <DIR>
+  <DIR>
+  <DIR>
+  <DIR></FONT><B><FONT color="#0000ff" ><PRE>Change Current Member of Set</B>
+Record  Owner  Member  Change  X_exit</PRE></DIR></DIR></DIR></DIR></OL></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-16. Change Current Member of Set 
+Submenu</P>
+<DIR>
+<DIR></B>
+<P>Record<BR>Changes the current member 
+of the selected set to the current record.</P>
+<P>Owner<BR>Changes the current member 
+of the previously selected set to the current owner of the set selected from the 
+displayed list of sets.</P>
+<P>Member<BR>Changes the current member 
+of the previously selected set to the current member of the set selected from 
+the displayed list of sets.</P>
+<P>Change<BR>Changes the current member 
+of the selected set to the database address entered in response to the 
+prompt:</P></FONT><FONT color="#0000ff"><PRE>enter database address: [<B><I>f</B> :<B>r</B></I>]</PRE></FONT><FONT size="2">
+<P>where <B><I>f</B></I> is the file number and <B><I>r</B></I> is the record number.</P></DIR></DIR></FONT>
+<H4>Record command</H4>
+<OL><FONT size="2">
+  <P>Changes the current record. This selection invokes the 
+  <B>Change Current Record</B> submenu, shown in Figure 
+  8-17, to determine the record to be made current.</P></OL>
+<HR>
+
+<OL>
+  <DIR>
+  <DIR>
+  <DIR>
+  <DIR>
+  <DIR></FONT><B><FONT color="#0000ff" ><PRE>Change Current Record</B>
+Owner  Member  Change  X_exit</PRE></DIR></DIR></DIR></DIR></DIR></OL></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-17. Change Current Record Submenu</P>
+<DIR>
+<DIR></B>
+<P>Owner<BR>Changes the current record 
+to the current owner of the set selected from the displayed list of set 
+names.</P>
+<P>Member<BR>Changes the current record 
+to the current member of the set selected from the displayed list of set 
+names.</P>
+<P>Change<BR>Changes the current record 
+to the database address entered in response to the prompt:</P></FONT><FONT color="#0000ff"><PRE>enter database address: [<I>f :r</I>] </PRE></FONT><FONT size="2">
+<P>where <B><I>f</B></I> is the file number and <B><I>r</B></I> is the record number. </P></DIR></DIR></FONT>
+<H4>Auto_set command</H4>
+<DIR><FONT size="2">
+<P>Toggles the automatic set connection flag within <B>ida</B>. When turned on, this flag causes newly entered 
+records to be connected automatically to the current owners of the sets for 
+which they are members.</P></DIR></FONT>
+<H4>Display command</H4>
+<DIR><FONT size="2">
+<P>Displays the currency tables showing the record type and 
+database addresses of the current record and, for each set, the current owner 
+and current member of that set. It also indicates whether automatic set 
+connection is enabled.</P></DIR></FONT>
+<H4>Timestamp command</H4>
+<OL><FONT size="2">
+  <P>Invokes the <B>Timestamp Currency 
+  Functions</B> submenu, shown in Figure 8-18, for testing currency table 
+  timestamp statuses.</P></OL>
+<HR>
+
+<OL>
+  <DIR>
+  <DIR>
+  <DIR>
+  <DIR></FONT><B><FONT color="#0000ff" ><PRE>Timestamp Currency Functions</B>
+Record  Owner  Member  Set  X_exit</PRE></DIR></DIR></DIR></DIR></OL></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-18. Timestamp Currency Functions 
+Submenu</P>
+<DIR>
+<DIR></B>
+<P>Record<BR>Issues a message indicating 
+the timestamp status of the current record. </P>
+<P>Owner<BR>Issues a message indicating 
+the timestamp status of the current owner. Select the set whose owner's 
+timestamp is to be checked from the displayed selection list.</P>
+<P>Member<BR>Issues a message indicating 
+the timestamp status of the current member. Select the set whose member's 
+timestamp is to be checked from the displayed selection list.</P>
+<P>Set<BR>Issues a message indicating 
+the timestamp status of a set. Select the set whose timestamp is to be checked 
+from the displayed selection list.</P></DIR></DIR></FONT>
+<H3>8.4.4 Using the Access Transaction Commands</H3><FONT size="2">
+<P>The <B>Transaction</B> command, 
+selected from the <B>Database Access Commands</B> submenu, 
+controls the initiation and termination of transactions. It invokes the <B>Transaction</B> <B>Processing 
+Functions</B> submenu, shown below, from which a transaction can be started (<B>Begin</B>), ended (<B>End</B>), or 
+aborted (<B>Abort</B>).</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR>
+<DIR>
+<DIR></FONT><FONT color="#0000ff"><PRE>Transaction Processing Functions
+Begin</FONT><FONT color="#0000ff" size="1"> </FONT><FONT color="#0000ff"> End  Abort  X_exit</PRE></DIR></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-19. Transaction Processing Functions 
+Submenu</P></B></FONT>
+<H4>Begin command</H4>
+<DIR><FONT size="2">
+<P>Starts a transaction. You are prompted to enter the 
+transaction identifier. </P></DIR></FONT>
+<H4>End command</H4>
+<DIR><FONT size="2">
+<P>Stops a transaction. It applies to the database files all 
+changes made since the beginning of the transaction.</P></DIR></FONT>
+<H4>Abort command</H4>
+<DIR><FONT size="2">
+<P>Aborts the current transaction. It discards all changes 
+made since the beginning of the transaction.</P></DIR></FONT>
+<H3>8.4.5 Using the Access Lock Commands</H3><FONT size="2">
+<P>The <B>Lock</B> command, selected 
+from the <B>Database Access Commands</B> submenu, is used to 
+lock set types, record types, and key types, as well as the current record. It 
+invokes the <B>Multiuser Set/Record Lock Functions</B> 
+submenu, shown in Fig. 8-20, from which you select either record, set, key, or 
+current locks. You then select the record, set, or key to be locked from the 
+displayed list of record, set, or key names defined in the database.</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR>
+<DIR>
+<DIR></FONT><B><FONT color="#0000ff"><PRE>Multiuser Set/Record Lock Functions</B>
+Record  Set  Key  Current  Display  X_exit</PRE></DIR></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-20. Timestamp Currency Functions 
+Submenu</P></B></FONT>
+<H4>Record command</H4>
+<DIR><FONT size="2">
+<P>Places a lock on the record type selected from the 
+displayed list of records. A selection list of lock types will be displayed, 
+from which you should select the desired lock type. This command can only be 
+executed when the database is opened for shared access.</P></DIR></FONT>
+<H4>Set command</H4>
+<DIR><FONT size="2">
+<P>Places a lock on the set type selected from the displayed 
+list of sets. A selection list of lock types will be displayed, from which you 
+should select the desired lock type. This command can only be executed when the 
+database is opened for shared access.</P></DIR></FONT>
+<H4>Key command</H4>
+<DIR><FONT size="2">
+<P>Places a lock on the key type selected from the displayed 
+list of keys. A selection list of lock types will be displayed, from which you 
+should select the desired lock type. This command can only be executed when the 
+database is opened for shared access.</P></DIR></FONT>
+<H4>Current command</H4>
+<DIR><FONT size="2">
+<P>Sets the record lock bit of the current 
+record.</P></DIR></FONT>
+<H4>Display command</H4>
+<DIR><FONT size="2">
+<P>Displays the lock status for each set, record, and key 
+type, indicating whether it is read-locked, read-locked with keep, write-locked, 
+exclusively locked, or free. This command can only be executed when the database 
+is opened for shared access.</P></DIR></FONT>
+<H3>8.4.6 Using the Access Free Commands</H3><FONT size="2">
+<P>The <B>Free</B> command, selected 
+from the <B>Database Access Commands</B> submenu, is used to 
+free locked record, set, and key types, or to clear the current record's lock 
+bit. <B>Free</B> invokes the <B>Multi-user Set/Record Free Locks Functions</B> submenu, 
+shown in Figure 8-21. From here you select which locks you want freed. If you 
+are freeing a set, record, or key lock, select the correct one from the 
+displayed list of names defined in the database.</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR>
+<DIR>
+<DIR></FONT><FONT color="#0000ff"><PRE>Multi-user Set/Record Free Locks Functions
+Record  Set  Key  All  Current  X_exit</PRE></DIR></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-21. Multi-user Set/Record Free Locks 
+Functions Submenu</P></B></FONT>
+<H4>Record command</H4>
+<DIR><FONT size="2">
+<P>Frees the lock for the record type selected from the 
+displayed list of record types. This command can only be executed when the 
+database is opened for shared access and when no transaction is 
+active.</P></DIR></FONT>
+<H4>Set command</H4>
+<DIR><FONT size="2">
+<P>Frees the lock for the set type selected from the 
+displayed list of set types. This command can only be executed when the database 
+is opened for shared access and when no transaction is active.</P></DIR></FONT>
+<H4>Key command</H4>
+<DIR><FONT size="2">
+<P>Frees the lock for the key type selected from the 
+displayed list of key types. This command can only be executed when the database 
+is opened for shared access and when no transaction is active.</P></DIR></FONT>
+<H4>All command</H4>
+<DIR><FONT size="2">
+<P>Frees all set, record and key locks. It can only be 
+executed when the database is opened for shared access and when no transaction 
+is active.</P></DIR></FONT>
+<H4>Current command</H4>
+<DIR><FONT size="2">
+<P>Clears the lock bit of the current 
+record.</P></DIR></FONT>
+<H3>8.4.7 Using the Access Misc Commands</H3><FONT size="2">
+<P>The <B>Misc</B> command, selected 
+from the <B>Database Access Commands</B> submenu, invokes 
+the <B>Miscellaneous ida Functions</B> submenu, shown in 
+Figure 8-22, for displaying current database file and lock statuses.</P>
+<HR>
+
+<P></P>
+<DIR>
+<DIR>
+<DIR>
+<DIR>
+<DIR>
+<DIR></FONT><FONT color="#0000ff"><PRE>Miscellaneous ida Functions
+Files  Locks  X_exit</PRE></DIR></DIR></DIR></DIR></DIR></DIR></FONT><FONT size="2">
+<HR>
+<B>
+<P align="center">Fig. 8-22. Miscellaneous ida Functions 
+Submenu</P></B></FONT>
+<H4>Files command</H4>
+<DIR><FONT size="2">
+<P>Displays status information pertaining to the database 
+and all database files, as shown in Table 8-4.</P></DIR></FONT>
+<H4>Locks command</H4>
+<DIR><FONT size="2">
+<P>Displays the lock status for each set, record, and key 
+type, indicating whether it is read-locked, read-locked with keep, write-locked, 
+exclusively locked, or free. This command can only be executed when the database 
+is opened for shared access.</P></DIR><B>
+<P align="center">Table 8-4. File Status Information (From the 
+Misc Files Command)</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="23%"><B ><FONT size="2">
+      <P>Item Name</B></FONT></P></TD>
+    <TD vAlign="top" width="77%"><B ><FONT size="2">
+      <P>Description</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>Database name</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The name of the database currently being 
+      accessed.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>Access type</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>Exclusive, shared, or one_user 
+  access.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>Transaction</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The identifier of the active 
+    transaction.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>FILE</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The file number of the listed 
+file.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>SLOTS</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The total number of allocated file slots (if data 
+      file) or pages (if key file).</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>TYPE</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The file type: either "<B >data</B>" or "<B >key</B>".</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>STATUS</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>File status: "<B>opened</B>" or 
+      "<B>closed</B>", "<B>locked</B>" 
+      or "<B>free.</B>"</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>RW</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The total number of read locks on the file within 
+      this application. A file may be locked from different set/record locks. 
+      This value gives the current total. It is displayed only when the database 
+      is opened for shared access. A value of -1 indicates that the file is 
+      write-locked.</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>EX</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The total number of exclusive locks on the file. A 
+      file may be exclusively locked from different set/record locks. This value 
+      gives the current total. It is displayed only when the database is opened 
+      for shared access. </FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="23%"><FONT size="2" >
+      <P>NAME</FONT></P></TD>
+    <TD vAlign="top" width="77%"><FONT size="2" >
+      <P>The name of the file including any current path 
+      names.</FONT></P></TD></TR></TABLE><FONT size="2">
+<P>&nbsp;</P></FONT>
+<H2><A name="CrossReferenced"></A>8.5 <I>db.*</I> Functions Cross-Referenced to ida Commands 
+</H2><FONT size="2">
+<P>The <B>ida</B> utility allows you to 
+use a menu-driven interface instead of entering <B><I>db.*</B></I> functions from the command line. Table 8-5 
+lists <B><I>db.*</B></I> functions and 
+the corresponding sequence of <B>ida</B> menu commands that 
+produce the same result. This list is helpful when learning how to use the 
+various <B><I>db.*</B></I> functions. 
+For complete information on the operation of a particular <B><I>db.*</B></I> C function, refer to the 
+detailed function descriptions in the <B><I>db.*</B> Reference Manual</I>.</P>
+<P>In the following list, functions are grouped by type of 
+operation. The function name is in the left column, and the <B>ida</B> menu command sequence is in the right column. </P><B>
+<P align="center">Table 8-5. <I>db.*</I> 
+Functions and Corresponding ida Command Sequences</P>
+<P>Database Administration Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setpages</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Pages</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setfiles</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Max_files</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_dbdpath</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Dictionary_path</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_dbfpath</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Files_path</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_dbuserid</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Userid</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_on_opt</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Logging/Chain</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_off_opt</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Parameters Logging/Chain</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_open</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Open</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_close</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Close </FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_initialize</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Initialize</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_initfile</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_destroy</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida 
+  sequence</I></FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Record Manipulation Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_recread</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Modify </FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_recwrite</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Modify Write</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_fillnew</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Enter Write</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_makenew</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setkey</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_delete</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Delete</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keystore</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Enter/Modify 
+  Store_key</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keydel</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Enter/Modify 
+  Delete_key</FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Set Manipulation Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_connect</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Connect</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_discon</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Discon</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_members</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Total</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_isowner</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_ismember</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida 
+  sequence</I></FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Set Navigation Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_findco</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Owner</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_findfm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set First</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_findlm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Last</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_findnm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Next</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_findpm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Set Prev</FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Key Field Access Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keyfrst</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keylast</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keyfind</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Find</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keynext</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Next</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keyprev</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Record Prev</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keyread</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida 
+  sequence</I></FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Multi-User Database Control Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_trbegin</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Transaction Begin</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_trend</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Transaction End </FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_trabort</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Transaction Abort</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_reclock</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Lock Record</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_recfree</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Free Record</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setlock</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Lock Set</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setfree</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Free Set</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keylock</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Lock Key</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_keyfree</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Free Key</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_freeall</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Free All</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_rlbset</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Lock Current</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_rlbclr</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Free 
+Current</FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Currency Control Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setro</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Record Owner</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setrm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Record Member</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setor</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Owner Record</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setom</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Owner Member</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setoo</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Owner Owner</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setmr</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Member Record</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setmo</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Member Owner</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_setmm</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Member Member</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_crget</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_crset</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Record Change</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_csmget</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_csmset</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Member Change</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_csoget</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_csoset</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Owner 
+  Change</FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Timestamp Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_crstat</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Timestamp Record</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_costat</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Timestamp Owner</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_cmstat</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Timestamp Member</FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_csstat</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><FONT size="2" >
+      <P>Access Currency Timestamp 
+  Set</FONT></P></TD></TR></TABLE><B><FONT size="2">
+<P>Miscellaneous Control Functions</P></B></FONT>
+<TABLE border="1" cellPadding="7" cellSpacing="1" width="542">
+  
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>Function</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><B ><FONT size="2">
+      <P>ida Menu Command Sequence</B></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_crtype</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_cmtype</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida sequence</I></FONT></P></TD></TR>
+  <TR>
+    <TD vAlign="top" width="25%"><B ><FONT size="2">
+      <P>d_cotype</B></FONT></P></TD>
+    <TD vAlign="top" width="75%"><I ><FONT size="2">
+      <P>no corresponding ida 
+  sequence</I></FONT></P></TD></TR></TABLE><FONT size="2">
+<P>&nbsp;</P>
+<P>&nbsp;</P></FONT></BODY>
+</HTML>
